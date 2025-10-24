@@ -79,7 +79,7 @@
       <h1 class="text-2xl font-bold text-gray-900">Edit Purchase Order {{ purchase_order.po_number }}</h1>
       <p class="text-gray-600">Update details for {{ purchase_order.get_customer_account_display }}</p>
     </div>
-    <a href="{% url 'purchase_orders:detail' purchase_order.pk %}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+    <a href="{% url 'purchase_orders:get_po_api' purchase_order.pk %}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
       Back to Details
     </a>
   </div>
@@ -87,7 +87,7 @@
   <!-- Form -->
   <form method="POST" class="form-section" id="editPOForm">
     {% csrf_token %}
-    
+
     <!-- Customer Information -->
     <div class="mb-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Customer Information</h2>
@@ -185,7 +185,7 @@
           <div class="progress-bar bg-blue-500" id="utilizationBar" style="width: {{ purchase_order.utilization_percentage }}%"></div>
         </div>
         <div class="grid grid-cols-3 gap-4 text-sm">
-          
+
           <div>
             <span class="text-gray-500">Remaining:</span>
             <span class="font-medium" id="remainingAmount">{{ purchase_order.formatted_balance }}</span>
@@ -236,7 +236,7 @@
       </div>
       <div class="mt-2">
         <p class="text-sm text-gray-500">
-          Duration: 
+          Duration:
           {% if purchase_order.valid_from and purchase_order.valid_until %}
             <span id="durationDisplay">{{ purchase_order.days_until_expiry }} days</span>
             {% if purchase_order.is_expiring_soon %}
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const symbol = currencySymbols[currencySelect.value] || '$';
             const currencySymbolEl = document.getElementById('currencySymbol');
             const currencySymbolBalanceEl = document.getElementById('currencySymbolBalance');
-            
+
             if (currencySymbolEl) currencySymbolEl.textContent = symbol;
             if (currencySymbolBalanceEl) currencySymbolBalanceEl.textContent = symbol;
         }
@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (utilizationBarEl) {
             utilizationBarEl.style.width = Math.min(utilizationPercent, 100) + '%';
-            
+
             // Update color based on utilization
             utilizationBarEl.className = 'progress-bar';
             if (utilizationPercent >= 90) {
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update balance alert
         if (balanceAlertEl) {
             let alertClass, alertContent;
-            
+
             if (utilizationPercent >= 90) {
                 alertClass = 'alert alert-danger';
                 alertContent = `<strong>Critical:</strong> PO balance is critically low (${utilizationPercent.toFixed(1)}% used)`;
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertClass = 'alert alert-success';
                 alertContent = '<strong>Good:</strong> PO has adequate balance remaining';
             }
-            
+
             balanceAlertEl.className = alertClass;
             balanceAlertEl.innerHTML = alertContent;
         }
@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (customerSelect && accountSelect) {
         customerSelect.addEventListener('change', function() {
             const customerId = this.value;
-            
+
             if (customerId) {
                 fetch(`/purchase-orders/api/customers/${customerId}/accounts/`)
                     .then(response => response.json())
@@ -425,13 +425,13 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             const totalAmount = parseFloat(totalAmountField.value) || 0;
             const balance = parseFloat(balanceField.value) || 0;
-            
+
             if (balance > totalAmount) {
                 e.preventDefault();
                 alert('Current balance cannot be greater than total amount');
                 return false;
             }
-            
+
             if (balance < 0) {
                 e.preventDefault();
                 alert('Current balance cannot be negative');

@@ -597,14 +597,14 @@
               </option>
               {% endfor %}
             </select>
-            
+
             <select class="po-select" id="fStatus">
               <option value="">All Statuses</option>
               {% for value, label in status_choices %}
               <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
-            
+
             <select class="po-select" id="fCurrency">
               <option value="">All Currencies</option>
               {% for currency in currencies %}
@@ -637,7 +637,7 @@
                 </div>
               </div>
             </div>
-            
+
             <button class="po-btn" id="fClear" type="button">Clear filters</button>
           </div>
 
@@ -732,7 +732,7 @@
           {% else %}
           <button class="po-btn" disabled>Previous</button>
           {% endif %}
-          
+
           {% if purchase_orders.has_next %}
           <a href="?page={{ purchase_orders.next_page_number }}&status={{ status_filter|default:'' }}&customer={{ customer_filter|default:'' }}&currency={{ currency_filter|default:'' }}&search={{ search_query|default:'' }}" class="po-btn">Next</a>
           {% else %}
@@ -751,7 +751,7 @@
       <h3 id="modal-title">Create New PO</h3>
       <button type="button" class="po-btn" id="modal-close" style="padding:6px 10px;">✖️</button>
     </div>
-    
+
     <div class="modal-body">
       <!-- CSV Upload Section -->
       <div id="csv-section" style="margin-bottom:24px;">
@@ -765,7 +765,7 @@
           </div>
         </div>
         <div id="csv-status" style="margin-top:8px;font-size:13px;"></div>
-        
+
         <!-- CSV Summary Box (hidden by default) -->
         <div id="csv-summary" class="csv-summary" style="display:none;">
           <h4>✅ CSV Parsed Successfully</h4>
@@ -784,11 +784,11 @@
             </div>
           </div>
           <div style="font-size:12px;color:var(--muted);">
-            <strong>Customer:</strong> <span id="csv-customer-name">-</span> â€¢ 
+            <strong>Customer:</strong> <span id="csv-customer-name">-</span> â€¢
             <strong>Currencies:</strong> <span id="csv-currencies">-</span>
           </div>
         </div>
-        
+
         <!-- Record Selector (hidden by default) -->
         <div id="record-selector" class="record-selector" style="display:none;">
           <h4>Select a record to populate the form:</h4>
@@ -799,14 +799,14 @@
       <!-- PO Form -->
       <form id="po-form">
         <input type="hidden" id="po-id" />
-        
+
         <div class="form-grid">
           <!-- Basic Info -->
           <div class="form-field">
             <label>PO Number *</label>
             <input type="text" id="po-number" required placeholder="Auto-generated" />
           </div>
-          
+
           <div class="form-field">
             <label>Customer *</label>
             <select id="customer">
@@ -817,7 +817,7 @@
             </select>
             <input type="text" id="customer-new" placeholder="Or enter new customer name" style="margin-top:4px;" />
           </div>
-          
+
           <div class="form-field">
             <label>Account</label>
             <select id="account">
@@ -825,7 +825,7 @@
             </select>
             <input type="text" id="account-new" placeholder="Or enter new account name" style="margin-top:4px;" />
           </div>
-          
+
           <div class="form-field">
             <label>Currency *</label>
             <div class="currency-input-wrapper">
@@ -837,82 +837,82 @@
                 <option value="SGD">SGD</option>
                 <option value="CUSTOM">+ Add Custom Currency</option>
               </select>
-              <input type="text" id="currency-custom" class="custom-currency-input" 
-                     placeholder="Enter currency code (e.g., JPY)" 
-                     maxlength="3" 
-                     pattern="[A-Z]{3}" 
+              <input type="text" id="currency-custom" class="custom-currency-input"
+                     placeholder="Enter currency code (e.g., JPY)"
+                     maxlength="3"
+                     pattern="[A-Z]{3}"
                      style="border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px;" />
             </div>
           </div>
-          
+
           <div class="form-field">
             <label>Total Amount *</label>
             <input type="number" id="total" step="0.01" min="0" required placeholder="0.00" />
           </div>
-          
+
           <div class="form-field">
             <label>Spent Amount</label>
             <input type="number" id="spent" step="0.01" min="0" placeholder="0.00" />
           </div>
-          
+
           <div class="form-field">
             <label>Valid From *</label>
             <input type="date" id="valid-from" required />
           </div>
-          
+
           <div class="form-field">
             <label>Valid Until *</label>
             <input type="date" id="valid-until" required />
           </div>
-          
+
           <!-- Additional Info -->
           <div class="form-section-title">Additional Information</div>
-          
+
           <div class="form-field">
             <label>Project</label>
             <input type="text" id="project" placeholder="Project name" />
           </div>
-          
+
           <div class="form-field">
             <label>SDM</label>
             <input type="text" id="sdm" placeholder="Service Delivery Manager" />
           </div>
-          
+
           <div class="form-field">
             <label>Bill To</label>
             <input type="text" id="bill-to" placeholder="Billing entity" />
           </div>
-          
+
           <div class="form-field">
             <label>Billing Address</label>
             <input type="text" id="billing-address" placeholder="Full billing address" />
           </div>
-          
+
           <div class="form-field full">
             <label>About</label>
             <textarea id="about" rows="2" placeholder="Description"></textarea>
           </div>
-          
+
           <div class="form-field">
             <label>Work Done</label>
             <input type="text" id="work-done" placeholder="e.g., 80%" />
           </div>
-          
+
           <div class="form-field">
             <label>Expiration Days</label>
             <input type="number" id="exp-days" min="0" placeholder="30" />
           </div>
-          
+
           <div class="form-field">
             <label>Payment Terms</label>
             <input type="text" id="payment-terms" placeholder="e.g., Net 30" />
           </div>
-          
+
           <div class="form-field">
             <label>Client Year</label>
             <input type="text" id="client-year" placeholder="2025" />
           </div>
-          
+
           <div class="form-field full">
             <label>Comment</label>
             <textarea id="comment" rows="2" placeholder="Additional notes"></textarea>
@@ -920,7 +920,7 @@
         </div>
       </form>
     </div>
-    
+
     <div class="modal-footer">
       <button type="button" class="po-btn" id="modal-cancel">Cancel</button>
       <button type="button" class="po-btn primary" id="modal-save">
@@ -938,7 +938,7 @@
       <h3>Bulk Import POs from CSV</h3>
       <button type="button" class="po-btn" id="bulk-modal-close" style="padding:6px 10px;">✖️</button>
     </div>
-    
+
     <div class="modal-body">
       <!-- Step 1: Upload CSV -->
       <div id="bulk-step-1">
@@ -957,7 +957,7 @@
       <!-- Step 2: Select Customer & Account -->
       <div id="bulk-step-2" style="display:none;">
         <h4 style="margin:0 0 16px 0;font-size:16px;font-weight:600;">Step 2: Select Customer & Account</h4>
-        
+
         <!-- CSV Summary -->
         <div class="csv-summary">
           <h4>✅ CSV Parsed Successfully</h4>
@@ -986,7 +986,7 @@
             <option value="{{ customer.id }}">{{ customer.name }}</option>
             {% endfor %}
           </select>
-          <input type="text" id="bulk-customer-new" placeholder="Or enter new customer name" 
+          <input type="text" id="bulk-customer-new" placeholder="Or enter new customer name"
                  style="margin-top:8px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;width:100%;" />
         </div>
 
@@ -1010,7 +1010,7 @@
         </div>
       </div>
     </div>
-    
+
     <div class="modal-footer">
       <button type="button" class="po-btn" id="bulk-modal-cancel">Cancel</button>
       <button type="button" class="po-btn" id="bulk-back-btn" style="display:none;">
@@ -1041,10 +1041,10 @@ let visibleCols = JSON.parse(localStorage.getItem('po-visible-cols') || '{}');
 
 function updateColumnVisibility() {
   const allCols = ['project', 'sdm', 'billto', 'billaddr', 'about', 'workdone', 'comment', 'expdays'];
-  
+
   allCols.forEach(col => {
     const isVisible = visibleCols[col] === true;
-    
+
     // Update header
     const headerCells = document.querySelectorAll(`th[data-col="${col}"]`);
     headerCells.forEach(cell => {
@@ -1054,7 +1054,7 @@ function updateColumnVisibility() {
         cell.classList.add('hidden');
       }
     });
-    
+
     // Update body cells
     const bodyCells = document.querySelectorAll(`td[data-col="${col}"]`);
     bodyCells.forEach(cell => {
@@ -1065,7 +1065,7 @@ function updateColumnVisibility() {
       }
     });
   });
-  
+
   // Save to localStorage
   localStorage.setItem('po-visible-cols', JSON.stringify(visibleCols));
 }
@@ -1075,7 +1075,7 @@ function updateSelectionUI() {
   const selectionInfo = document.getElementById('selection-info');
   const selectedCount = document.getElementById('selected-count');
   const exportSelectedBtn = document.getElementById('po-export-selected');
-  
+
   if (count > 0) {
     selectionInfo.style.display = 'inline';
     exportSelectedBtn.style.display = 'inline-flex';
@@ -1084,7 +1084,7 @@ function updateSelectionUI() {
     selectionInfo.style.display = 'none';
     exportSelectedBtn.style.display = 'none';
   }
-  
+
   // Update row highlighting
   document.querySelectorAll('.row-checkbox').forEach(cb => {
     const tr = cb.closest('tr');
@@ -1129,7 +1129,7 @@ document.getElementById('po-export-selected').addEventListener('click', () => {
     alert('Please select at least one PO to export');
     return;
   }
-  
+
   const ids = Array.from(selectedRows).join(',');
   window.location.href = `{% url "purchase_orders:export" %}?ids=${ids}`;
 });
@@ -1138,7 +1138,7 @@ document.getElementById('po-export-selected').addEventListener('click', () => {
 document.querySelectorAll('.col-toggle').forEach(checkbox => {
   const col = checkbox.dataset.col;
   checkbox.checked = visibleCols[col] === true;
-  
+
   checkbox.addEventListener('change', (e) => {
     visibleCols[e.target.dataset.col] = e.target.checked;
     updateColumnVisibility();
@@ -1207,7 +1207,7 @@ function openModal(editMode = false, poId = null) {
   modalTitle.textContent = editMode ? 'Edit PO' : 'Create New PO';
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
-  
+
   if (editMode && poId) {
     // Hide CSV section when editing
     document.getElementById('csv-section').style.display = 'none';
@@ -1284,18 +1284,18 @@ csvInput.addEventListener('change', (e) => {
 async function uploadCSV(file) {
   const formData = new FormData();
   formData.append('csv_file', file);
-  
+
   csvStatus.innerHTML = '<span style="color:var(--brand);">⏳ Uploading and parsing CSV...</span>';
-  
+
   try {
     const response = await fetch('{% url "purchase_orders:upload_csv" %}', {
       method: 'POST',
       headers: { 'X-CSRFToken': csrftoken },
       body: formData
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       csvStatus.innerHTML = '';
       csvData = result.data;
@@ -1311,47 +1311,47 @@ async function uploadCSV(file) {
 
 function displayCSVSummary(data) {
   const summaryBox = document.getElementById('csv-summary');
-  
+
   // Calculate statistics
   const records = data.po_records || [];
   const uniqueAccounts = new Set(records.map(r => r.account_name).filter(a => a)).size;
   const uniquePOs = new Set(records.map(r => r.po_number).filter(p => p)).size;
   const currencies = [...new Set(records.map(r => r.currency).filter(c => c))].join(', ');
-  
+
   document.getElementById('csv-total-records').textContent = records.length;
   document.getElementById('csv-unique-accounts').textContent = uniqueAccounts;
   document.getElementById('csv-unique-pos').textContent = uniquePOs;
   document.getElementById('csv-customer-name').textContent = data.customer_name || 'N/A';
   document.getElementById('csv-currencies').textContent = currencies || 'N/A';
-  
+
   summaryBox.style.display = 'block';
 }
 
 function displayRecordSelector(data) {
   const selectorBox = document.getElementById('record-selector');
   const recordList = document.getElementById('record-list');
-  
+
   const records = data.po_records || [];
-  
+
   if (records.length === 0) {
     recordList.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">No records found in CSV</div>';
     selectorBox.style.display = 'block';
     return;
   }
-  
+
   recordList.innerHTML = '';
-  
+
   records.forEach((record, index) => {
     const item = document.createElement('div');
     item.className = 'record-item';
     item.dataset.index = index;
-    
+
     const account = record.account_name || 'No Account';
     const poNumber = record.po_number || 'No PO Number';
     const currency = record.currency || 'USD';
     const total = record.total_amount ? parseFloat(record.total_amount).toFixed(2) : '0.00';
     const balance = record.remaining_balance ? parseFloat(record.remaining_balance).toFixed(2) : '0.00';
-    
+
     item.innerHTML = `
       <div class="record-item-header">
         <div class="record-account">${account}</div>
@@ -1363,17 +1363,17 @@ function displayRecordSelector(data) {
         <span>👤 ${record.sdm || 'No SDM'}</span>
       </div>
     `;
-    
+
     item.addEventListener('click', () => selectRecord(index));
     recordList.appendChild(item);
   });
-  
+
   selectorBox.style.display = 'block';
 }
 
 function selectRecord(index) {
   selectedRecordIndex = index;
-  
+
   // Update UI
   document.querySelectorAll('.record-item').forEach((item, i) => {
     if (i === index) {
@@ -1382,7 +1382,7 @@ function selectRecord(index) {
       item.classList.remove('selected');
     }
   });
-  
+
   // Fill form with selected record
   const record = csvData.po_records[index];
   fillFormFromRecord(record);
@@ -1391,11 +1391,11 @@ function selectRecord(index) {
 function fillFormFromRecord(record) {
   // Basic fields
   if (record.po_number) document.getElementById('po-number').value = record.po_number;
-  
+
   // Customer - try to match first, otherwise use custom input
   const customerSelect = document.getElementById('customer');
   const customerNewInput = document.getElementById('customer-new');
-  
+
   if (csvData.matched_customer_id) {
     customerSelect.value = csvData.matched_customer_id;
     customerNewInput.value = ''; // Clear custom input
@@ -1412,24 +1412,24 @@ function fillFormFromRecord(record) {
         break;
       }
     }
-    
+
     if (!matchedCustomer) {
       // No match found, use custom input
       customerSelect.value = '';
       customerNewInput.value = csvData.customer_name;
     }
   }
-  
+
   // Account - try to match or use custom input
   if (record.account_name) {
     document.getElementById('account-new').value = record.account_name;
     // The loadAccounts function will try to auto-select if match is found
   }
-  
+
   // Currency - handle custom currencies
   const currencyValue = record.currency || 'USD';
   const currencyOptions = Array.from(document.getElementById('currency').options).map(opt => opt.value);
-  
+
   if (currencyOptions.includes(currencyValue)) {
     document.getElementById('currency').value = currencyValue;
   } else {
@@ -1437,15 +1437,15 @@ function fillFormFromRecord(record) {
     currencyCustomInput.classList.add('show');
     currencyCustomInput.value = currencyValue;
   }
-  
+
   // Financial data
   if (record.total_amount) document.getElementById('total').value = record.total_amount;
   if (record.spent_amount) document.getElementById('spent').value = record.spent_amount;
-  
+
   // Dates
   if (record.valid_from) document.getElementById('valid-from').value = record.valid_from;
   if (record.valid_until) document.getElementById('valid-until').value = record.valid_until;
-  
+
   // Additional fields
   if (record.sdm) document.getElementById('sdm').value = record.sdm;
   if (record.bill_to) document.getElementById('bill-to').value = record.bill_to;
@@ -1456,7 +1456,7 @@ function fillFormFromRecord(record) {
   if (record.expiration_days) document.getElementById('exp-days').value = record.expiration_days;
   if (record.payment_terms) document.getElementById('payment-terms').value = record.payment_terms;
   if (record.client_year) document.getElementById('client-year').value = record.client_year;
-  
+
   // Use account_name as project if no project specified
   if (record.account_name) document.getElementById('project').value = record.account_name;
 }
@@ -1472,20 +1472,20 @@ async function loadAccounts(customerId, selectAccountName = null) {
   try {
     const response = await fetch(`/customers/api/${customerId}/accounts/`);
     const result = await response.json();
-    
+
     const accountSelect = document.getElementById('account');
     const accountNewInput = document.getElementById('account-new');
     accountSelect.innerHTML = '<option value="">-- Select or enter new --</option>';
-    
+
     if (result.success) {
       let matchFound = false;
-      
+
       result.accounts.forEach(acc => {
         const option = document.createElement('option');
         option.value = acc.id;
         option.textContent = acc.name;
         accountSelect.appendChild(option);
-        
+
         // Auto-select if name matches (case-insensitive)
         if (selectAccountName && acc.name.toLowerCase().trim() === selectAccountName.toLowerCase().trim()) {
           accountSelect.value = acc.id;
@@ -1493,7 +1493,7 @@ async function loadAccounts(customerId, selectAccountName = null) {
           matchFound = true;
         }
       });
-      
+
       // If no match was found and we have a selectAccountName, keep it in the custom input
       if (selectAccountName && !matchFound) {
         accountNewInput.value = selectAccountName;
@@ -1509,7 +1509,7 @@ async function loadPOData(poId) {
   try {
     const response = await fetch(`/purchase-orders/api/${poId}/`);
     const result = await response.json();
-    
+
     if (result.success) {
       const data = result.data;
       poIdInput.value = data.id;
@@ -1517,7 +1517,7 @@ async function loadPOData(poId) {
       document.getElementById('customer').value = data.customer_id;
       await loadAccounts(data.customer_id);
       if (data.account_id) document.getElementById('account').value = data.account_id;
-      
+
       // Handle currency
       const currencyOptions = Array.from(currencySelect.options).map(opt => opt.value);
       if (currencyOptions.includes(data.currency)) {
@@ -1527,7 +1527,7 @@ async function loadPOData(poId) {
         currencyCustomInput.classList.add('show');
         currencyCustomInput.value = data.currency;
       }
-      
+
       document.getElementById('total').value = data.total_amount;
       document.getElementById('spent').value = data.spent_amount;
       document.getElementById('valid-from').value = data.valid_from;
@@ -1554,31 +1554,31 @@ document.getElementById('modal-save').addEventListener('click', async () => {
   // Custom validation since we removed required attribute from customer select
   const customerSelect = document.getElementById('customer');
   const customerNew = document.getElementById('customer-new').value.trim();
-  
+
   if (!customerSelect.value && !customerNew) {
     alert('Please select a customer or enter a new customer name');
     customerSelect.focus();
     return;
   }
-  
+
   const form = document.getElementById('po-form');
   if (!form.checkValidity()) {
     form.reportValidity();
     return;
   }
-  
+
   const saveBtn = document.getElementById('modal-save');
   const saveText = document.getElementById('save-text');
   const saveSpinner = document.getElementById('save-spinner');
-  
+
   saveBtn.disabled = true;
   saveText.style.display = 'none';
   saveSpinner.style.display = 'inline-block';
-  
+
   const customerId = customerSelect.value;
   const accountId = document.getElementById('account').value;
   const accountNew = document.getElementById('account-new').value.trim();
-  
+
   // Get currency value
   let currencyValue = currencySelect.value;
   if (currencyValue === 'CUSTOM') {
@@ -1591,7 +1591,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       return;
     }
   }
-  
+
   const data = {
     po_number: document.getElementById('po-number').value,
     customer_id: customerId || null,
@@ -1614,7 +1614,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
     payment_terms: document.getElementById('payment-terms').value,
     client_year: document.getElementById('client-year').value,
   };
-  
+
   try {
     let url, method;
     if (isEditMode) {
@@ -1624,7 +1624,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       url = '{% url "purchase_orders:create_po_api" %}';
       method = 'POST';
     }
-    
+
     const response = await fetch(url, {
       method: method,
       headers: {
@@ -1633,9 +1633,9 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       alert(result.message);
       window.location.reload();
@@ -1656,30 +1656,30 @@ document.getElementById('modal-save').addEventListener('click', async () => {
 document.getElementById('po-tbody').addEventListener('click', async (e) => {
   const act = e.target?.dataset?.act;
   if (!act) return;
-  
+
   const tr = e.target.closest('tr');
   const id = tr?.dataset?.id;
   if (!id) return;
-  
+
   if (act === 'edit') {
     openModal(true, id);
   }
-  
+
   if (act === 'dup') {
     if (confirm('Duplicate this PO?')) {
       try {
         const response = await fetch(`/purchase-orders/api/${id}/`);
         const result = await response.json();
-        
+
         if (result.success) {
           const data = result.data;
           openModal(false);
-          
+
           // Fill form with duplicated data
           document.getElementById('customer').value = data.customer_id;
           await loadAccounts(data.customer_id);
           if (data.account_id) document.getElementById('account').value = data.account_id;
-          
+
           // Handle currency
           const currencyOptions = Array.from(currencySelect.options).map(opt => opt.value);
           if (currencyOptions.includes(data.currency)) {
@@ -1689,7 +1689,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
             currencyCustomInput.classList.add('show');
             currencyCustomInput.value = data.currency;
           }
-          
+
           document.getElementById('total').value = data.total_amount;
           document.getElementById('spent').value = 0; // Reset spent
           document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
@@ -1709,7 +1709,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
       }
     }
   }
-  
+
   if (act === 'del') {
     if (confirm('Delete this PO? This cannot be undone.')) {
       try {
@@ -1717,7 +1717,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
           method: 'DELETE',
           headers: { 'X-CSRFToken': csrftoken }
         });
-        
+
         const result = await response.json();
         if (result.success) {
           alert(result.message);
@@ -1746,12 +1746,12 @@ function applyFilters() {
   const status = document.getElementById('fStatus').value;
   const currency = document.getElementById('fCurrency').value;
   const search = document.getElementById('fSearch').value;
-  
+
   if (customer) params.set('customer', customer);
   if (status) params.set('status', status);
   if (currency) params.set('currency', currency);
   if (search) params.set('search', search);
-  
+
   window.location.href = '?' + params.toString();
 }
 
@@ -1845,19 +1845,19 @@ bulkCsvInput.addEventListener('change', (e) => {
 async function uploadBulkCSV(file) {
   const formData = new FormData();
   formData.append('csv_file', file);
-  
+
   const statusDiv = document.getElementById('bulk-csv-status');
   statusDiv.innerHTML = '<span style="color:var(--brand);">⏳ Uploading and parsing CSV...</span>';
-  
+
   try {
     const response = await fetch('{% url "purchase_orders:upload_csv" %}', {
       method: 'POST',
       headers: { 'X-CSRFToken': csrftoken },
       body: formData
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       statusDiv.innerHTML = '<span style="color:#059669;">✅ CSV uploaded successfully</span>';
       bulkCsvData = result.data;
@@ -1872,39 +1872,39 @@ async function uploadBulkCSV(file) {
 
 function displayBulkCSVSummary(data) {
   console.log('displayBulkCSVSummary called');
-  
+
   const records = data.po_records || [];
   const uniqueAccounts = new Set(records.map(r => r.account_name).filter(a => a)).size;
   const uniquePOs = new Set(records.map(r => r.po_number).filter(p => p)).size;
-  
+
   document.getElementById('bulk-csv-total-records').textContent = records.length;
   document.getElementById('bulk-csv-unique-accounts').textContent = uniqueAccounts;
   document.getElementById('bulk-csv-unique-pos').textContent = uniquePOs;
-  
+
   console.log(`Summary: ${records.length} records, ${uniqueAccounts} unique accounts, ${uniquePOs} unique POs`);
-  
+
   // NOTE: Don't populate account dropdown here - it's in Step 2 which is hidden
   // It will be populated when user clicks "Next" button
 }
 
 function populateBulkAccountDropdown(data) {
   console.log('populateBulkAccountDropdown called with data:', data);
-  
+
   const accountFilter = document.getElementById('bulk-account-filter');
   if (!accountFilter) {
     console.error('bulk-account-filter element not found!');
     return;
   }
-  
+
   accountFilter.innerHTML = '<option value="">-- All Accounts (Import All) --</option>';
-  
+
   if (!data || !data.po_records) {
     console.warn('No data or po_records found');
     return;
   }
-  
+
   console.log(`Total po_records: ${data.po_records.length}`);
-  
+
   // Get unique account names from CSV data
   const uniqueAccounts = new Set();
   data.po_records.forEach((record, index) => {
@@ -1916,12 +1916,12 @@ function populateBulkAccountDropdown(data) {
       uniqueAccounts.add(accountName.trim());
     }
   });
-  
+
   console.log(`Found ${uniqueAccounts.size} unique accounts:`, Array.from(uniqueAccounts).slice(0, 10));
-  
+
   // Sort accounts alphabetically
   const sortedAccounts = Array.from(uniqueAccounts).sort();
-  
+
   // Add to dropdown
   sortedAccounts.forEach(accountName => {
     const option = document.createElement('option');
@@ -1929,7 +1929,7 @@ function populateBulkAccountDropdown(data) {
     option.textContent = accountName;
     accountFilter.appendChild(option);
   });
-  
+
   console.log(`✓ Populated ${sortedAccounts.length} accounts in bulk dropdown`);
   console.log('Dropdown now has', accountFilter.options.length, 'options');
 }
@@ -1940,18 +1940,18 @@ document.getElementById('bulk-next-btn').addEventListener('click', () => {
     alert('Please upload a CSV file first');
     return;
   }
-  
+
   bulkCurrentStep = 2;
   document.getElementById('bulk-step-1').style.display = 'none';
   document.getElementById('bulk-step-2').style.display = 'block';
   document.getElementById('bulk-next-btn').style.display = 'none';
   document.getElementById('bulk-import-btn').style.display = 'inline-flex';
   document.getElementById('bulk-back-btn').style.display = 'inline-flex';
-  
+
   console.log('Populating account dropdown in Step 2...');
   populateBulkAccountDropdown(bulkCsvData);
   updateBulkRecordPreview();
-  
+
   // Refresh the dropdown if using Bootstrap Select
   const accountFilter = document.getElementById('bulk-account-filter');
   if (accountFilter) {
@@ -1986,43 +1986,43 @@ document.getElementById('bulk-account-filter').addEventListener('change', update
 
 function updateBulkRecordPreview() {
   if (!bulkCsvData) return;
-  
+
   const accountFilter = document.getElementById('bulk-account-filter').value;
   const records = bulkCsvData.po_records || [];
-  
+
   // Filter records
   let filteredRecords = records;
   if (accountFilter) {
     filteredRecords = records.filter(r => r.account_name === accountFilter);
   }
-  
+
   // Update count
   const count = filteredRecords.length;
   document.getElementById('bulk-import-count').textContent = count;
   document.getElementById('bulk-import-count-btn').textContent = count;
-  
+
   // Display preview
   const previewDiv = document.getElementById('bulk-record-preview');
-  
+
   if (filteredRecords.length === 0) {
     previewDiv.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">No records match the filter</div>';
     return;
   }
-  
+
   previewDiv.innerHTML = '';
-  
+
   filteredRecords.forEach((record, index) => {
     const item = document.createElement('div');
     item.className = 'record-item';
     item.style.cursor = 'default';
     item.style.pointerEvents = 'none';
-    
+
     const account = record.account_name || 'No Account';
     const poNumber = record.po_number || 'No PO Number';
     const currency = record.currency || 'USD';
     const total = record.total_amount ? parseFloat(record.total_amount).toFixed(2) : '0.00';
     const balance = record.remaining_balance ? parseFloat(record.remaining_balance).toFixed(2) : '0.00';
-    
+
     item.innerHTML = `
       <div class="record-item-header">
         <div class="record-account">${account}</div>
@@ -2034,7 +2034,7 @@ function updateBulkRecordPreview() {
         <span>👤 ${record.sdm || 'No SDM'}</span>
       </div>
     `;
-    
+
     previewDiv.appendChild(item);
   });
 }
@@ -2043,33 +2043,33 @@ function updateBulkRecordPreview() {
 document.getElementById('bulk-import-btn').addEventListener('click', async () => {
   const customerSelect = document.getElementById('bulk-customer');
   const customerNew = document.getElementById('bulk-customer-new').value.trim();
-  
+
   if (!customerSelect.value && !customerNew) {
     alert('Please select a customer or enter a new customer name');
     return;
   }
-  
+
   const accountFilter = document.getElementById('bulk-account-filter').value;
-  
+
   if (!confirm(`Import ${document.getElementById('bulk-import-count').textContent} POs?`)) {
     return;
   }
-  
+
   const importBtn = document.getElementById('bulk-import-btn');
   const importText = document.getElementById('bulk-import-text');
   const importSpinner = document.getElementById('bulk-import-spinner');
-  
+
   importBtn.disabled = true;
   importText.style.display = 'none';
   importSpinner.style.display = 'inline-block';
-  
+
   try {
     const data = {
       customer_id: customerSelect.value || null,
       customer_name: customerNew || null,
       account_filter: accountFilter || null
     };
-    
+
     const response = await fetch('{% url "purchase_orders:bulk_create_from_csv" %}', {
       method: 'POST',
       headers: {
@@ -2078,9 +2078,9 @@ document.getElementById('bulk-import-btn').addEventListener('click', async () =>
       },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       let message = `Successfully imported ${result.created_pos} POs`;
       if (result.created_accounts > 0) {

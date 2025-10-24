@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2>PDF Session Data Debug</h2>
-    
+
     <div class="card mb-3">
         <div class="card-header">Session Status</div>
         <div class="card-body">
@@ -11,7 +11,7 @@
             <p><strong>Session Keys:</strong> {{ session_keys }}</p>
         </div>
     </div>
-    
+
     {% if pdf_data %}
     <div class="card mb-3">
         <div class="card-header">Extracted PDF Data</div>
@@ -39,7 +39,7 @@
     {% else %}
     <div class="alert alert-warning">No PDF data in session</div>
     {% endif %}
-    
-    <a href="{% url 'purchase_orders:create' %}" class="btn btn-primary">Back to Create PO</a>
+
+    <a href="{% url 'purchase_orders:create_po_api' %}" class="btn btn-primary">Back to Create PO</a>
 </div>
 {% endblock %}
