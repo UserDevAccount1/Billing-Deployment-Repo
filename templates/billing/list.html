@@ -24,7 +24,7 @@
                         </a>
                     </div>
                 </div>
-                
+
                 <div class="card-body">
                     <!-- Filters -->
                     <div class="row mb-4">
@@ -52,7 +52,7 @@
                             <span class="text-muted">{{ billing_runs.paginator.count }} billing runs found</span>
                         </div>
                     </div>
-                    
+
                     <!-- Billing Runs Table -->
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -88,7 +88,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <a href="{% url 'purchase_orders:detail' billing.purchase_order.id %}" class="text-decoration-none">
+                                        <a href="{% url 'purchase_orders:get_po_api' billing.purchase_order.id %}" class="text-decoration-none">
                                             {{ billing.purchase_order.po_number }}
                                         </a>
                                         <br><small class="text-muted">Balance: ${{ billing.purchase_order.remaining_balance|floatformat:2 }}</small>
@@ -106,7 +106,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge 
+                                        <span class="badge
                                             {% if billing.status == 'completed' %}bg-success
                                             {% elif billing.status == 'processing' %}bg-info
                                             {% elif billing.status == 'pending' %}bg-warning text-dark
@@ -116,7 +116,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge 
+                                        <span class="badge
                                             {% if billing.billing_type == 'wizard' %}bg-primary
                                             {% elif billing.billing_type == 'automated' %}bg-info
                                             {% else %}bg-light text-dark{% endif %}">
@@ -136,27 +136,27 @@
                                                 <li><a class="dropdown-item view-details" href="#" data-billing-id="{{ billing.id }}">
                                                     <i class="material-symbols-outlined me-2">visibility</i>View Details
                                                 </a></li>
-                                                
+
                                                 {% if billing.can_be_processed %}
                                                 <li><a class="dropdown-item text-success process-run" href="#" data-billing-id="{{ billing.id }}">
                                                     <i class="material-symbols-outlined me-2">play_arrow</i>Process Run
                                                 </a></li>
                                                 {% endif %}
-                                                
+
                                                 {% if billing.output_file %}
                                                 <li><a class="dropdown-item" href="{{ billing.output_file.url }}" target="_blank">
                                                     <i class="material-symbols-outlined me-2">download</i>Download Output
                                                 </a></li>
                                                 {% endif %}
-                                                
+
                                                 {% if billing.tickets_file %}
                                                 <li><a class="dropdown-item" href="{{ billing.tickets_file.url }}" target="_blank">
                                                     <i class="material-symbols-outlined me-2">file_present</i>View Tickets
                                                 </a></li>
                                                 {% endif %}
-                                                
+
                                                 <li><hr class="dropdown-divider"></li>
-                                                
+
                                                 {% if billing.can_be_cancelled %}
                                                 <li><a class="dropdown-item text-danger cancel-run" href="#" data-billing-id="{{ billing.id }}">
                                                     <i class="material-symbols-outlined me-2">cancel</i>Cancel Run
@@ -183,7 +183,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Pagination -->
                     {% if billing_runs.has_other_pages %}
                     <nav class="mt-4">
@@ -195,11 +195,11 @@
                                 </a>
                             </li>
                             {% endif %}
-                            
+
                             <li class="page-item active">
                                 <span class="page-link">{{ billing_runs.number }} of {{ billing_runs.paginator.num_pages }}</span>
                             </li>
-                            
+
                             {% if billing_runs.has_next %}
                             <li class="page-item">
                                 <a class="page-link" href="?page={{ billing_runs.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}">
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
             viewBillingRunDetails(billingId);
         });
     });
-    
+
     // Process run
     document.querySelectorAll('.process-run').forEach(function(link) {
         link.addEventListener('click', function(e) {
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
             processBillingRun(billingId);
         });
     });
-    
+
     // Cancel run
     document.querySelectorAll('.cancel-run').forEach(function(link) {
         link.addEventListener('click', function(e) {
