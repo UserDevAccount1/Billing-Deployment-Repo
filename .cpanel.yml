@@ -1,0 +1,22 @@
+---
+deployment:
+  tasks:
+    # 1. Define deployment path (update this to match your hosting account)
+    - export DEPLOYPATH=/home/jayant/public_html/
+
+    # 2. Copy all repository files (excluding .gitignored ones)
+    - /bin/cp -R * $DEPLOYPATH
+
+    # 3. Create or reuse a Python virtual environment
+    - python3 -m venv $DEPLOYPATH/venv
+
+    # 4. Activate venv and install dependencies
+    - source $DEPLOYPATH/venv/bin/activate && pip install --upgrade pip
+    - source $DEPLOYPATH/venv/bin/activate && pip install -r $DEPLOYPATH/requirements.txt
+
+    # 5. Run Django management commands
+    - source $DEPLOYPATH/venv/bin/activate && python $DEPLOYPATH/manage.py collectstatic --noinput
+    - source $DEPLOYPATH/venv/bin/activate && python $DEPLOYPATH/manage.py migrate --noinput
+
+    # 6. Restart Passenger (reloads your Django app)
+    - touch $DEPLOYPATH/tmp/restart.txt
