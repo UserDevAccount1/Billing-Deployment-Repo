@@ -30,7 +30,7 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
 # Accept comma-separated hostnames from env, falling back to existing hosts
 _allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS')
-ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',')] if _allowed_hosts_env else ['127.0.0.1', 'localhost', 'billing.pickfreshdevelopment.site', 'www.billing.pickfreshdevelopment.site']
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',')] if _allowed_hosts_env else ['127.0.0.1', 'localhost', '0.0.0.0', 'billing.pickfreshdevelopment.site', 'www.billing.pickfreshdevelopment.site', 'testserver']
 
 
 # Application definition
@@ -93,10 +93,10 @@ WSGI_APPLICATION = 'excis_billing.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('MYSQL_DATABASE', 'pickfres_billing'),
-        'USER': os.getenv('MYSQL_USER', 'pickfres_billingAccess'),
-        'PASSWORD': os.getenv('MYSQL_PASSWORD', 'Templates2025'),
-        'HOST': os.getenv('MYSQL_HOST', 'localhost'),
+        'NAME': os.getenv('MYSQL_DATABASE'),
+        'USER': os.getenv('MYSQL_USER'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+        'HOST': os.getenv('MYSQL_HOST'),
         'PORT': os.getenv('MYSQL_PORT', '3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
