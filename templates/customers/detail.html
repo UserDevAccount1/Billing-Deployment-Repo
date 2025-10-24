@@ -328,7 +328,7 @@
     <div class="customer-info">
       <div class="customer-title">{{ customer.name }}</div>
       <div class="customer-code">Customer Code: {{ customer.code }}</div>
-      
+
       <div class="customer-meta">
         <div class="meta-item">
           <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -336,7 +336,7 @@
           </svg>
           <span>{{ customer.email }}</span>
         </div>
-        
+
         {% if customer.phone %}
         <div class="meta-item">
           <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -345,7 +345,7 @@
           <span>{{ customer.phone }}</span>
         </div>
         {% endif %}
-        
+
         <div class="meta-item">
           <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
@@ -364,7 +364,7 @@
       </svg>
       Add Account
     </a>
-    <a href="{% url 'purchase_orders:create' %}?customer={{ customer.id }}" class="btn btn-outline">
+    <a href="{% url 'purchase_orders:create_po_api' %}?customer={{ customer.id }}" class="btn btn-outline">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8s0 0 0 0l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
       </svg>
@@ -387,19 +387,19 @@
       <div class="stat-change positive">+{{ accounts.count }} this month</div>
       {% endif %}
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-number">{{ purchase_orders.count }}</div>
       <div class="stat-label">Purchase Orders</div>
       <div class="stat-change positive">Active POs</div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-number">${{ total_po_value|default:0|floatformat:0 }}</div>
       <div class="stat-label">Total PO Value</div>
       <div class="stat-change">All time</div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-number">{{ active_accounts_count|default:0 }}</div>
       <div class="stat-label">Active Accounts</div>
@@ -434,7 +434,7 @@
             </div>
             <span class="status-badge status-{{ account.status }}">{{ account.get_status_display }}</span>
           </div>
-          
+
           <div class="account-details">
             <div class="account-detail">
               <span class="detail-label">Region</span>
@@ -453,7 +453,7 @@
               <span class="detail-value">{{ account.get_formatted_balance }}</span>
             </div>
           </div>
-          
+
           <div style="margin-top: 16px;">
             <a href="{% url 'customers:account_detail' account.id %}" class="btn btn-outline btn-sm">
               View Details
@@ -500,7 +500,7 @@
               <span class="status-badge status-{{ po.status }}">{{ po.get_status_display }}</span>
             </td>
             <td>
-              <a href="{% url 'purchase_orders:detail' po.id %}" class="btn btn-outline btn-sm">View</a>
+              <a href="{% url 'purchase_orders:get_po_api' po.id %}" class="btn btn-outline btn-sm">View</a>
             </td>
           </tr>
           {% endfor %}
@@ -510,7 +510,7 @@
       <div class="empty-state">
         <h3>No purchase orders</h3>
         <p>Create the first purchase order for {{ customer.name }}</p>
-        <a href="{% url 'purchase_orders:create' %}?customer={{ customer.id }}" class="btn btn-primary">
+        <a href="{% url 'purchase_orders:create_po_api' %}?customer={{ customer.id }}" class="btn btn-primary">
           Create Purchase Order
         </a>
       </div>
@@ -535,12 +535,12 @@ function showTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.style.display = 'none';
   });
-  
+
   // Remove active class from all buttons
   document.querySelectorAll('.tab-button').forEach(btn => {
     btn.classList.remove('active');
   });
-  
+
   // Show selected tab and mark button as active
   document.getElementById(tabName + '-tab').style.display = 'block';
   event.target.classList.add('active');
