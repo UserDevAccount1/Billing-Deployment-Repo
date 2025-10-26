@@ -102,7 +102,7 @@ DATABASES = {
         "USER": config("MYSQL_USER", default="test_fres"),
         "PASSWORD": config("MYSQL_PASSWORD", default="pA?ssWord1234."),
         "HOST": config("MYSQL_HOST", default="localhost"),
-        "PORT": config("MYSQL_PORT", default="3306"),
+        "PORT": config("MYSQL_PORT", default="3307"),
         "OPTIONS": {
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
