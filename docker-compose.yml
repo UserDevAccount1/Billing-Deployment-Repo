@@ -48,7 +48,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     ports:
-      - "${MYSQL_PORT:-3006}:3306"
+      - "3006:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
