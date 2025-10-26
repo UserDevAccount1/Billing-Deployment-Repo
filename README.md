@@ -78,7 +78,7 @@ This command will:
 Once the containers are running, you can access the application at:
 
 - **Web Application**: http://localhost:8000
-- **Database**: localhost:3307 (MySQL)
+- **Database**: localhost:3306 (MySQL)
 
 ### 5. Create a Superuser (Optional)
 
