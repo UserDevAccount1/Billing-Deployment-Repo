@@ -1,29 +1,10 @@
 import logging
 from django import forms
-from .models import Customer, Account, Project, BillingCycle, Currency, Country
+from .models import Customer, Account, BillingCycle, Currency, Country
 
 logger = logging.getLogger('customers')
 
-class CustomerForm(forms.ModelForm):
-    # Project fields embedded in customer form
-    project_name = forms.CharField(
-        max_length=200,
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-        help_text='Name of the initial project for this customer'
-    )
-    project_code = forms.CharField(
-        max_length=50,
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-        help_text='Short code for the project (e.g., PROJ1)'
-    )
-    project_description = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-        help_text='Optional project description'
-    )
-    
+class CustomerForm(forms.ModelForm):    
     class Meta:
         model = Customer
         fields = ['name', 'code', 'email', 'phone', 'address']
@@ -36,32 +17,15 @@ class CustomerForm(forms.ModelForm):
         }
 
 
-class ProjectForm(forms.ModelForm):
-    class Meta:
-        model = Project
-        fields = ['customer', 'name', 'code', 'description']
-        widgets = {
-            'customer': forms.Select(attrs={'class': 'form-select'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'code': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['customer'].queryset = Customer.objects.filter(is_active=True)
-
-
 class BillingCycleForm(forms.ModelForm):
     class Meta:
         model = BillingCycle
-        fields = ['name', 'cycle_type', 'customer', 'account', 'project', 'description']
+        fields = ['name', 'cycle_type', 'customer', 'account', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'cycle_type': forms.Select(attrs={'class': 'form-select'}),
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'account': forms.Select(attrs={'class': 'form-select'}),
-            'project': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
     
@@ -70,29 +34,20 @@ class BillingCycleForm(forms.ModelForm):
         self.fields['customer'].queryset = Customer.objects.filter(is_active=True)
         self.fields['customer'].required = False
         self.fields['account'].required = False
-        self.fields['project'].required = False
         
-        # If customer is set, filter projects
         if 'customer' in self.data:
             try:
                 customer_id = int(self.data.get('customer'))
-                self.fields['project'].queryset = Project.objects.filter(
-                    customer_id=customer_id, is_active=True
-                )
                 self.fields['account'].queryset = Account.objects.filter(
                     customer_id=customer_id, is_active=True
                 )
             except (ValueError, TypeError):
                 pass
         elif self.instance.pk and self.instance.customer:
-            self.fields['project'].queryset = Project.objects.filter(
-                customer=self.instance.customer, is_active=True
-            )
             self.fields['account'].queryset = Account.objects.filter(
                 customer=self.instance.customer, is_active=True
             )
         else:
-            self.fields['project'].queryset = Project.objects.none()
             self.fields['account'].queryset = Account.objects.none()
 
 

@@ -391,12 +391,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let selectedProjectId = projectSelect.value || '';
   
   // Function to update project dropdown
-  function updateProjects(customerId) {
-    console.log('Updating projects for customer:', customerId);
-    
+  function updateProjects(customerId) {   
     // Only reset if customer ID is empty and no project is selected
     if (!customerId && !selectedProjectId) {
-      console.log('No customer ID provided, resetting project dropdown');
       projectSelect.innerHTML = '<option value="">Select customer first...</option>';
       projectSelect.disabled = true;
       return;
@@ -404,76 +401,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Skip AJAX if customer ID hasn't changed and projects are already loaded
     if (customerId && projectSelect.options.length > 1 && customerSelect.dataset.lastCustomerId === customerId) {
-      console.log('Projects already loaded for customer:', customerId);
       projectSelect.disabled = false;
       return;
     }
     
-    projectSelect.innerHTML = '<option value="">Loading projects...</option>';
-    projectSelect.disabled = true;
     
-    if (customerId) {
-      const url = `{% url 'customers:ajax_load_projects' %}?customer_id=${customerId}`;
-      console.log('Fetching projects from:', url);
-      
-      fetch(url, {
-        method: 'GET',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      })
-        .then(response => {
-          console.log('Response status:', response.status);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log('Received projects:', data.projects);
-          projectSelect.innerHTML = '<option value="">Select a project...</option>';
-          
-          if (data.projects && Array.isArray(data.projects) && data.projects.length > 0) {
-            data.projects.forEach(project => {
-              console.log('Adding project option:', project);
-              const option = document.createElement('option');
-              option.value = project.id;
-              option.textContent = `${project.name} (${project.code})`;
-              if (project.id == selectedProjectId) {
-                option.selected = true;
-              }
-              projectSelect.appendChild(option);
-            });
-            projectSelect.disabled = false;
-            customerSelect.dataset.lastCustomerId = customerId; // Store last customer ID
-            console.log('Project dropdown updated with', data.projects.length, 'options');
-          } else {
-            console.log('No projects found for customer');
-            projectSelect.innerHTML = '<option value="">No projects available</option>';
-            projectSelect.disabled = true;
-          }
-          
-          // Trigger change event to ensure form validation
-          projectSelect.dispatchEvent(new Event('change'));
-        })
-        .catch(error => {
-          console.error('Error loading projects:', error);
-          projectSelect.innerHTML = '<option value="">Error loading projects</option>';
-          projectSelect.disabled = true;
-        });
-    }
   }
   
   // Attach change event listener
   customerSelect.addEventListener('change', function() {
-    console.log('Customer change event triggered with value:', this.value, 'options:', this.options[this.selectedIndex].text);
     updateProjects(this.value);
   });
   
   // Preserve project selection on change
   projectSelect.addEventListener('change', function() {
     selectedProjectId = this.value;
-    console.log('Selected project ID:', selectedProjectId);
   });
   
   // Auto-uppercase codes
@@ -489,7 +431,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Trigger initial load if customer is pre-selected
   if (customerSelect.value) {
-    console.log('Triggering initial project load for pre-selected customer:', customerSelect.value);
     updateProjects(customerSelect.value);
   }
 
