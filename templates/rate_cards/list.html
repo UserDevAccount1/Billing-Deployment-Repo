@@ -4,6 +4,10 @@
 {% block title %}Rate Cards - Excis Billing System{% endblock %}
 {% block page_title %}Rate Cards{% endblock %}
 
+{% block header_js %}
+<script src="{% static 'js/rate_cards/lists.js' %}" type="script"></script>
+{% endblock %}
+
 {% block extra_css %}
 <style>
     /* Fix dropdown visibility issues */
@@ -14,6 +18,8 @@
     .table-responsive {
         overflow: visible !important;
     }
+    .table-container { background: #fff; border-radius: 8px; padding: 0.01rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: scroll;}
+
     
     /* Ensure table doesn't clip dropdowns on smaller screens */
     @media (max-width: 768px) {
@@ -33,167 +39,882 @@
             position: relative;
         }
     }
+    /* .w-100.text-center.m-20:hover { */
+    
+    /* border-width: 2px;  */
+    /* border-color: #ebebf9; */
+    /* border-color: #3e3691; */
+    /* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); */
+/* } */
+.nav>.nav-item{
+    border-style: dashed;
+    border-width: 10px;
+    border-radius: 5px;
+}
+.cards>.active { 
+    /* border-color: #ebebf9; */
+    border-color: #3e3691;
+    background: #ebebf9;
+}
+
+.w-100.text-center.m-20 {
+	height: 50px;
+    border-width: 1px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+    margin: 0px 20px;
+    border-style: solid;
+}
+
+#cardsth:hover {
+    cursor: pointer;
+    border-width: 2px; 
+/* border-color: #ebebf9; */
+background: #ebebf9;
+border-color: #3e3691;
+}
+
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-xl-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="card-title">Rate Card Management</h4>
-                    <p class="mb-0 text-muted">Manage pricing and rate structures</p>
-                </div>
-                <a href="{% url 'rate_cards:create' %}" class="btn btn-primary">
-                    <i class="material-symbols-outlined me-1">add</i>
-                    Create Rate Card
-                </a>
-            </div>
-            
-            <div class="card-body">
-                <!-- Filters -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <form method="get">
-                            <select name="customer" class="form-select" onchange="this.form.submit()">
-                                <option value="">All Customers</option>
-                                {% for customer in customers %}
-                                <option value="{{ customer.id }}" {% if customer.id|stringformat:"s" == customer_filter %}selected{% endif %}>{{ customer.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                    </div>
-                    <div class="col-md-8 text-end">
-                        <span class="text-muted">{{ rate_cards|length }} rate cards found</span>
-                    </div>
-                </div>
-                
-                <!-- Rate Cards Table -->
-                <div class="table-container">
-                    <div class="table-responsive-custom">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Rate Card Name</th>
-                                    <th>Customer</th>
-                                    <th>Rate per Unit</th>
-                                    <th>Unit Type</th>
-                                    <th>Valid Period</th>
-                                    <th>Status</th>
-                                    <th style="width: 120px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for rate_card in rate_cards %}
-                                <tr>
-                                    <td>
-                                        <div>
-                                            <strong>{{ rate_card.name }}</strong>
-                                            {% if rate_card.description %}
-                                            <br><small class="text-muted">{{ rate_card.description|truncatechars:50 }}</small>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <strong>{{ rate_card.customer.name }}</strong>
-                                            <br><small class="text-muted">{{ rate_card.customer.code }}</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <strong>${{ rate_card.rate_per_unit|floatformat:4 }}</strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ rate_card.unit_type|title }}</span>
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <strong>{{ rate_card.valid_from|date:"M d, Y" }}</strong>
-                                            <br><small class="text-muted">to {{ rate_card.valid_until|date:"M d, Y" }}</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% if rate_card.is_active %}
-                                            <span class="badge bg-success">Active</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Inactive</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                                    type="button" 
-                                                    data-bs-toggle="dropdown" 
-                                                    aria-expanded="false">
-                                                Actions
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a class="dropdown-item" href="#">
-                                                        <i class="material-symbols-outlined me-2">visibility</i>View Details
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" href="#">
-                                                        <i class="material-symbols-outlined me-2">edit</i>Edit Rate Card
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" href="#">
-                                                        <i class="material-symbols-outlined me-2">content_copy</i>Duplicate
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <a class="dropdown-item text-danger" href="#">
-                                                        <i class="material-symbols-outlined me-2">delete</i>Deactivate
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <i class="material-symbols-outlined fs-1">sell</i>
-                                            <p class="mt-2">No rate cards found</p>
-                                            <a href="{% url 'rate_cards:create' %}" class="btn btn-primary">Create First Rate Card</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Pagination -->
-                {% if rate_cards.has_other_pages %}
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if rate_cards.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ rate_cards.previous_page_number }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}">Previous</a>
-                        </li>
-                        {% endif %}
-                        
-                        <li class="page-item active">
-                            <span class="page-link">{{ rate_cards.number }} of {{ rate_cards.paginator.num_pages }}</span>
-                        </li>
-                        
-                        {% if rate_cards.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ rate_cards.next_page_number }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}">Next</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+
+<style>
+/* ---------- keep your original style variables ---------- */
+:root{
+  --bg:#fff;
+  --text:#000;
+  --muted:#555;
+  --line:#ddd;
+  --panel:#fafafa;
+  --chip:#f3f4f6;
+  --brand:#5335ff;
+  --btn:#f5f5f5;
+  --btn-h:#ececec;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  color:var(--text); background:var(--bg);
+}
+.wrap{min-height:100%; display:flex; flex-direction:column}
+
+/* top/title */
+.titlebar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--btn);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--btn-h)}
+.btn.primary{background:#e9e7ff;border-color:#c3b8fe}
+
+/* cards */
+.cards{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:#fafafa}
+.card{flex:1;min-width:160px;padding:16px;text-align:center;border:2px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;transition:.18s}
+.card:hover{border-color:var(--brand)}
+.card.active{border-color:var(--brand);background:#e9e7ff;font-weight:700}
+
+/* filters */
+.filters{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.rc-input{border:1px solid var(--line);padding:8px 10px;border-radius:8px;background:#fff}
+.rc-select{border:1px solid var(--line);padding:8px 10px;border-radius:8px;background:#fff}
+
+/* table */
+.list{flex:1;overflow:auto;padding:12px}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+thead th{position:sticky;top:0;z-index:1;text-align:left;padding:10px;background:#f3f3f3;color:#333;font-size:12px;font-weight:700;border-bottom:1px solid var(--line)}
+tbody td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:hover{background:#fafafa}
+.actions{display:flex;gap:6px}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 8px;cursor:pointer;font-size:14px}
+.iconbtn:hover{background:#eee}
+.footer{padding:12px 16px;border-top:1px solid var(--line);background:var(--panel);}
+
+/* dedicated / band headers */
+thead tr.rc-band-group th{background:#102a43;color:#fff;text-align:center}
+thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-weight:600}
+
+/* modal (scoped) */
+#rcModalBackdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:9999}
+#rcModalBackdrop.show{display:flex}
+.rcModal{background:#fff;padding:18px;border-radius:10px;min-width:360px;max-width:900px;max-height:85vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,0.45)}
+.rcModal h3{margin:0 0 10px 0}
+.rcFormRow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.rcFormRow label{min-width:120px;font-weight:600}
+.rcFormRow input, .rcFormRow select {flex:1;padding:8px;border:1px solid var(--line);border-radius:6px}
+.rcModal .rcActions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- cards -->
+  <div class="cards" id="rcCards">
+    <div class="card active" data-type="default">📋 Rate Cards</div>
+    <div class="card" data-type="service-rate">🧾 Service Rate Card</div>
+    <div class="card" data-type="dedicated">🧑‍💻 Dedicated Services</div>
+    <div class="card" data-type="scheduled">📅 Scheduled Services</div>
+    <div class="card" data-type="dispatch">🚚 Dispatch Services</div>
+    <div class="card" data-type="projects">🏗️ Projects</div>
+  </div>
+
+  <!-- titlebar -->
+  <div class="titlebar">
+    <div class="sub small">Manage pricing by customer, region, and service type</div>
+    <div class="spacer"></div>
+    <button class="btn" id="rcNewBtn">＋ New Rate Card</button>
+  </div>
+
+  <!-- filters -->
+  <div class="filters" id="rcFilters">
+    <input id="rc_search" class="rc-input" placeholder="Search customer/ country..." />
+    <select id="rc_region" class="rc-select"><option value="">All Regions</option><option>EMEA</option><option>APAC</option><option>NA</option></select>
+    <select id="rc_currency" class="rc-select"><option value="">All Currencies</option><option>USD</option><option>EUR</option><option>GBP</option></select>
+    <select id="rc_supplier" class="rc-select"><option value="">All Suppliers</option></select>
+  </div>
+
+  <!-- table container -->
+  <div class="list" id="rcTableContainer"></div>
+
+  
 </div>
+
+<!-- Modal (scoped unique IDs) -->
+<div id="rcModalBackdrop" aria-hidden="true">
+  <div class="rcModal" role="dialog" aria-modal="true" aria-labelledby="rcModalTitle">
+    <h3 id="rcModalTitle">Rate Card</h3>
+    <div id="rcModalBody"></div>
+    <div class="rcActions">
+      <button class="btn" id="rcCancelBtn">Cancel</button>
+      <button class="btn primary" id="rcSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function RateCardApp(){
+  const ns = {};
+  ns.services = {};
+
+  // CSRF helper
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : null;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // Endpoints (adjust if you included app_name in urls)
+  const API_BASE = '/rate-cards/api';
+
+  // load service rates for a single ratecard and svcType
+  async function loadServiceRatesForType(ratecard_id, svcType){
+    const ep = svcEndpointMap[svcType];
+    if(!ep) throw new Error('Unknown svcType endpoint: '+svcType);
+    const res = await fetch(`${API_BASE}/ratecards/${ratecard_id}/${ep}s/`); 
+    // NOTE: this assumes your server supports URLs like /ratecards/<id>/service_rates/ or /ratecards/<id>/dedicated_rates/
+    // If your endpoints differ, adjust to something like `${API_BASE}/${ep}/?rate_card_id=${ratecard_id}`
+    if(!res.ok) {
+      console.warn('failed loadServiceRatesForType', ratecard_id, svcType, res.status);
+      return [];
+    }
+    const j = await res.json();
+    return j.results || [];
+  }
+
+  // initial load: get ratecards, then load each svc type incrementally for each ratecard
+  async function loadRateCards(){
+    const res = await fetch(`${API_BASE}/ratecards/`);
+    const j = await res.json();
+    ns.data = j.results || [];
+
+    // initialize ns.services slots for each ratecard
+    ns.data.forEach(r => {
+      ns.services[r.id] = ns.services[r.id] || {};
+      Object.values(serviceKeyMap).forEach(k => ns.services[r.id][k] = []);
+    });
+
+    // list of svcTypes to load (all of them)
+    const svcTypes = Object.keys(serviceKeyMap);
+
+    // load each ratecard's svc types incrementally (fire-and-await pattern)
+    await Promise.all(ns.data.map(async r => {
+      await Promise.all(svcTypes.map(async svcType => {
+        try {
+          const arr = await loadServiceRatesForType(r.id, svcType);
+          const key = serviceKeyMap[svcType];
+          ns.services[r.id][key] = arr;
+          // if currently viewing the tab that uses this svcType, re-render for immediate feedback
+          if(ns.currentType === svcType) render();
+        } catch(err) {
+          console.warn('failed loading', svcType, 'for', r.id, err);
+          ns.services[r.id][serviceKeyMap[svcType]] = [];
+        }
+      }));
+    }));
+
+    // initial render & filters
+    render();
+    refreshSupplierFilter();
+  }
+
+
+  // CRUD helpers
+  async function createRateCard(payload){
+    const body = new URLSearchParams(payload);
+    const res = await fetch(`${API_BASE}/ratecards/create/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+      body
+    });
+    return await res.json();
+  }
+  async function updateRateCard(id, payload){
+    const res = await fetch(`${API_BASE}/ratecards/${id}/update/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+      body: new URLSearchParams(payload)
+    });
+    return await res.json();
+  }
+  async function deleteRateCard(id){
+    const res = await fetch(`${API_BASE}/ratecards/${id}/delete/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+    });
+    return await res.json();
+  }
+  // ServiceRate CRUD helpers (uses csrftoken and API_BASE from your script)
+  // maps: ns.currentType -> ns.services property name (no dashes)
+  const serviceKeyMap = {
+    'service-rate': 'service_rates',
+    'dedicated': 'dedicated',
+    'scheduled': 'scheduled',
+    'dispatch': 'dispatch',
+    'projects': 'projects'
+  };
+
+  // maps: ns.currentType -> backend endpoint base (adjust to your real endpoints)
+  const svcEndpointMap = {
+    'service-rate': 'service_rate',   // endpoint examples: /rate-cards/api/service_rate/create/
+    'dedicated': 'dedicated_rate',
+    'scheduled': 'scheduled_rate',
+    'dispatch': 'dispatch_rate',
+    'projects': 'project_rate'
+  };
+
+  // Generic service CRUD that uses svcType to pick endpoint
+  async function createSvc(svcType, payload){
+    const ep = svcEndpointMap[svcType];
+    if(!ep) throw new Error('Unknown svcType endpoint: '+svcType);
+    const res = await fetch(`${API_BASE}/${ep}/create/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+      body: new URLSearchParams(payload)
+    });
+    return await res.json();
+  }
+  async function updateSvc(svcType, id, payload){
+    const ep = svcEndpointMap[svcType];
+    if(!ep) throw new Error('Unknown svcType endpoint: '+svcType);
+    const res = await fetch(`${API_BASE}/${ep}/${id}/update/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+      body: new URLSearchParams(payload)
+    });
+    return await res.json();
+  }
+  async function deleteSvc(svcType, id){
+    const ep = svcEndpointMap[svcType];
+    if(!ep) throw new Error('Unknown svcType endpoint: '+svcType);
+    const res = await fetch(`${API_BASE}/${ep}/${id}/delete/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+    });
+    return await res.json();
+  }
+
+
+
+  // --- Keep your UI wiring but use ns.data from backend
+  const container = document.getElementById('rcTableContainer');
+  const cards = document.querySelectorAll('#rcCards .card');
+  const modalBackdrop = document.getElementById('rcModalBackdrop');
+  const modalTitle = document.getElementById('rcModalTitle');
+  const modalBody = document.getElementById('rcModalBody');
+  const saveBtn = document.getElementById('rcSaveBtn');
+  const cancelBtn = document.getElementById('rcCancelBtn');
+  const searchEl = document.getElementById('rc_search');
+  const regionEl = document.getElementById('rc_region');
+  const currencyEl = document.getElementById('rc_currency');
+  const supplierEl = document.getElementById('rc_supplier');
+  const newBtn = document.getElementById('rcNewBtn');
+
+  ns.currentType='default';
+  const esc = s=>String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+
+  function uniqueSuppliers(){ return [...new Set((ns.data||[]).map(d=>d.supplier))]; }
+  function refreshSupplierFilter(){
+    supplierEl.innerHTML = '<option value="">All Suppliers</option>' + uniqueSuppliers().map(s => `<option>${esc(s)}</option>`).join('');
+  }
+  function filterData(){
+    const q=(searchEl.value||'').toLowerCase(), r=regionEl.value, c=currencyEl.value, s=supplierEl.value;
+    return (ns.data||[]).filter(d=>
+      (!r||d.region===r) && (!c||d.currency===c) && (!s||d.supplier===s) &&
+      (!q || [d.customer, d.country, d.supplier].some(x => (x||'').toLowerCase().includes(q)))
+    );
+  }
+
+  const baseCols=()=>`<th>#</th><th>Customer</th><th>Region</th><th>Country</th><th>Supplier</th><th>Currency</th><th>Entity</th><th>Payment</th>`;
+  const baseCells=(r,i)=>`<td>${i+1}</td><td>${esc(r.customer)}</td><td>${esc(r.region)}</td><td>${esc(r.country)}</td><td>${esc(r.supplier)}</td><td>${esc(r.currency)}</td><td>${esc(r.entity)}</td><td>${esc(r.payment)}</td>`;
+
+  function renderDefault(){
+    const rows = filterData().map((r,i) => `
+      <tr data-id="${r.id}">
+        ${baseCells(r,i)}
+        <td>${r.status}</td>
+        <td class="actions">
+          <button class="iconbtn rc-view" data-id="${r.id}" data-viewtype="details">👁️</button>
+          <button class="iconbtn rc-edit" data-id="${r.id}">✏️</button>
+          <button class="iconbtn rc-del" data-id="${r.id}">🗑️</button>
+        </td>
+      </tr>`).join('');
+    container.innerHTML = `<table><thead><tr>${baseCols()}<th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function render(){ 
+    if(ns.currentType==='dedicated') renderGeneric('dedicated');
+    else if(ns.currentType==='scheduled') renderGeneric('scheduled');
+    else if(ns.currentType==='dispatch') renderGeneric('dispatch');
+    else if(ns.currentType==='projects') renderGeneric('projects');
+    else if(ns.currentType==='service-rate') renderServiceRateCard();
+    else renderDefault();
+  }
+
+  function renderGeneric(key) {
+    // helper to safely get the array for a given ratecard/key
+    const getSvcList = id => {
+      const slot = ns.services[id] && ns.services[id][key];
+      return Array.isArray(slot) ? slot : [];
+    };
+
+    const rowsData = filterData();
+    const categoryOrder = [];
+    const categoryTypes = {}; // { category: Set(types) }
+
+    // optional known ordering for dedicated (keeps previous behavior)
+    const knownOrder = (key === 'dedicated' && Array.isArray(ns.dedicatedCols) && ns.dedicatedCols.length)
+      ? ns.dedicatedCols.slice()
+      : null;
+
+    // discover categories and types from visible rows
+    rowsData.forEach(r => {
+      const svc = getSvcList(r.id);
+      svc.forEach(s => {
+        const cat = String(s.category ?? '—');
+        const t = String(s.rate_type ?? '—');
+        if (!categoryTypes[cat]) categoryTypes[cat] = new Set();
+        categoryTypes[cat].add(t);
+        if (!categoryOrder.includes(cat)) categoryOrder.push(cat);
+      });
+    });
+
+    // merge knownOrder if present so configured categories appear first and all show up
+    if (knownOrder) {
+      const merged = [];
+      knownOrder.forEach(k => { if (categoryOrder.includes(k)) merged.push(k); });
+      categoryOrder.forEach(c => { if (!merged.includes(c)) merged.push(c); });
+      knownOrder.forEach(k => { if (!merged.includes(k)) merged.push(k); });
+      categoryOrder.length = 0;
+      categoryOrder.push(...merged);
+      knownOrder.forEach(k => { if (!categoryTypes[k]) categoryTypes[k] = new Set(); });
+    }
+
+    // build headers
+    const topHeaders = categoryOrder.map(cat => {
+      const types = Array.from(categoryTypes[cat] || []);
+      const colspan = Math.max(1, types.length || 1);
+      return `<th colspan="${colspan}" style="text-align:center">${esc(cat)}</th>`;
+    }).join('');
+
+    const subHeaders = categoryOrder.map(cat => {
+      const types = Array.from(categoryTypes[cat] || []);
+      if (types.length === 0) return `<th>—</th>`;
+      return types.map(t => `<th>${esc(t)}</th>`).join('');
+    }).join('');
+
+    // rows
+    const rowsHtml = rowsData.map((r, idx) => {
+      const svc = getSvcList(r.id);
+      const idxMap = {};
+      svc.forEach(s => {
+        const cat = String(s.category ?? '—');
+        const t = String(s.rate_type ?? '—');
+        idxMap[cat] = idxMap[cat] || {};
+        if (idxMap[cat][t] === undefined) idxMap[cat][t] = s;
+      });
+
+      const cells = categoryOrder.map(cat => {
+        const types = Array.from(categoryTypes[cat] || []);
+        if (types.length === 0) {
+          const s = idxMap[cat] ? (Object.values(idxMap[cat])[0]) : null;
+          const val = s ? String(s.rate_value ?? '—') : '—';
+          return `<td style="text-align:center">${esc(val)}</td>`;
+        }
+        return types.map(t => {
+          const s = (idxMap[cat] && idxMap[cat][t]) ? idxMap[cat][t] : null;
+          const val = s ? String(s.rate_value ?? '—') : '—';
+          return `<td style="text-align:center">${esc(val)}</td>`;
+        }).join('');
+      }).join('');
+
+      return `<tr data-id="${r.id}">
+        ${baseCells(r, idx)}
+        ${cells}
+        <td>${esc(r.status)}</td>
+        <td class="actions">
+          <button class="iconbtn rc-view" data-id="${r.id}">👁️</button>
+          <button class="iconbtn rc-edit" data-id="${r.id}">✏️</button>
+          <button class="iconbtn rc-del" data-id="${r.id}">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    // header fallback when no categories discovered
+    let headerHtml;
+    if (categoryOrder.length === 0) {
+      headerHtml = `<tr>${baseCols()}<th>Status</th><th>Actions</th></tr>`;
+    } else {
+      headerHtml = `<tr>${baseCols()}${topHeaders}<th>Status</th><th>Actions</th></tr>
+                    <tr><th colspan="8"></th>${subHeaders}<th colspan="2"></th></tr>`;
+    }
+
+    container.innerHTML = `<table><thead>${headerHtml}</thead><tbody>${rowsHtml || '<tr><td colspan="100%">No rows</td></tr>'}</tbody></table>`;
+  }
+
+
+  function renderServiceRateCard() {
+    // Helper: get service_rates array for a ratecard (may be undefined)
+    const getSvcList = id => (ns.services[id] && ns.services[id].service_rates) ? ns.services[id].service_rates : [];
+
+    // Build the global category -> set(types) map from currently-filtered rows (so headers reflect visible data)
+    const rowsData = filterData();
+    const categoryOrder = []; // preserve order if you have ns.dedicatedCols fallback
+    const categoryTypes = {}; // { category: Set(types) }
+
+    // Prefer ordering from ns.dedicatedCols if it exists and matches; else discover from data
+    const knownOrder = Array.isArray(ns.dedicatedCols) && ns.dedicatedCols.length ? ns.dedicatedCols.slice() : null;
+
+    rowsData.forEach(r => {
+      const svc = getSvcList(r.id);
+      svc.forEach(s => {
+        const cat = String(s.category ?? '—');
+        const t = String(s.rate_type ?? '—');
+        if (!categoryTypes[cat]) categoryTypes[cat] = new Set();
+        categoryTypes[cat].add(t);
+        if (!categoryOrder.includes(cat)) categoryOrder.push(cat);
+      });
+    });
+
+    // If we have a knownOrder (e.g. configured categories) merge it so configured items appear first
+    if (knownOrder) {
+      // include knownOrder items first, then append any discovered ones not in knownOrder
+      const merged = [];
+      knownOrder.forEach(k => { if (categoryOrder.includes(k)) merged.push(k); });
+      categoryOrder.forEach(c => { if (!merged.includes(c)) merged.push(c); });
+      // also include any knownOrder items missing entirely (so UI shows column headers even if empty)
+      knownOrder.forEach(k => { if (!merged.includes(k)) merged.push(k); });
+      categoryOrder.length = 0;
+      categoryOrder.push(...merged);
+      // ensure categoryTypes has Sets for knownOrder entries (so we can render headers even if empty)
+      knownOrder.forEach(k => { if (!categoryTypes[k]) categoryTypes[k] = new Set(); });
+    }
+
+    // Build header HTML
+    const topHeaders = categoryOrder.map(cat => {
+      const types = Array.from(categoryTypes[cat] || []);
+      const colspan = Math.max(1, types.length || 1);
+      return `<th colspan="${colspan}" style="text-align:center">${esc(cat)}</th>`;
+    }).join('');
+
+    const subHeaders = categoryOrder.map(cat => {
+      const types = Array.from(categoryTypes[cat] || []);
+      if (types.length === 0) return `<th>—</th>`; // placeholder if no types discovered
+      return types.map(t => `<th>${esc(t)}</th>`).join('');
+    }).join('');
+
+    // Now rows: for every visible ratecard, produce a cell for each category/type combo (in same order)
+    const rowsHtml = rowsData.map((r, idx) => {
+      const svc = getSvcList(r.id);
+      // index service rates by (category -> type -> service)
+      const idxMap = {};
+      svc.forEach(s => {
+        const cat = String(s.category ?? '—');
+        const t = String(s.rate_type ?? '—');
+        idxMap[cat] = idxMap[cat] || {};
+        // if multiple entries exist for same cat+type, prefer the first — change to aggregation if needed
+        if (idxMap[cat][t] === undefined) idxMap[cat][t] = s;
+      });
+
+      // produce cells in same ordering as headers
+      const cells = categoryOrder.map(cat => {
+        const types = Array.from(categoryTypes[cat] || []);
+        if (types.length === 0) {
+          // show a single placeholder cell if category has no defined types
+          const s = idxMap[cat] ? (Object.values(idxMap[cat])[0]) : null;
+          const val = s ? String(s.rate_value ?? '—') : '—';
+          return `<td style="text-align:center">${esc(val)}</td>`;
+        }
+        return types.map(t => {
+          const s = (idxMap[cat] && idxMap[cat][t]) ? idxMap[cat][t] : null;
+          const val = s ? String(s.rate_value ?? '—') : '—';
+          return `<td style="text-align:center">${esc(val)}</td>`;
+        }).join('');
+      }).join('');
+
+      return `<tr data-id="${r.id}">
+        ${baseCells(r, idx)}
+        ${cells}
+        <td>${esc(r.status)}</td>
+        <td class="actions">
+          <button class="iconbtn rc-view" data-id="${r.id}">👁️</button>
+          <button class="iconbtn rc-edit" data-id="${r.id}">✏️</button>
+          <button class="iconbtn rc-del" data-id="${r.id}">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    // If there are no categories discovered at all, show a single Service Rates placeholder column
+    let headerHtml;
+    if (categoryOrder.length === 0) {
+      headerHtml = `<tr>${baseCols()}<th>Status</th><th>Actions</th></tr>`;
+    } else {
+      headerHtml = `<tr>${baseCols()}${topHeaders}<th>Status</th><th>Actions</th></tr>
+                    <tr><th colspan="8"></th>${subHeaders}<th colspan="2"></th></tr>`;
+    }
+
+    container.innerHTML = `<table><thead>${headerHtml}</thead><tbody>${rowsHtml || '<tr><td colspan="100%">No rows</td></tr>'}</tbody></table>`;
+  }
+
+
+  // Modal open/edit/new using backend
+  function openModal(mode, id){
+  const rec = id ? (ns.data.find(x=>x.id===id) || {}) : {id:Date.now(), customer:'', region:'', country:'', supplier:'', currency:'USD', entity:'', payment:'', status:'Active'};
+  const svcType = ns.currentType;
+  modalTitle.textContent = mode==='edit'?'Edit Record':mode==='view'?'View Record':'New Rate Card';
+  const readonly = mode==='view' ? 'readonly' : '';
+
+  // base fields
+  let html = `
+    <div class="rcFormRow"><label>Customer</label><input id="rcf_customer" value="${esc(rec.customer||'')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Region</label><input id="rcf_region" value="${esc(rec.region||'')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Country</label><input id="rcf_country" value="${esc(rec.country||'')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Supplier</label><input id="rcf_supplier" value="${esc(rec.supplier||'')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Currency</label><input id="rcf_currency" value="${esc(rec.currency||'USD')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Entity</label><input id="rcf_entity" value="${esc(rec.entity||'')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Payment</label><input id="rcf_payment" value="${esc(rec.payment||'')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Status</label><input id="rcf_status" value="${esc(rec.status||'Active')}" ${readonly}></div>
+  `;
+
+  // determine service key and label
+  const svcKey = serviceKeyMap[svcType] || 'service_rates';
+  const svcLabel = svcType === 'service-rate' ? 'Service Rates' : (svcType.charAt(0).toUpperCase() + svcType.slice(1).replace('-', ' '));
+
+  // include service list/editor for every svcType (except 'default' where you may opt-out)
+  if(svcType !== 'default'){
+    html += `<hr><div style="font-weight:700;margin-bottom:8px">${esc(svcLabel)}</div>`;
+    html += `<div id="rcSvcList" style="max-height:320px;overflow:auto;border:1px solid #eee;padding:8px;border-radius:6px">${'<div style="color:#777">Loading…</div>'}</div>`;
+    if(mode !== 'view') html += `<div style="margin-top:8px"><button class="btn" id="rcAddSvcBtn">＋ Add ${esc(svcLabel)}</button></div>`;
+  }
+
+  modalBody.innerHTML = html;
+  modalBackdrop.style.display = 'flex';
+
+  // helper to extract created/updated object from backend response (best-effort)
+  function extractObjectFromResponse(resp, svcTypeKey){
+    if(!resp) return null;
+    // common conventional keys
+    const keysToTry = [
+      svcEndpointMap[svcTypeKey],     // e.g. 'service_rate'
+      serviceKeyMap[svcTypeKey],      // e.g. 'service_rates' (plural)
+      'service_rate','result','data','created','updated'
+    ];
+    for(const k of keysToTry){
+      if(k && resp[k] && typeof resp[k] === 'object') return resp[k];
+    }
+    // look for any object with id
+    for(const k in resp){
+      const v = resp[k];
+      if(v && typeof v === 'object' && ('id' in v)) return v;
+    }
+    // fallback to first result element
+    if(Array.isArray(resp.results) && resp.results.length) return resp.results[0];
+    return null;
+  }
+
+  // render service editor/list
+  function renderSvcEditor(){
+    const svc = (ns.services[rec.id] && ns.services[rec.id][svcKey]) ? ns.services[rec.id][svcKey].slice() : [];
+    const listEl = document.getElementById('rcSvcList');
+    if(!listEl) return;
+    if(svc.length === 0){
+      listEl.innerHTML = `<div style="color:#777" class="rcFormRow"><label style="width:auto">No entries for ${esc(svcLabel)}.</label></div>`;
+      return;
+    }
+
+    listEl.innerHTML = svc.map(s=>{
+      const sid = s.id || s._tmpId || `tmp-${Math.random().toString(36).slice(2,8)}`;
+      s._tmpId = sid;
+      if(mode === 'view'){
+        return `<div data-sid="${sid}" style="padding:8px;border-bottom:1px solid #f2f2f2">
+          <div class="rcFormRow"><label>Category</label><div class="rcValue">${esc(s.category||'—')}</div></div>
+          <div class="rcFormRow"><label>Rate</label><div class="rcValue">${esc(String(s.rate_value ?? '—'))} ${s.currency?esc(s.currency):''}</div></div>
+          <div class="rcFormRow"><label>Type</label><div class="rcValue">${esc(s.rate_type||'—')}</div></div>
+          <div class="rcFormRow"><label>Region</label><div class="rcValue">${esc(s.region||'—')}</div></div>
+          <div class="rcFormRow"><label>Remarks</label><div class="rcValue">${esc(s.remarks||'')}</div></div>
+        </div>`;
+      } else {
+        return `<div data-sid="${sid}" style="padding:8px;border-bottom:1px solid #f8f8f8">
+          <div class="rcFormRow"><label>Category</label><input class="rc_svc_field" data-field="category" value="${esc(s.category||'')}" placeholder="e.g. Band 0"></div>
+
+          <div class="rcFormRow">
+            <label>Rate</label>
+            <input class="rc_svc_field" data-field="rate_value" value="${esc(s.rate_value||'')}" placeholder="e.g. 26000" style="width:140px">
+            <label style="margin-left:12px;width:60px">Type</label>
+            <input class="rc_svc_field" data-field="rate_type" value="${esc(s.rate_type||'')}" placeholder="free text" style="width:160px">
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button class="btn small rcSvcSave" data-sid="${sid}">Save</button>
+              <button class="btn small rcSvcDel" data-sid="${sid}">✖</button>
+            </div>
+          </div>
+
+          <div class="rcFormRow"><label>Region</label><input class="rc_svc_field" data-field="region" value="${esc(s.region||'')}" placeholder="Region / Location"></div>
+          <div class="rcFormRow"><label>Remarks</label><input class="rc_svc_field" data-field="remarks" value="${esc(s.remarks||'')}" placeholder="Optional remarks"></div>
+        </div>`;
+      }
+    }).join('');
+
+    if(mode !== 'view'){
+      // Save (create/update)
+      Array.from(listEl.querySelectorAll('.rcSvcSave')).forEach(btn=>{
+        btn.onclick = async ()=>{
+          const sid = btn.dataset.sid;
+          const wrapper = listEl.querySelector(`[data-sid="${sid}"]`);
+          if(!wrapper) return;
+          const fields = wrapper.querySelectorAll('.rc_svc_field');
+          const payload = {};
+          fields.forEach(inp=>payload[inp.dataset.field] = inp.value);
+          const svcList = ns.services[rec.id][svcKey] || [];
+          const existing = svcList.find(x=> (x._tmpId && x._tmpId === sid) || (x.id && String(x.id) === sid));
+
+          try {
+            if(existing && existing.id){
+              const resp = await updateSvc(svcType, existing.id, Object.assign({rate_card_id: rec.id}, payload));
+              if(resp && resp.success){
+                const updatedObj = extractObjectFromResponse(resp, svcType) || resp;
+                const idx = svcList.findIndex(x => x.id === existing.id);
+                if(idx >= 0) svcList[idx] = updatedObj;
+              } else {
+                alert('Update failed');
+              }
+            } else {
+              payload.rate_card_id = rec.id;
+              const resp = await createSvc(svcType, payload);
+              if(resp && resp.success){
+                const created = extractObjectFromResponse(resp, svcType) || resp;
+                const idx = svcList.findIndex(x => x._tmpId === sid);
+                if(idx >= 0) svcList.splice(idx, 1, created);
+                else svcList.push(created);
+              } else {
+                alert('Create failed');
+              }
+            }
+            ns.services[rec.id][svcKey] = svcList;
+            renderSvcEditor();
+            render();
+          } catch(err){
+            console.error(err);
+            alert('Request failed');
+          }
+        };
+      });
+
+      // Delete
+      Array.from(listEl.querySelectorAll('.rcSvcDel')).forEach(btn=>{
+        btn.onclick = async ()=>{
+          const sid = btn.dataset.sid;
+          const svcList = ns.services[rec.id][svcKey] || [];
+          const existing = svcList.find(x=> x._tmpId === sid || (x.id && String(x.id) === sid));
+          if(!existing) return;
+          if(existing.id){
+            if(!confirm('Delete this entry?')) return;
+            try {
+              const resp = await deleteSvc(svcType, existing.id);
+              if(resp && resp.success){
+                ns.services[rec.id][svcKey] = svcList.filter(x=> x.id !== existing.id);
+                renderSvcEditor();
+                render();
+              } else {
+                alert('Delete failed');
+              }
+            } catch(err){
+              console.error(err);
+              alert('Delete request failed');
+            }
+          } else {
+            ns.services[rec.id][svcKey] = svcList.filter(x=> x._tmpId !== sid);
+            renderSvcEditor();
+            render();
+          }
+        };
+      });
+    }
+  } // end renderSvcEditor
+
+  // when modal is opened, load this svcType for this record if not already loaded
+  (async ()=>{
+    ns.services[rec.id] = ns.services[rec.id] || {};
+    ns.services[rec.id][svcKey] = ns.services[rec.id][svcKey] || [];
+    try{
+      // load via typed endpoint helper if empty
+      if(!ns.services[rec.id][svcKey] || ns.services[rec.id][svcKey].length === 0){
+        if(id){
+          // use generic loader (make sure function loadServiceRatesForType exists and accepts svcType)
+          const arr = await loadServiceRatesForType(id, svcType).catch(e=>{
+            console.warn('typed load failed, falling back to ratecard detail', e);
+            return null;
+          });
+          if(Array.isArray(arr)) {
+            ns.services[rec.id][svcKey] = arr;
+          } else {
+            // fallback to fetching ratecard detail and plucking out the array key (best-effort)
+            const res = await fetch(`${API_BASE}/ratecards/${id}/`);
+            if(res.ok){
+              const j = await res.json();
+              // attempt to pick the right array from response
+              const opt = j.ratecard && (j.ratecard[svcKey] || j.ratecard.service_rates || j.ratecard.results);
+              ns.services[rec.id][svcKey] = Array.isArray(opt) ? opt : [];
+            }
+          }
+        } else {
+          ns.services[rec.id][svcKey] = [];
+        }
+      }
+    }catch(err){
+      console.warn('Failed to load entries for', svcType, err);
+      ns.services[rec.id][svcKey] = ns.services[rec.id][svcKey] || [];
+    } finally {
+      renderSvcEditor();
+      const addBtn = document.getElementById('rcAddSvcBtn');
+      if(addBtn){
+        addBtn.onclick = ()=>{
+          ns.services[rec.id][svcKey] = ns.services[rec.id][svcKey] || [];
+          ns.services[rec.id][svcKey].unshift({ category:'', region:'', rate_type:'', rate_value:'', remarks:'', _tmpId:`tmp-${Math.random().toString(36).slice(2,8)}`});
+          renderSvcEditor();
+        };
+      }
+    }
+  })();
+
+  // Save handler for the main ratecard (not svc items)
+  saveBtn.onclick = async ()=>{
+    if(mode === 'view'){ modalBackdrop.style.display = 'none'; return; }
+    const payload = {
+      customer: document.getElementById('rcf_customer').value,
+      region: document.getElementById('rcf_region').value,
+      country: document.getElementById('rcf_country').value,
+      supplier: document.getElementById('rcf_supplier').value,
+      currency: document.getElementById('rcf_currency').value,
+      entity: document.getElementById('rcf_entity').value,
+      payment: document.getElementById('rcf_payment').value,
+      status: document.getElementById('rcf_status').value,
+    };
+    try{
+      if(mode === 'new'){
+        const j = await createRateCard(payload);
+        if(j.success){
+          await loadRateCards();
+        } else { alert('Create failed'); return; }
+      } else {
+        const j = await updateRateCard(id, payload);
+        if(!j.success){ alert('Update failed'); return; }
+        await loadRateCards();
+      }
+    }catch(err){
+      console.error(err);
+      alert('Request failed');
+    } finally {
+      modalBackdrop.style.display = 'none';
+    }
+  };
+
+  cancelBtn.onclick = ()=> modalBackdrop.style.display = 'none';
+}
+
+
+
+
+  async function deleteRec(id){
+    if(!confirm('Delete this record?')) return;
+    const j = await deleteRateCard(id);
+    if(j.success) {
+      ns.data = ns.data.filter(x=>x.id!==id);
+      render();
+    } else {
+      alert('Delete failed');
+    }
+  }
+
+  // events
+  container.addEventListener('click', e=>{
+    const id = +e.target.dataset.id;
+    const viewType = e.target.dataset.viewtype;
+    if(e.target.classList.contains('rc-view')){
+      if(viewType === 'details'){
+        // open detailed service rate view by fetching ratecard detail
+        (async ()=>{
+          const res = await fetch(`${API_BASE}/ratecards/${id}/`);
+          const j = await res.json();
+          const d = j.ratecard;
+          modalTitle.textContent = "Service Rate Card Details";
+          modalBody.innerHTML = `
+            <div><b>${esc(d.customer)}</b></div>
+            <div>Currency: ${esc(d.currency)}</div>
+            <div>Valid From: —</div>
+            <div>Valid To: —</div>
+            <div>Contact Email: —</div>
+            <div>Last Updated At: ${esc(d.updated_at)}</div>
+            <hr>
+            <div style="font-weight:700">Service Rates</div>
+            <div>${(d.service_rates||[]).map(s=>`<div style="padding:6px;border-bottom:1px solid #eee"><b>${esc(s.category)}</b> — ${esc(s.region)} — ${esc(s.rate_type)} ${s.rate_value}</div>`).join('')}</div>
+          `;
+          modalBackdrop.style.display = 'flex';
+          saveBtn.onclick = ()=> (modalBackdrop.style.display = 'none');
+        })();
+      } else {
+        openModal('view', id);
+      }
+    }
+    if(e.target.classList.contains('rc-edit')) openModal('edit', id);
+    if(e.target.classList.contains('rc-del')) deleteRec(id);
+  });
+
+  cards.forEach(c => c.onclick = ()=>{
+    cards.forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    ns.currentType = c.dataset.type;
+    render();
+  });
+
+  [searchEl,regionEl,currencyEl,supplierEl].forEach(el => el.oninput = render);
+  newBtn.onclick = ()=> openModal('new');
+
+  // initial load
+  loadRateCards();
+})();
+</script>
+
+
+
 {% endblock %}

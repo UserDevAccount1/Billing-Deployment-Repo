@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import pymysql
 pymysql.install_as_MySQLdb()
 from pathlib import Path
-import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,15 +22,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Allow override from environment for containerized deployments
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-&r5twgh-a9*=72plnee0sefd*(w$v@js@n+^ydrzbyp(te%$#v')
+SECRET_KEY = config("DEBUG_STATUS", default="django-insecure-&r5twgh-a9*=72plnee0sefd*(w$v@js@n+^ydrzbyp(te%$#v")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = config("DEBUG_STATUS", default=False, cast=bool)
 
-# Accept comma-separated hostnames from env, falling back to existing hosts
-_allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS')
-ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',')] if _allowed_hosts_env else ['127.0.0.1', 'localhost', '0.0.0.0', 'billing.pickfreshdevelopment.site', 'www.billing.pickfreshdevelopment.site', 'testserver']
+
+ALLOWED_HOSTS = ['billing.pickfreshdevelopment.site', 'www.billing.pickfreshdevelopment.site', 'localhost',
+    "37.59.106.222",
+    "vps-f5f38f61.vps.ovh.net",
+    "127.0.0.1",
+    "82.163.176.114"
+]
 
 
 # Application definition
@@ -42,11 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'django.contrib.humanize',
+    
     # Third party apps
     'crispy_forms',
     'crispy_bootstrap5',
-
+    
     # Local apps
     'apps.accounts',
     'apps.dashboard',
@@ -90,17 +94,23 @@ WSGI_APPLICATION = 'excis_billing.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('MYSQL_DATABASE'),
-        'USER': os.getenv('MYSQL_USER'),
-        'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-        'HOST': os.getenv('MYSQL_HOST'),
-        'PORT': os.getenv('MYSQL_PORT', '3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": config("MYSQL_DATABASE", default="test_pickfres_billing"),
+        "USER": config("MYSQL_USER", default="test_fres"),
+        "PASSWORD": config("MYSQL_PASSWORD", default="pA?ssWord1234."),
+        "HOST": config("MYSQL_HOST", default="localhost"),
+        "PORT": config("MYSQL_PORT", default="3306"),
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
+    }
+} if not DEBUG else {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -205,7 +215,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
-
+        
         # File handler for general app logs
         'file': {
             'level': 'DEBUG',
@@ -213,7 +223,7 @@ LOGGING = {
             'filename': LOGS_DIR / 'django_app.log',
             'formatter': 'detailed',
         },
-
+        
         # Rotating file handler (creates new files when they get too big)
         'rotating_file': {
             'level': 'DEBUG',
@@ -223,7 +233,7 @@ LOGGING = {
             'backupCount': 5,
             'formatter': 'detailed',
         },
-
+        
         # Separate file for errors only
         'error_file': {
             'level': 'ERROR',
@@ -231,7 +241,7 @@ LOGGING = {
             'filename': LOGS_DIR / 'errors.log',
             'formatter': 'verbose',
         },
-
+        
         # Time-based rotating handler (new file each day)
         'daily_file': {
             'level': 'DEBUG',
@@ -250,20 +260,20 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-
+        
         # Django's built-in loggers
         'django': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
         },
-
+        
         # Database queries (useful for debugging)
         'django.db.backends': {
             'handlers': ['daily_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-
+        
         # Root logger (catches everything)
         '': {
             'handlers': ['console', 'error_file'],

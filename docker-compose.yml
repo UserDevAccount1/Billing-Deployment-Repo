@@ -1,26 +1,69 @@
 version: "3.9"
+
+# x-common-environment: &common-env
+#   # Common environment consumed by the web container - values come from .env
+#   DJANGO_DEBUG: "${DJANGO_DEBUG:-False}"
+#   DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost}"
+#   DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY}"
+#   MYSQL_DATABASE: "${MYSQL_DATABASE}"
+#   MYSQL_USER: "${MYSQL_USER}"
+#   MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+#   MYSQL_HOST: "${MYSQL_HOST}"
+#   MYSQL_PORT: "${MYSQL_PORT:-3306}"
+
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: excis-billing-web
+    env_file:
+      - .env
     environment:
-      DJANGO_DEBUG: "True"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0"
-      DJANGO_SECRET_KEY: "dev-secret-key-change-me"
-      MYSQL_DATABASE: pickfres_billing
-      MYSQL_USER: pickfres_billingAccess
-      MYSQL_PASSWORD: Templates2025
-      MYSQL_HOST: host.docker.internal   # Connects to your local MySQL
-      MYSQL_PORT: "3306"
+      # <<: *common-env
+      MYSQL_HOST: "${MYSQL_HOST:-db}"
     volumes:
-      - .:/app
+      - .:/app:cached
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - logs_volume:/app/logs
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - excis-net
+
+  db:
+    image: mysql:8.0
+    container_name: excis-billing-db
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    networks:
+      - excis-net
 
 volumes:
   static_volume:
   media_volume:
   logs_volume:
+  db_data:
+
+networks:
+  excis-net:
+    driver: bridge
