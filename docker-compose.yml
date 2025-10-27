@@ -22,6 +22,8 @@ services:
     environment:
       # <<: *common-env
       MYSQL_HOST: "${MYSQL_HOST:-db}"
+
+      N8N_DASHBOARD_KPI_WEBHOOK: "https://exciscloud.app.n8n.cloud/webhook/dashboard-kpi-notification"
     volumes:
       - .:/app:cached
       - static_volume:/app/staticfiles
