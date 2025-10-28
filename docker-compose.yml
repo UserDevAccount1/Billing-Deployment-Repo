@@ -1,15 +1,3 @@
-version: "3.9"
-
-# x-common-environment: &common-env
-#   # Common environment consumed by the web container - values come from .env
-#   DJANGO_DEBUG: "${DJANGO_DEBUG:-False}"
-#   DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost}"
-#   DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY}"
-#   MYSQL_DATABASE: "${MYSQL_DATABASE}"
-#   MYSQL_USER: "${MYSQL_USER}"
-#   MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-#   MYSQL_HOST: "${MYSQL_HOST}"
-#   MYSQL_PORT: "${MYSQL_PORT:-3306}"
 
 services:
   web:
@@ -20,10 +8,15 @@ services:
     env_file:
       - .env
     environment:
-      # <<: *common-env
-      MYSQL_HOST: "${MYSQL_HOST:-db}"
+      MYSQL_HOST: "${MYSQL_HOST:-host.docker.internal}"
+      MYSQL_PORT: "${MYSQL_PORT:-3306}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
 
       N8N_DASHBOARD_KPI_WEBHOOK: "https://exciscloud.app.n8n.cloud/webhook/dashboard-kpi-notification"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # maps host.docker.internal -> host gateway (works on modern Docker)
     volumes:
       - .:/app:cached
       - static_volume:/app/staticfiles
@@ -31,40 +24,14 @@ services:
       - logs_volume:/app/logs
     ports:
       - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - excis-net
 
-  db:
-    image: mysql:8.0
-    container_name: excis-billing-db
-    env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE}"
-      MYSQL_USER: "${MYSQL_USER}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-    volumes:
-      - db_data:/var/lib/mysql
-    ports:
-      - "3006:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: ["--default-authentication-plugin=mysql_native_password"]
-    networks:
-      - excis-net
-
+# (db service removed)
 volumes:
   static_volume:
   media_volume:
   logs_volume:
-  db_data:
 
 networks:
   excis-net:
