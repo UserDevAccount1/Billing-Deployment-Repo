@@ -34,6 +34,8 @@ def send_kpi_notifications_to_n8n():
                 notifications.append({
                     "po_number": po.po_number,
                     "customer": po.customer.name if po.customer else "N/A",
+                    "total_amount": float(po.total_amount),
+                    "remaining_balance": float(po.remaining_balance),
                     "utilization_percent": round(utilization, 2),
                     "remaining_percent": round(remaining, 2),
                     "threshold_triggered": f"<{threshold}",
