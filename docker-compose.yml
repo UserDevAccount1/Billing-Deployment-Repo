@@ -1,38 +1,37 @@
-
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: excis-billing-web
-    env_file:
-      - .env
-    environment:
-      MYSQL_HOST: "${MYSQL_HOST:-host.docker.internal}"
-      MYSQL_PORT: "${MYSQL_PORT:-3306}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE}"
-      MYSQL_USER: "${MYSQL_USER}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: excis-billing-web
+        env_file:
+            - .env
+        environment:
+            MYSQL_HOST: "${MYSQL_HOST:-host.docker.internal}"
+            MYSQL_PORT: "${MYSQL_PORT:-3306}"
+            MYSQL_DATABASE: "${MYSQL_DATABASE}"
+            MYSQL_USER: "${MYSQL_USER}"
+            MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
 
-      N8N_DASHBOARD_KPI_WEBHOOK: "https://exciscloud.app.n8n.cloud/webhook/dashboard-kpi-notification"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"   # maps host.docker.internal -> host gateway (works on modern Docker)
-    volumes:
-      - .:/app:cached
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-      - logs_volume:/app/logs
-    ports:
-      - "8000:8000"
-    networks:
-      - excis-net
+            N8N_DASHBOARD_KPI_WEBHOOK: "https://exciscloud.app.n8n.cloud/webhook/dashboard-kpi-notification"
+        extra_hosts:
+            - "host.docker.internal:host-gateway" # maps host.docker.internal -> host gateway (works on modern Docker)
+        volumes:
+            - .:/app:cached
+            - static_volume:/app/staticfiles
+            - media_volume:/app/media
+            - logs_volume:/app/logs
+        ports:
+            - "8000:8000"
+        networks:
+            - excis-net
 
 # (db service removed)
 volumes:
-  static_volume:
-  media_volume:
-  logs_volume:
+    static_volume:
+    media_volume:
+    logs_volume:
 
 networks:
-  excis-net:
-    driver: bridge
+    excis-net:
+        driver: bridge
