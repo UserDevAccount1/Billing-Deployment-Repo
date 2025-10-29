@@ -4,7 +4,7 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: excis-billing-web
-        env_file:
+        env_file: 
             - .env
         environment:
             MYSQL_HOST: "${MYSQL_HOST:-host.docker.internal}"
