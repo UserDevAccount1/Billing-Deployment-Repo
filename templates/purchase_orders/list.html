@@ -8,564 +8,579 @@
 
 {% block extra_css %}
 <style>
-/* PO Dashboard Styles */
-:root {
-  --bg: #ffffff;
-  --panel: #ffffff;
-  --card: #ffffff;
-  --ink: #111827;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --brand: #dc2626;
-  --brand-2: #6366f1;
-  --ok: #059669;
-  --warn: #d97706;
-  --low: #f59e0b;
-  --zero: #9ca3af;
-}
+  /* PO Dashboard Styles */
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --card: #ffffff;
+    --ink: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --brand: #dc2626;
+    --brand-2: #6366f1;
+    --ok: #059669;
+    --warn: #d97706;
+    --low: #f59e0b;
+    --zero: #9ca3af;
+  }
 
-.po-wrap { max-width: 1500px; margin: 0 auto; padding: 16px; }
-.po-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.po-title { font-size: 28px; margin: 0; font-weight: 700; }
-.po-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line);
-  background: #ffffff;
-  color: var(--ink);
-  padding: 10px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.po-btn:hover { background: #f9fafb; }
-.po-btn.primary {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
-  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.18);
-}
-.po-btn.primary:hover { background: #b91c1c; }
-.po-btn:active { transform: translateY(1px); }
-.po-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .po-wrap { max-width: 1500px; margin: 0 auto; padding: 16px; }
+  .po-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .po-title { font-size: 28px; margin: 0; font-weight: 700; }
+  .po-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line);
+    background: #ffffff;
+    color: var(--ink);
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .po-btn:hover { background: #f9fafb; }
+  .po-btn.primary {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.18);
+  }
+  .po-btn.primary:hover { background: #b91c1c; }
+  .po-btn:active { transform: translateY(1px); }
+  .po-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.po-checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--brand);
-}
+  .po-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--brand);
+  }
 
-.po-table tbody tr.selected td {
-  background: #eef2ff !important;
-  border-color: var(--brand) !important;
-}
+  .po-table tbody tr.selected td {
+    background: #eef2ff !important;
+    border-color: var(--brand) !important;
+  }
 
-.export-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+  .export-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
 
-.selection-info {
-  font-size: 13px;
-  color: var(--muted);
-  padding: 0 10px;
-}
+  .selection-info {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 0 10px;
+  }
 
-/* KPI Cards */
-.po-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin: 8px 0 16px;
-}
-.po-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
-}
-.po-card .label { font-size: 13px; color: var(--muted); font-weight: 500; }
-.po-card .value {
-  margin-top: 8px;
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--ink);
-}
-.po-card .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  /* KPI Cards */
+  .po-cards {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 8px 0 16px;
+  }
+  .po-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    flex: 0 0 300px;
+    flex-shrink: 0;
+  }
+  .po-card .label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .po-card .value {
+    margin-top: 8px;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--ink);
+  }
+  .po-card .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
 
-/* Block Container */
-.po-block {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
+  /* Block Container */
+  .po-block {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
 
-/* Toolbar */
-.po-toolbar {
-  padding: 14px;
-  border-bottom: 1px solid var(--line);
-  background: #f9fafb;
-}
-.po-toolbar .row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-.po-select, .po-search {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  color: var(--ink);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
-}
-.po-search {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-width: 250px;
-}
-.po-search input {
-  all: unset;
-  color: var(--ink);
-  flex: 1;
-}
+  /* Toolbar */
+  .po-toolbar {
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+    background: #f9fafb;
+  }
+  .po-toolbar .row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .po-select, .po-search {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .po-search {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 250px;
+  }
+  .po-search input {
+    all: unset;
+    color: var(--ink);
+    flex: 1;
+  }
 
-/* Show More Info Dropdown */
-.show-more-wrapper {
-  position: relative;
-}
-.show-more-dropdown {
-  display: none;
-  position: absolute;
-  top: 110%;
-  left: 0;
-  background: white;
-  border: 1px solid var(--line);
-  padding: 12px;
-  border-radius: 8px;
-  z-index: 100;
-  min-width: 240px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.show-more-dropdown.active {
-  display: block;
-}
-.show-more-dropdown label {
-  display: block;
-  margin-bottom: 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-.show-more-dropdown label:hover {
-  color: var(--brand);
-}
-.show-more-dropdown input[type="checkbox"] {
-  margin-right: 8px;
-  cursor: pointer;
-}
-.show-more-dropdown hr {
-  margin: 12px 0;
-  border: none;
-  border-top: 1px solid var(--line);
-}
-.dropdown-footer {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  margin-top: 8px;
-}
+  /* Show More Info Dropdown */
+  .show-more-wrapper {
+    position: relative;
+  }
+  .show-more-dropdown {
+    display: none;
+    position: absolute;
+    top: 110%;
+    left: 0;
+    background: white;
+    border: 1px solid var(--line);
+    padding: 12px;
+    border-radius: 8px;
+    z-index: 100;
+    min-width: 240px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .show-more-dropdown.active {
+    display: block;
+  }
+  .show-more-dropdown label {
+    display: block;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .show-more-dropdown label:hover {
+    color: var(--brand);
+  }
+  .show-more-dropdown input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+  }
+  .show-more-dropdown hr {
+    margin: 12px 0;
+    border: none;
+    border-top: 1px solid var(--line);
+  }
+  .dropdown-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
 
-/* Table */
-.po-table { padding: 10px; overflow-x: auto; }
-.po-table table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 8px;
-  min-width: 1500px;
-}
-.po-table thead th {
-  color: var(--muted);
-  font-size: 12px;
-  text-align: left;
-  padding: 0 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-.po-table thead th.hidden {
-  display: none;
-}
-.po-table tbody td {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  padding: 12px;
-  font-size: 14px;
-}
-.po-table tbody td.hidden {
-  display: none;
-}
-.po-table tbody tr td:first-child:not(.hidden) {
-  border-top-left-radius: 10px;
-  border-bottom-left-radius: 10px;
-}
-.po-table tbody tr td:last-child:not(.hidden) {
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-.po-table tbody tr:hover td { background: #f9fafb; }
-.right { text-align: right; }
-.helper { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  /* Table */
+  .po-table { padding: 10px; overflow-x: auto; }
+  .po-table table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    min-width: 1500px;
+  }
+  .po-table thead th {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+    padding: 0 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .po-table thead th.hidden {
+    display: none;
+  }
+  .po-table tbody td {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    padding: 12px;
+    font-size: 14px;
+  }
+  .po-table tbody td.hidden {
+    display: none;
+  }
+  .po-table tbody tr td:first-child:not(.hidden) {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+  }
+  .po-table tbody tr td:last-child:not(.hidden) {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+  .po-table tbody tr:hover td { background: #f9fafb; }
+  .right { text-align: right; }
+  .helper { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-/* Status Chips */
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #f8fafc;
-  font-weight: 500;
-}
-.status.active {
-  color: var(--ok);
-  border-color: #bbf7d0;
-  background: #ecfdf5;
-}
-.status.low_balance {
-  color: #92400e;
-  border-color: #fde68a;
-  background: #fffbeb;
-}
-.status.expiring_soon {
-  color: #c2410c;
-  border-color: #fed7aa;
-  background: #fff7ed;
-}
-.status.fully_utilized {
-  color: var(--zero);
-  background: #f3f4f6;
-  border-color: #d1d5db;
-}
+  /* Status Chips */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #f8fafc;
+    font-weight: 500;
+  }
+  .status.active {
+    color: var(--ok);
+    border-color: #bbf7d0;
+    background: #ecfdf5;
+  }
+  .status.low_balance {
+    color: #92400e;
+    border-color: #fde68a;
+    background: #fffbeb;
+  }
+  .status.expiring_soon {
+    color: #c2410c;
+    border-color: #fed7aa;
+    background: #fff7ed;
+  }
+  .status.fully_utilized {
+    color: var(--zero);
+    background: #f3f4f6;
+    border-color: #d1d5db;
+  }
 
-/* Actions */
-.actions {
-  display: flex;
-  gap: 10px;
-  opacity: 0.9;
-}
-.icon {
-  cursor: pointer;
-  font-size: 18px;
-  transition: transform 0.2s;
-}
-.icon:hover { transform: scale(1.1); }
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 10px;
+    opacity: 0.9;
+  }
+  .icon {
+    cursor: pointer;
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .icon:hover { transform: scale(1.1); }
 
-/* Progress Bar */
-.progress {
-  height: 6px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  position: relative;
-  overflow: hidden;
-}
-.bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, var(--brand), var(--brand-2));
-  transition: width 0.3s;
-}
+  /* Progress Bar */
+  .progress {
+    height: 6px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    position: relative;
+    overflow: hidden;
+  }
+  .bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    transition: width 0.3s;
+  }
 
-/* Footer */
-.po-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--muted);
-  font-size: 12px;
-  padding: 12px 14px;
-  border-top: 1px solid var(--line);
-}
+  /* Footer */
+  .po-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+  }
 
-/* Modal */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.active { display: flex; }
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
 
-.modal-container {
-  background: #ffffff;
-  border-radius: 14px;
-  width: min(900px, 94vw);
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
+  .modal-container {
+    background: #ffffff;
+    border-radius: 14px;
+    width: min(900px, 94vw);
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
 
-.modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f9fafb;
-}
-.modal-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9fafb;
+  }
+  .modal-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
 
-.modal-body {
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1;
-}
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
 
-.modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  background: #f9fafb;
-}
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: #f9fafb;
+  }
 
-/* Form Fields */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.form-field.full { grid-column: 1 / -1; }
-.form-field label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink);
-}
-.form-field input,
-.form-field select,
-.form-field textarea {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: var(--ink);
-  font-size: 14px;
-}
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
-  outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-.form-section-title {
-  grid-column: 1 / -1;
-  font-size: 16px;
-  font-weight: 600;
-  margin-top: 8px;
-  margin-bottom: -8px;
-  color: var(--ink);
-}
+  /* Form Fields */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-field label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .form-field input:focus,
+  .form-field select:focus,
+  .form-field textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+  .form-section-title {
+    grid-column: 1 / -1;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 8px;
+    margin-bottom: -8px;
+    color: var(--ink);
+  }
 
-/* CSV Upload Area */
-.csv-upload-area {
-  border: 2px dashed var(--line);
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: #f9fafb;
-}
-.csv-upload-area:hover {
-  border-color: var(--brand);
-  background: #fef2f2;
-}
-.csv-upload-area.dragover {
-  border-color: var(--brand);
-  background: #fee2e2;
-}
+  /* CSV Upload Area */
+  .csv-upload-area {
+    border: 2px dashed var(--line);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #f9fafb;
+  }
+  .csv-upload-area:hover {
+    border-color: var(--brand);
+    background: #fef2f2;
+  }
+  .csv-upload-area.dragover {
+    border-color: var(--brand);
+    background: #fee2e2;
+  }
 
-/* Sortable Column Headers */
-.sortable {
-  cursor: pointer;
-  user-select: none;
-  position: relative;
-  padding-right: 20px !important;
-}
-.sortable:hover {
-  color: var(--brand);
-}
-.sort-icon {
-  position: absolute;
-  right: 8px;
-  font-size: 10px;
-  opacity: 0.4;
-}
-.sortable.active .sort-icon {
-  opacity: 1;
-  color: var(--brand);
-}
-.sortable:not(.active) .sort-icon::after {
-  content: '⇅';
-}
-.sortable.active.asc .sort-icon::after {
-  content: '↑';
-}
-.sortable.active.desc .sort-icon::after {
-  content: '↓';
-}
+  /* Sortable Column Headers */
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 20px !important;
+  }
+  .sortable:hover {
+    color: var(--brand);
+  }
+  .sort-icon {
+    position: absolute;
+    right: 8px;
+    font-size: 10px;
+    opacity: 0.4;
+  }
+  .sortable.active .sort-icon {
+    opacity: 1;
+    color: var(--brand);
+  }
+  .sortable:not(.active) .sort-icon::after {
+    content: '⇅';
+  }
+  .sortable.active.asc .sort-icon::after {
+    content: '↑';
+  }
+  .sortable.active.desc .sort-icon::after {
+    content: '↓';
+  }
 
-/* CSV Summary Box */
-.csv-summary {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 12px;
-}
-.csv-summary h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ok);
-}
-.csv-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.csv-stat {
-  text-align: center;
-}
-.csv-stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--ink);
-}
-.csv-stat-label {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 4px;
-}
+  /* CSV Summary Box */
+  .csv-summary {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+  .csv-summary h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ok);
+  }
+  .csv-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .csv-stat {
+    text-align: center;
+  }
+  .csv-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .csv-stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 
-/* Record Selection */
-.record-selector {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 16px;
-  background: #fafafa;
-}
-.record-selector h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-.record-list {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: white;
-}
-.record-item {
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.record-item:last-child {
-  border-bottom: none;
-}
-.record-item:hover {
-  background: #f9fafb;
-}
-.record-item.selected {
-  background: #fee2e2;
-  border-left: 3px solid var(--brand);
-}
-.record-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-.record-account {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--ink);
-}
-.record-po {
-  font-size: 12px;
-  color: var(--muted);
-  font-family: monospace;
-}
-.record-details {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--muted);
-}
+  /* Record Selection */
+  .record-selector {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    background: #fafafa;
+  }
+  .record-selector h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .record-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: white;
+  }
+  .record-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .record-item:last-child {
+    border-bottom: none;
+  }
+  .record-item:hover {
+    background: #f9fafb;
+  }
+  .record-item.selected {
+    background: #fee2e2;
+    border-left: 3px solid var(--brand);
+  }
+  .record-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .record-account {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .record-po {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: monospace;
+  }
+  .record-details {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--muted);
+  }
 
-/* Loading Spinner */
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+  /* Loading Spinner */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-/* Currency Input with Custom Option */
-.currency-input-wrapper {
-  position: relative;
-}
-.custom-currency-input {
-  display: none;
-  margin-top: 8px;
-}
-.custom-currency-input.show {
-  display: block;
-}
+  /* Currency Input with Custom Option */
+  .currency-input-wrapper {
+    position: relative;
+  }
+  .custom-currency-input {
+    display: none;
+    margin-top: 8px;
+  }
+  .custom-currency-input.show {
+    display: block;
+  }
 
-@media (max-width: 900px) {
-  .po-cards { grid-template-columns: repeat(2, 1fr); }
-  .form-grid { grid-template-columns: 1fr; }
-  .csv-summary-grid { grid-template-columns: 1fr; }
-}
+  @media (max-width: 900px) {
+    .po-cards { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+    .csv-summary-grid { grid-template-columns: 1fr; }
+  }
+
+
+  /* Export Records Modal Style */
+  .exportModalForm .dropdown.bootstrap-select  {
+    width: 100% !important;
+  }
+
+  /* Exchange Rates Modal Style */
+  #po-convert-currency .modal-body .dropdown.bootstrap-select  {
+    width: 75% !important;
+  }
 </style>
 {% endblock %}
 
@@ -574,7 +589,14 @@
   <div class="po-wrap">
     <!-- Header -->
     <div class="po-header">
-      <h2 class="po-title">Purchase Orders</h2>
+      <!-- <h2 class="po-title">Purchase Orders</h2> -->
+      <!-- <button type="button" class="po-btn" data-bs-toggle="modal" data-bs-target="#po-convert-currency">
+        💱 Convert Currency
+      </button> -->
+      <button type="button" class="po-btn" onclick="openExchangeRateModal()">
+        💱 Convert Currency
+      </button>
+
       <div class="export-actions">
         <span class="selection-info" id="selection-info" style="display:none;">
           <span id="selected-count">0</span> selected
@@ -582,7 +604,10 @@
         <button class="po-btn" id="po-export-selected" style="display:none;">
           📩 Export Selected
         </button>
-        <button class="po-btn" id="po-export">📩 Export All</button>
+        <!-- <button class="po-btn" id="po-export">📩 Export All</button> -->
+        <button type="button" class="po-btn" data-bs-toggle="modal" data-bs-target="#po-export-records">
+          📩 Export Records
+        </button>
         <button class="po-btn" id="po-bulk-import" style="background:#059669;color:#fff;border-color:#059669;">
           📥 Bulk Import from CSV
         </button>
@@ -593,14 +618,74 @@
     <!-- KPI Cards -->
     <div class="po-cards">
       <div class="po-card">
-        <div class="label">Active POs</div>
-        <div class="value">{{ kpis.active_pos }}</div>
-        <div class="hint">Across all customers</div>
+        <div class="label">Total Remaining Balance</div>
+        <div class="value">${{ kpis.total_amount|floatformat:0|intcomma|default:"0" }}</div>
+        <div class="hint">All customers balance</div>
       </div>
       <div class="po-card">
         <div class="label">Total Value</div>
-        <div class="value">${{ kpis.total_value|floatformat:0|intcomma|default:"0" }}</div>
+        <div class="value">{{ kpis.total_value|floatformat:0|intcomma|default:"0" }}</div>
         <div class="hint">Combined PO value</div>
+      </div>
+
+      <!-- Total Amount Invoiced USD -->
+      <div class="po-card">
+        <div class="label">Total Amount Invoiced USD</div>
+        <div class="value">
+          {% if currency_filter == 'USD' %}
+            $ {{ total_converted_currency_to_usd|floatformat:2|intcomma }}
+          {% else %}
+            $ 0
+          {% endif %}
+        </div>
+        <div class="hint">Total amount invoiced in USD</div>
+      </div>
+
+      <!-- Total Amount Invoiced Non-USD -->
+      <div class="po-card">
+        <div class="label">Total Amount Invoiced Non-USD</div>
+        <div class="value">
+          {% if total_converted_currency_to_usd and currency_filter != "USD" %}
+            {% if currency_filter == 'Non-USD' %}
+              {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
+            {% else %}
+              {{ currency_filter }} {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
+            {% endif %}
+          {% else %}
+            $ 0
+          {% endif %}
+        </div>
+        <div class="hint">
+          {% if total_converted_currency_to_non_usd and currency_filter != "USD" %}
+            {% if currency_filter == 'All' %}
+              Total amount invoiced all currencies
+            {% elif currency_filter == 'Non-USD' %}
+              Total amount invoiced in all currency except USD
+            {% else %}
+            Total amount invoiced in {{ currency_filter }} currency
+            {% endif %}
+          {% else %}
+            Total amount invoiced all currencies
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Total Amount Invoiced Converted -->
+      <div class="po-card">
+        <div class="label">Total Amount Invoiced Converted</div>
+        <div class="value">
+          {% if total_converted_currency_to_usd and currency_filter != "USD" %}
+            ${{ total_converted_currency_to_usd|floatformat:2|intcomma }}
+          {% else %}
+            $ 0
+          {% endif %}
+        </div>
+        <div class="hint">Total amount invoiced converted to USD</div>
+      </div>
+      <div class="po-card">
+        <div class="label">Active POs</div>
+        <div class="value">{{ kpis.active_pos }}</div>
+        <div class="hint">Across all customers</div>
       </div>
       <div class="po-card">
         <div class="label">Low Balance</div>
@@ -628,14 +713,14 @@
               </option>
               {% endfor %}
             </select>
-            
+
             <select class="po-select" id="fStatus">
               <option value="">All Statuses</option>
               {% for value, label in status_choices %}
               <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
-            
+
             <select class="po-select" id="fCurrency">
               <option value="">All Currencies</option>
               {% for currency in currencies %}
@@ -665,6 +750,7 @@
                 <div style="max-height:260px;overflow:auto;padding-right:6px;">
                   <label><input type="checkbox" class="col-toggle" data-col="project"> Project</label>
                   <label><input type="checkbox" class="col-toggle" data-col="sdm"> SDM</label>
+                  <label><input type="checkbox" class="col-toggle" data-col="totalinvoiced"> Total Amount Invoiced</label>
                   <label><input type="checkbox" class="col-toggle" data-col="billto"> Bill To</label>
                   <label><input type="checkbox" class="col-toggle" data-col="billaddr"> Billing Address</label>
                   <label><input type="checkbox" class="col-toggle" data-col="about"> About</label>
@@ -679,7 +765,7 @@
                 </div>
               </div>
             </div>
-            
+
             <button class="po-btn" id="fClear" type="button">Clear filters</button>
           </div>
 
@@ -719,17 +805,19 @@
               <th class="sortable {% if sort_by == 'status' %}active {{ order }}{% endif %}" data-sort="status">
                 STATUS<span class="sort-icon"></span>
               </th>
-              <th>ACTIONS</th>
+
               <th class="sortable hidden {% if sort_by == 'project' %}active {{ order }}{% endif %}" data-col="project" data-sort="project">
                 PROJECT<span class="sort-icon"></span>
               </th>
               <th class="hidden" data-col="sdm">SDM</th>
+              <th class="hidden" data-col="totalinvoiced">TOTAL AMOUNT INVOICED</th>
               <th class="hidden" data-col="billto">BILL TO</th>
               <th class="hidden" data-col="billaddr">BILLING ADDRESS</th>
               <th class="hidden" data-col="about">ABOUT</th>
               <th class="hidden" data-col="workdone">WORK DONE</th>
               <th class="hidden" data-col="comment">COMMENT</th>
               <th class="hidden" data-col="expdays">EXPIRATION DAYS</th>
+              <th>ACTIONS</th>
             </tr>
           </thead>
           <tbody id="po-tbody">
@@ -756,19 +844,21 @@
               <td>{{ po.valid_from|date:"Y-m-d" }}</td>
               <td>{{ po.valid_until|date:"Y-m-d" }}</td>
               <td><span class="status {{ po.status }}">{{ po.get_status_display }}</span></td>
-              <td class="actions">
-                <span class="icon" data-act="edit" title="Edit">✏️</span>
-                <span class="icon" data-act="dup" title="Duplicate">📝</span>
-                <span class="icon" data-act="del" title="Delete">🗑️</span>
-              </td>
+
               <td class="hidden" data-col="project">{{ po.project|default:"-" }}</td>
               <td class="hidden" data-col="sdm">{{ po.sdm|default:"-" }}</td>
+              <td class="hidden" data-col="totalinvoiced">{{ po.total_invoiced|default:"-" }}</td>
               <td class="hidden" data-col="billto">{{ po.bill_to|default:"-" }}</td>
               <td class="hidden" data-col="billaddr">{{ po.billing_address|default:"-" }}</td>
               <td class="hidden" data-col="about">{{ po.about|default:"-" }}</td>
               <td class="hidden" data-col="workdone">{{ po.work_done|default:"-" }}</td>
               <td class="hidden" data-col="comment">{{ po.comment|default:"-" }}</td>
               <td class="hidden" data-col="expdays">{{ po.expiration_days|default:"-" }}</td>
+              <td class="actions">
+                <span class="icon" data-act="edit" title="Edit">✏️</span>
+                <span class="icon" data-act="dup" title="Duplicate">📝</span>
+                <span class="icon" data-act="del" title="Delete">🗑️</span>
+              </td>
             </tr>
             {% empty %}
             <tr>
@@ -790,7 +880,7 @@
           {% else %}
           <button class="po-btn" disabled>Previous</button>
           {% endif %}
-          
+
           {% if purchase_orders.has_next %}
           <a href="?page={{ purchase_orders.next_page_number }}&status={{ status_filter|default:'' }}&customer={{ customer_filter|default:'' }}&currency={{ currency_filter|default:'' }}&project={{ project_filter|default:'' }}&search={{ search_query|default:'' }}&sort={{ sort_by|default:'' }}&order={{ order|default:'' }}" class="po-btn">Next</a>
           {% else %}
@@ -798,6 +888,7 @@
           {% endif %}
         </div>
       </div>
+
     </div>
   </div>
 </section>
@@ -809,7 +900,7 @@
       <h3 id="modal-title">Create New PO</h3>
       <button type="button" class="po-btn" id="modal-close" style="padding:6px 10px;">✖️</button>
     </div>
-    
+
     <div class="modal-body">
       <!-- CSV Upload Section -->
       <div id="csv-section" style="margin-bottom:24px;">
@@ -823,7 +914,7 @@
           </div>
         </div>
         <div id="csv-status" style="margin-top:8px;font-size:13px;"></div>
-        
+
         <!-- CSV Summary Box (hidden by default) -->
         <div id="csv-summary" class="csv-summary" style="display:none;">
           <h4>✅ CSV Parsed Successfully</h4>
@@ -842,11 +933,11 @@
             </div>
           </div>
           <div style="font-size:12px;color:var(--muted);">
-            <strong>Customer:</strong> <span id="csv-customer-name">-</span> â€¢ 
+            <strong>Customer:</strong> <span id="csv-customer-name">-</span> â€¢
             <strong>Currencies:</strong> <span id="csv-currencies">-</span>
           </div>
         </div>
-        
+
         <!-- Record Selector (hidden by default) -->
         <div id="record-selector" class="record-selector" style="display:none;">
           <h4>Select a record to populate the form:</h4>
@@ -857,14 +948,14 @@
       <!-- PO Form -->
       <form id="po-form">
         <input type="hidden" id="po-id" />
-        
+
         <div class="form-grid">
           <!-- Basic Info -->
           <div class="form-field">
             <label>PO Number *</label>
             <input type="text" id="po-number" required placeholder="Auto-generated" />
           </div>
-          
+
           <div class="form-field">
             <label>Customer *</label>
             <select id="customer">
@@ -875,7 +966,7 @@
             </select>
             <input type="text" id="customer-new" placeholder="Or enter new customer name" style="margin-top:4px;" />
           </div>
-          
+
           <div class="form-field">
             <label>Account</label>
             <select id="account">
@@ -883,7 +974,7 @@
             </select>
             <input type="text" id="account-new" placeholder="Or enter new account name" style="margin-top:4px;" />
           </div>
-          
+
           <div class="form-field">
             <label>Currency *</label>
             <div class="currency-input-wrapper">
@@ -895,82 +986,82 @@
                 <option value="SGD">SGD</option>
                 <option value="CUSTOM">+ Add Custom Currency</option>
               </select>
-              <input type="text" id="currency-custom" class="custom-currency-input" 
-                     placeholder="Enter currency code (e.g., JPY)" 
-                     maxlength="3" 
-                     pattern="[A-Z]{3}" 
+              <input type="text" id="currency-custom" class="custom-currency-input"
+                     placeholder="Enter currency code (e.g., JPY)"
+                     maxlength="3"
+                     pattern="[A-Z]{3}"
                      style="border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px;" />
             </div>
           </div>
-          
+
           <div class="form-field">
             <label>Total Amount *</label>
             <input type="number" id="total" step="0.01" min="0" required placeholder="0.00" />
           </div>
-          
+
           <div class="form-field">
             <label>Spent Amount</label>
             <input type="number" id="spent" step="0.01" min="0" placeholder="0.00" />
           </div>
-          
+
           <div class="form-field">
             <label>Valid From *</label>
             <input type="date" id="valid-from" required />
           </div>
-          
+
           <div class="form-field">
             <label>Valid Until *</label>
             <input type="date" id="valid-until" required />
           </div>
-          
+
           <!-- Additional Info -->
           <div class="form-section-title">Additional Information</div>
-          
+
           <div class="form-field">
             <label>Project</label>
             <input type="text" id="project" placeholder="Project name" />
           </div>
-          
+
           <div class="form-field">
             <label>SDM</label>
             <input type="text" id="sdm" placeholder="Service Delivery Manager" />
           </div>
-          
+
           <div class="form-field">
             <label>Bill To</label>
             <input type="text" id="bill-to" placeholder="Billing entity" />
           </div>
-          
+
           <div class="form-field">
             <label>Billing Address</label>
             <input type="text" id="billing-address" placeholder="Full billing address" />
           </div>
-          
+
           <div class="form-field full">
             <label>About</label>
             <textarea id="about" rows="2" placeholder="Description"></textarea>
           </div>
-          
+
           <div class="form-field">
             <label>Work Done</label>
             <input type="text" id="work-done" placeholder="e.g., 80%" />
           </div>
-          
+
           <div class="form-field">
             <label>Expiration Days</label>
             <input type="number" id="exp-days" min="0" placeholder="30" />
           </div>
-          
+
           <div class="form-field">
             <label>Payment Terms</label>
             <input type="text" id="payment-terms" placeholder="e.g., Net 30" />
           </div>
-          
+
           <div class="form-field">
             <label>Client Year</label>
             <input type="text" id="client-year" placeholder="2025" />
           </div>
-          
+
           <div class="form-field full">
             <label>Comment</label>
             <textarea id="comment" rows="2" placeholder="Additional notes"></textarea>
@@ -978,7 +1069,7 @@
         </div>
       </form>
     </div>
-    
+
     <div class="modal-footer">
       <button type="button" class="po-btn" id="modal-cancel">Cancel</button>
       <button type="button" class="po-btn primary" id="modal-save">
@@ -996,7 +1087,7 @@
       <h3>Bulk Import POs from CSV</h3>
       <button type="button" class="po-btn" id="bulk-modal-close" style="padding:6px 10px;">✖️</button>
     </div>
-    
+
     <div class="modal-body">
       <!-- Step 1: Upload CSV -->
       <div id="bulk-step-1">
@@ -1015,7 +1106,7 @@
       <!-- Step 2: Select Customer & Account -->
       <div id="bulk-step-2" style="display:none;">
         <h4 style="margin:0 0 16px 0;font-size:16px;font-weight:600;">Step 2: Select Customer & Account</h4>
-        
+
         <!-- CSV Summary -->
         <div class="csv-summary">
           <h4>✅ CSV Parsed Successfully</h4>
@@ -1044,7 +1135,7 @@
             <option value="{{ customer.id }}">{{ customer.name }}</option>
             {% endfor %}
           </select>
-          <input type="text" id="bulk-customer-new" placeholder="Or enter new customer name" 
+          <input type="text" id="bulk-customer-new" placeholder="Or enter new customer name"
                  style="margin-top:8px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;width:100%;" />
         </div>
 
@@ -1068,7 +1159,7 @@
         </div>
       </div>
     </div>
-    
+
     <div class="modal-footer">
       <button type="button" class="po-btn" id="bulk-modal-cancel">Cancel</button>
       <button type="button" class="po-btn" id="bulk-back-btn" style="display:none;">
@@ -1084,6 +1175,158 @@
     </div>
   </div>
 </div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="po-export-records" tabindex="-1" aria-labelledby="po-export-recordsLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="po-export-recordsLabel">Export Records</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="exportModalForm" class="exportModalForm">
+          <div class="mb-3">
+            <label>Select Customer</label> <br>
+            <select id="slctCustomer" style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;width:100%;">
+              <option selected value="">-Select Customer-</option>
+              {% for customer in customers %}
+              <option value="{{ customer.name }} - {{ customer.id }}">{{ customer.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Select Project</label>  <br>
+            <select id="slctProject" style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;width:100%;">
+              <option selected value="">-Select Project-</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Select Date Range</label>  <br>
+            <select id="slctDateRange" style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;width:100%;">
+              <option selected value="">-Select Range-</option>
+              <option value="last_week">Last Week</option>
+              <option value="last_month">Last Month</option>
+              <option value="last_6_months">Last 6 Months</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary float-end">Export</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Convert Currency Modal -->
+<div class="modal fade" id="po-convert-currency" tabindex="-1" aria-labelledby="po-convert-currencyLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content shadow-xl border-0 rounded-4">
+      <div class="modal-header bg-light">
+        <h1 class="modal-title fs-5" id="po-convert-currencyLabel">💱 Exchange Rate Management</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Header with Import Button -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-semibold mb-0">Exchange Rate Data</h6>
+          <div>
+            <input type="file" id="importRatesInput" accept=".csv"
+                   style="display:none" onchange="handleExchangeRateUpload(event)">
+            <button class="btn btn-sm btn-primary" onclick="document.getElementById('importRatesInput').click()">
+              <i class="bi bi-upload me-2"></i> Import Rates
+            </button>
+          </div>
+        </div>
+
+        <!-- Upload Status -->
+        <div id="exchange-rate-upload-status" class="small mb-3"></div>
+
+        <!-- Exchange Rates Table -->
+        <div class="table-responsive mt-3">
+          <table id="exchange-rate-table" class="table table-hover align-middle table-striped border rounded-3 shadow-sm">
+            <thead class="table-dark">
+              <tr>
+                <th scope="col">Currency Code</th>
+                <th scope="col">Currency Name</th>
+                <th scope="col" class="text-end">USD per Unit</th>
+                <th scope="col">Last Updated</th>
+                <th scope="col" class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="exchange-rate-tbody">
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  Loading...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="d-flex justify-content-between align-items-center my-3">
+          <div id="resultInfo" class="text-muted small"></div>
+          <div class="d-flex gap-2">
+            <button id="prevPage" class="btn btn-secondary btn-sm" disabled>Previous</button>
+            <button id="nextPage" class="btn btn-secondary btn-sm" disabled>Next</button>
+          </div>
+        </div>
+
+
+        <!-- Exchange Rate Calculator Section -->
+        <div class="p-3 rounded-3 shadow-sm bg-white border">
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-currency-exchange fs-5 me-2 text-primary"></i>
+            <h6 class="fw-bold mb-0">Smart Calculator</h6>
+          </div>
+
+          <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Currency Conversion Rule</h4>
+            <p>Please select only one option below to recalculate the total amount.</p>
+            <ul style="color: #A098AE;">
+              <li class="fw-semibold">Option 1: Use the first dropdown to choose whether to total all currencies, USD only, or non-USD only. When selecting "non-USD only," the calculator will convert all non-USD totals to USD and sum them.</li>
+              <li class="fw-semibold">Option 2: Use the second dropdown to specify a single currency to convert and total into USD.</li>
+            </ul>
+            <hr>
+            <p class="mb-0">Note: You can only use one of the dropdowns at a time. Selecting both is not allowed.</p>
+          </div>
+
+          <div class="row my-3 g-3">
+            <div class="col-md-6 d-flex">
+              <div class="input-group">
+                <select id="slctCurrencyAll" style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:14px;">
+                  <option value="all" selected>All Currencies</option>
+                  <option value="usd">USD Only</option>
+                  <option value="other">NON-USD Only</option>
+                </select>
+                <button onclick="btnCalculateCurrency('all_currency')" class="btn btn-outline-danger" type="button">Recalculate</button>
+              </div>
+            </div>
+
+            <div class="col-md-6 d-flex">
+              <div class="input-group">
+                <select id="slctExchangeCurrency" style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:14px;">
+                  <option value="" selected>Select Currency</option>
+                </select>
+                <button onclick="btnCalculateCurrency('single_currency')" class="btn btn-outline-danger" type="button">Recalculate</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
 {% endblock %}
 
 {% block extra_js %}
@@ -1098,11 +1341,11 @@ let selectedRecordIndex = null; // Track selected record
 let visibleCols = JSON.parse(localStorage.getItem('po-visible-cols') || '{}');
 
 function updateColumnVisibility() {
-  const allCols = ['project', 'sdm', 'billto', 'billaddr', 'about', 'workdone', 'comment', 'expdays'];
-  
+  const allCols = ['project', 'sdm', 'totalinvoiced', 'billto', 'billaddr', 'about', 'workdone', 'comment', 'expdays'];
+
   allCols.forEach(col => {
     const isVisible = visibleCols[col] === true;
-    
+
     // Update header
     const headerCells = document.querySelectorAll(`th[data-col="${col}"]`);
     headerCells.forEach(cell => {
@@ -1112,7 +1355,7 @@ function updateColumnVisibility() {
         cell.classList.add('hidden');
       }
     });
-    
+
     // Update body cells
     const bodyCells = document.querySelectorAll(`td[data-col="${col}"]`);
     bodyCells.forEach(cell => {
@@ -1123,7 +1366,7 @@ function updateColumnVisibility() {
       }
     });
   });
-  
+
   // Save to localStorage
   localStorage.setItem('po-visible-cols', JSON.stringify(visibleCols));
 }
@@ -1133,7 +1376,7 @@ function updateSelectionUI() {
   const selectionInfo = document.getElementById('selection-info');
   const selectedCount = document.getElementById('selected-count');
   const exportSelectedBtn = document.getElementById('po-export-selected');
-  
+
   if (count > 0) {
     selectionInfo.style.display = 'inline';
     exportSelectedBtn.style.display = 'inline-flex';
@@ -1142,7 +1385,7 @@ function updateSelectionUI() {
     selectionInfo.style.display = 'none';
     exportSelectedBtn.style.display = 'none';
   }
-  
+
   // Update row highlighting
   document.querySelectorAll('.row-checkbox').forEach(cb => {
     const tr = cb.closest('tr');
@@ -1187,7 +1430,7 @@ document.getElementById('po-export-selected').addEventListener('click', () => {
     alert('Please select at least one PO to export');
     return;
   }
-  
+
   const ids = Array.from(selectedRows).join(',');
   window.location.href = `{% url "purchase_orders:export" %}?ids=${ids}`;
 });
@@ -1196,7 +1439,7 @@ document.getElementById('po-export-selected').addEventListener('click', () => {
 document.querySelectorAll('.col-toggle').forEach(checkbox => {
   const col = checkbox.dataset.col;
   checkbox.checked = visibleCols[col] === true;
-  
+
   checkbox.addEventListener('change', (e) => {
     visibleCols[e.target.dataset.col] = e.target.checked;
     updateColumnVisibility();
@@ -1265,7 +1508,7 @@ function openModal(editMode = false, poId = null) {
   modalTitle.textContent = editMode ? 'Edit PO' : 'Create New PO';
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
-  
+
   if (editMode && poId) {
     // Hide CSV section when editing
     document.getElementById('csv-section').style.display = 'none';
@@ -1342,18 +1585,18 @@ csvInput.addEventListener('change', (e) => {
 async function uploadCSV(file) {
   const formData = new FormData();
   formData.append('csv_file', file);
-  
+
   csvStatus.innerHTML = '<span style="color:var(--brand);">⏳ Uploading and parsing CSV...</span>';
-  
+
   try {
     const response = await fetch('{% url "purchase_orders:upload_csv" %}', {
       method: 'POST',
       headers: { 'X-CSRFToken': csrftoken },
       body: formData
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       csvStatus.innerHTML = '';
       csvData = result.data;
@@ -1369,47 +1612,47 @@ async function uploadCSV(file) {
 
 function displayCSVSummary(data) {
   const summaryBox = document.getElementById('csv-summary');
-  
+
   // Calculate statistics
   const records = data.po_records || [];
   const uniqueAccounts = new Set(records.map(r => r.account_name).filter(a => a)).size;
   const uniquePOs = new Set(records.map(r => r.po_number).filter(p => p)).size;
   const currencies = [...new Set(records.map(r => r.currency).filter(c => c))].join(', ');
-  
+
   document.getElementById('csv-total-records').textContent = records.length;
   document.getElementById('csv-unique-accounts').textContent = uniqueAccounts;
   document.getElementById('csv-unique-pos').textContent = uniquePOs;
   document.getElementById('csv-customer-name').textContent = data.customer_name || 'N/A';
   document.getElementById('csv-currencies').textContent = currencies || 'N/A';
-  
+
   summaryBox.style.display = 'block';
 }
 
 function displayRecordSelector(data) {
   const selectorBox = document.getElementById('record-selector');
   const recordList = document.getElementById('record-list');
-  
+
   const records = data.po_records || [];
-  
+
   if (records.length === 0) {
     recordList.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">No records found in CSV</div>';
     selectorBox.style.display = 'block';
     return;
   }
-  
+
   recordList.innerHTML = '';
-  
+
   records.forEach((record, index) => {
     const item = document.createElement('div');
     item.className = 'record-item';
     item.dataset.index = index;
-    
+
     const account = record.account_name || 'No Account';
     const poNumber = record.po_number || 'No PO Number';
     const currency = record.currency || 'USD';
     const total = record.total_amount ? parseFloat(record.total_amount).toFixed(2) : '0.00';
     const balance = record.remaining_balance ? parseFloat(record.remaining_balance).toFixed(2) : '0.00';
-    
+
     item.innerHTML = `
       <div class="record-item-header">
         <div class="record-account">${account}</div>
@@ -1421,17 +1664,17 @@ function displayRecordSelector(data) {
         <span>👤 ${record.sdm || 'No SDM'}</span>
       </div>
     `;
-    
+
     item.addEventListener('click', () => selectRecord(index));
     recordList.appendChild(item);
   });
-  
+
   selectorBox.style.display = 'block';
 }
 
 function selectRecord(index) {
   selectedRecordIndex = index;
-  
+
   // Update UI
   document.querySelectorAll('.record-item').forEach((item, i) => {
     if (i === index) {
@@ -1440,7 +1683,7 @@ function selectRecord(index) {
       item.classList.remove('selected');
     }
   });
-  
+
   // Fill form with selected record
   const record = csvData.po_records[index];
   fillFormFromRecord(record);
@@ -1449,11 +1692,11 @@ function selectRecord(index) {
 function fillFormFromRecord(record) {
   // Basic fields
   if (record.po_number) document.getElementById('po-number').value = record.po_number;
-  
+
   // Customer - try to match first, otherwise use custom input
   const customerSelect = document.getElementById('customer');
   const customerNewInput = document.getElementById('customer-new');
-  
+
   if (csvData.matched_customer_id) {
     customerSelect.value = csvData.matched_customer_id;
     customerNewInput.value = ''; // Clear custom input
@@ -1470,24 +1713,24 @@ function fillFormFromRecord(record) {
         break;
       }
     }
-    
+
     if (!matchedCustomer) {
       // No match found, use custom input
       customerSelect.value = '';
       customerNewInput.value = csvData.customer_name;
     }
   }
-  
+
   // Account - try to match or use custom input
   if (record.account_name) {
     document.getElementById('account-new').value = record.account_name;
     // The loadAccounts function will try to auto-select if match is found
   }
-  
+
   // Currency - handle custom currencies
   const currencyValue = record.currency || 'USD';
   const currencyOptions = Array.from(document.getElementById('currency').options).map(opt => opt.value);
-  
+
   if (currencyOptions.includes(currencyValue)) {
     document.getElementById('currency').value = currencyValue;
   } else {
@@ -1495,15 +1738,15 @@ function fillFormFromRecord(record) {
     currencyCustomInput.classList.add('show');
     currencyCustomInput.value = currencyValue;
   }
-  
+
   // Financial data
   if (record.total_amount) document.getElementById('total').value = record.total_amount;
   if (record.spent_amount) document.getElementById('spent').value = record.spent_amount;
-  
+
   // Dates
   if (record.valid_from) document.getElementById('valid-from').value = record.valid_from;
   if (record.valid_until) document.getElementById('valid-until').value = record.valid_until;
-  
+
   // Additional fields
   if (record.sdm) document.getElementById('sdm').value = record.sdm;
   if (record.bill_to) document.getElementById('bill-to').value = record.bill_to;
@@ -1514,7 +1757,7 @@ function fillFormFromRecord(record) {
   if (record.expiration_days) document.getElementById('exp-days').value = record.expiration_days;
   if (record.payment_terms) document.getElementById('payment-terms').value = record.payment_terms;
   if (record.client_year) document.getElementById('client-year').value = record.client_year;
-  
+
   // Use account_name as project if no project specified
   if (record.account_name) document.getElementById('project').value = record.account_name;
 }
@@ -1530,20 +1773,20 @@ async function loadAccounts(customerId, selectAccountName = null) {
   try {
     const response = await fetch(`/customers/api/${customerId}/accounts/`);
     const result = await response.json();
-   
+
     const accountSelect = document.getElementById('account');
     const accountNewInput = document.getElementById('account-new');
     accountSelect.innerHTML = '<option>-- Select or enter new --</option>'; // Use valid HTML for the default option
-   
+
     if (result.success) {
       let matchFound = false;
-     
+
       result.accounts.forEach(acc => {
         const option = document.createElement('option');
         option.value = acc.id;
         option.textContent = acc.name;
         accountSelect.appendChild(option);
-       
+
         // Auto-select if name matches (case-insensitive)
         if (selectAccountName && acc.name.toLowerCase().trim() === selectAccountName.toLowerCase().trim()) {
           accountSelect.value = acc.id;
@@ -1551,7 +1794,7 @@ async function loadAccounts(customerId, selectAccountName = null) {
           matchFound = true;
         }
       });
-     
+
       // If no match was found and we have a selectAccountName, keep it in the custom input
       if (selectAccountName && !matchFound) {
         accountNewInput.value = selectAccountName;
@@ -1579,7 +1822,7 @@ async function loadPOData(poId) {
   try {
     const response = await fetch(`/purchase-orders/api/${poId}/`);
     const result = await response.json();
-    
+
     if (result.success) {
       const data = result.data;
       poIdInput.value = data.id;
@@ -1587,7 +1830,7 @@ async function loadPOData(poId) {
       document.getElementById('customer').value = data.customer_id;
       await loadAccounts(data.customer_id);
       if (data.account_id) document.getElementById('account').value = data.account_id;
-      
+
       // Handle currency
       const currencyOptions = Array.from(currencySelect.options).map(opt => opt.value);
       if (currencyOptions.includes(data.currency)) {
@@ -1597,7 +1840,7 @@ async function loadPOData(poId) {
         currencyCustomInput.classList.add('show');
         currencyCustomInput.value = data.currency;
       }
-      
+
       document.getElementById('total').value = data.total_amount;
       document.getElementById('spent').value = data.spent_amount;
       document.getElementById('valid-from').value = data.valid_from;
@@ -1624,31 +1867,31 @@ document.getElementById('modal-save').addEventListener('click', async () => {
   // Custom validation since we removed required attribute from customer select
   const customerSelect = document.getElementById('customer');
   const customerNew = document.getElementById('customer-new').value.trim();
-  
+
   if (!customerSelect.value && !customerNew) {
     alert('Please select a customer or enter a new customer name');
     customerSelect.focus();
     return;
   }
-  
+
   const form = document.getElementById('po-form');
   if (!form.checkValidity()) {
     form.reportValidity();
     return;
   }
-  
+
   const saveBtn = document.getElementById('modal-save');
   const saveText = document.getElementById('save-text');
   const saveSpinner = document.getElementById('save-spinner');
-  
+
   saveBtn.disabled = true;
   saveText.style.display = 'none';
   saveSpinner.style.display = 'inline-block';
-  
+
   const customerId = customerSelect.value;
   const accountId = document.getElementById('account').value;
   const accountNew = document.getElementById('account-new').value.trim();
-  
+
   // Get currency value
   let currencyValue = currencySelect.value;
   if (currencyValue === 'CUSTOM') {
@@ -1661,7 +1904,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       return;
     }
   }
-  
+
   const data = {
     po_number: document.getElementById('po-number').value,
     customer_id: customerId || null,
@@ -1684,7 +1927,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
     payment_terms: document.getElementById('payment-terms').value,
     client_year: document.getElementById('client-year').value,
   };
-  
+
   try {
     let url, method;
     if (isEditMode) {
@@ -1694,7 +1937,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       url = '{% url "purchase_orders:create_po_api" %}';
       method = 'POST';
     }
-    
+
     const response = await fetch(url, {
       method: method,
       headers: {
@@ -1703,9 +1946,9 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       alert(result.message);
       window.location.reload();
@@ -1726,30 +1969,30 @@ document.getElementById('modal-save').addEventListener('click', async () => {
 document.getElementById('po-tbody').addEventListener('click', async (e) => {
   const act = e.target?.dataset?.act;
   if (!act) return;
-  
+
   const tr = e.target.closest('tr');
   const id = tr?.dataset?.id;
   if (!id) return;
-  
+
   if (act === 'edit') {
     openModal(true, id);
   }
-  
+
   if (act === 'dup') {
     if (confirm('Duplicate this PO?')) {
       try {
         const response = await fetch(`/purchase-orders/api/${id}/`);
         const result = await response.json();
-        
+
         if (result.success) {
           const data = result.data;
           openModal(false);
-          
+
           // Fill form with duplicated data
           document.getElementById('customer').value = data.customer_id;
           await loadAccounts(data.customer_id);
           if (data.account_id) document.getElementById('account').value = data.account_id;
-          
+
           // Handle currency
           const currencyOptions = Array.from(currencySelect.options).map(opt => opt.value);
           if (currencyOptions.includes(data.currency)) {
@@ -1759,7 +2002,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
             currencyCustomInput.classList.add('show');
             currencyCustomInput.value = data.currency;
           }
-          
+
           document.getElementById('total').value = data.total_amount;
           document.getElementById('spent').value = 0; // Reset spent
           document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
@@ -1779,7 +2022,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
       }
     }
   }
-  
+
   if (act === 'del') {
     if (confirm('Delete this PO? This cannot be undone.')) {
       try {
@@ -1787,7 +2030,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
           method: 'DELETE',
           headers: { 'X-CSRFToken': csrftoken }
         });
-        
+
         const result = await response.json();
         if (result.success) {
           alert(result.message);
@@ -1815,15 +2058,15 @@ function applyFilters() {
   const customer = document.getElementById('fCustomer').value;
   const status = document.getElementById('fStatus').value;
   const currency = document.getElementById('fCurrency').value;
-  const project = document.getElementById('fProject').value;  
+  const project = document.getElementById('fProject').value;
   const search = document.getElementById('fSearch').value;
-  
+
   if (customer) params.set('customer', customer);
   if (status) params.set('status', status);
   if (currency) params.set('currency', currency);
-  if (project) params.set('project', project);  
+  if (project) params.set('project', project);
   if (search) params.set('search', search);
-  
+
   window.location.href = '?' + params.toString();
 }
 
@@ -1832,9 +2075,9 @@ document.getElementById('fClear').addEventListener('click', () => {
 });
 
 // Export
-document.getElementById('po-export').addEventListener('click', () => {
-  window.location.href = '{% url "purchase_orders:export" %}';
-});
+// document.getElementById('po-export').addEventListener('click', () => {
+//   window.location.href = '{% url "purchase_orders:export" %}';
+// });
 
 // Utility
 function debounce(func, wait) {
@@ -1848,6 +2091,83 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
+// =====================================================================================
+//                        Export Records
+// =====================================================================================
+const exportPoData = async (customer, project, range) => {
+  try {
+    const response = await fetch('{% url "purchase_orders:export" %}', {
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      body: JSON.stringify({
+        customer,
+        project,
+        range,
+      }),
+    });
+
+    const result = await response.json();
+    console.log('result', result)
+    if (result.success) {
+      alert(result.message);
+    } else {
+      alert('Error: ' + result.error);
+    }
+
+  } catch (err) {
+    console.error("Export failed:", err);
+    alert("Failed to export. Please try again.");
+  }
+}
+
+document.getElementById("slctCustomer").addEventListener("change", e => {
+  const selectedValue = e.target.value;
+  if (!selectedValue) {
+    return;
+  }
+  const selectedCustomerName = selectedValue.split("-")[0].trim().toUpperCase()
+  const selectedCustomerID = selectedValue.split("-")[1].trim()
+
+  const formattedProjectData = [
+    {% for project in projects %}
+      "{{ project }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+
+  // Filter projects by customer name (case-insensitive)
+  const filteredProjects = formattedProjectData.filter(item =>
+    item.toUpperCase().startsWith(selectedCustomerName.toUpperCase())
+  );
+
+  const projectSelectEl = document.getElementById("slctProject");
+  projectSelectEl.innerHTML = "";
+
+  const defaultOption = new Option("-- Select Project --", "");
+  projectSelectEl.add(defaultOption);
+
+  filteredProjects.forEach(project => {
+     const newOption = document.createElement("option");
+     const optionText = document.createTextNode(project);
+     newOption.appendChild(optionText);
+     newOption.setAttribute('value', project);
+     projectSelectEl.appendChild(newOption);
+  });
+
+  $('#slctProject').selectpicker('refresh');
+})
+
+
+document.getElementById("exportModalForm").addEventListener('submit', e => {
+  e.preventDefault()
+    const customer = document.getElementById("slctCustomer").value;
+    const project = document.getElementById("slctProject").value;
+    const range = document.getElementById("slctDateRange").value;
+
+    exportPoData(customer, project, range)
+})
+
+
 
 // Bulk Import Feature
 let bulkCsvData = null;
@@ -1917,19 +2237,19 @@ bulkCsvInput.addEventListener('change', (e) => {
 async function uploadBulkCSV(file) {
   const formData = new FormData();
   formData.append('csv_file', file);
-  
+
   const statusDiv = document.getElementById('bulk-csv-status');
   statusDiv.innerHTML = '<span style="color:var(--brand);">⏳ Uploading and parsing CSV...</span>';
-  
+
   try {
     const response = await fetch('{% url "purchase_orders:upload_csv" %}', {
       method: 'POST',
       headers: { 'X-CSRFToken': csrftoken },
       body: formData
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       statusDiv.innerHTML = '<span style="color:#059669;">✅ CSV uploaded successfully</span>';
       bulkCsvData = result.data;
@@ -1942,31 +2262,31 @@ async function uploadBulkCSV(file) {
   }
 }
 
-function displayBulkCSVSummary(data) { 
+function displayBulkCSVSummary(data) {
   const records = data.po_records || [];
   const uniqueAccounts = new Set(records.map(r => r.account_name).filter(a => a)).size;
   const uniquePOs = new Set(records.map(r => r.po_number).filter(p => p)).size;
-  
+
   document.getElementById('bulk-csv-total-records').textContent = records.length;
   document.getElementById('bulk-csv-unique-accounts').textContent = uniqueAccounts;
   document.getElementById('bulk-csv-unique-pos').textContent = uniquePOs;
-  
+
 }
 
-function populateBulkAccountDropdown(data) {  
+function populateBulkAccountDropdown(data) {
   const accountFilter = document.getElementById('bulk-account-filter');
   if (!accountFilter) {
     console.error('bulk-account-filter element not found!');
     return;
   }
-  
+
   accountFilter.innerHTML = '<option value="">-- All Accounts (Import All) --</option>';
-  
+
   if (!data || !data.po_records) {
     console.warn('No data or po_records found');
     return;
   }
-  
+
   // Get unique account names from CSV data
   const uniqueAccounts = new Set();
   data.po_records.forEach((record, index) => {
@@ -1977,10 +2297,10 @@ function populateBulkAccountDropdown(data) {
       uniqueAccounts.add(accountName.trim());
     }
   });
-  
+
   // Sort accounts alphabetically
   const sortedAccounts = Array.from(uniqueAccounts).sort();
-  
+
   // Add to dropdown
   sortedAccounts.forEach(accountName => {
     const option = document.createElement('option');
@@ -1988,7 +2308,7 @@ function populateBulkAccountDropdown(data) {
     option.textContent = accountName;
     accountFilter.appendChild(option);
   });
-  
+
 }
 
 // Navigation buttons
@@ -1997,17 +2317,17 @@ document.getElementById('bulk-next-btn').addEventListener('click', () => {
     alert('Please upload a CSV file first');
     return;
   }
-  
+
   bulkCurrentStep = 2;
   document.getElementById('bulk-step-1').style.display = 'none';
   document.getElementById('bulk-step-2').style.display = 'block';
   document.getElementById('bulk-next-btn').style.display = 'none';
   document.getElementById('bulk-import-btn').style.display = 'inline-flex';
   document.getElementById('bulk-back-btn').style.display = 'inline-flex';
-  
+
   populateBulkAccountDropdown(bulkCsvData);
   updateBulkRecordPreview();
-  
+
   // Refresh the dropdown if using Bootstrap Select
   const accountFilter = document.getElementById('bulk-account-filter');
   if (accountFilter) {
@@ -2042,43 +2362,43 @@ document.getElementById('bulk-account-filter').addEventListener('change', update
 
 function updateBulkRecordPreview() {
   if (!bulkCsvData) return;
-  
+
   const accountFilter = document.getElementById('bulk-account-filter').value;
   const records = bulkCsvData.po_records || [];
-  
+
   // Filter records
   let filteredRecords = records;
   if (accountFilter) {
     filteredRecords = records.filter(r => r.account_name === accountFilter);
   }
-  
+
   // Update count
   const count = filteredRecords.length;
   document.getElementById('bulk-import-count').textContent = count;
   document.getElementById('bulk-import-count-btn').textContent = count;
-  
+
   // Display preview
   const previewDiv = document.getElementById('bulk-record-preview');
-  
+
   if (filteredRecords.length === 0) {
     previewDiv.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">No records match the filter</div>';
     return;
   }
-  
+
   previewDiv.innerHTML = '';
-  
+
   filteredRecords.forEach((record, index) => {
     const item = document.createElement('div');
     item.className = 'record-item';
     item.style.cursor = 'default';
     item.style.pointerEvents = 'none';
-    
+
     const account = record.account_name || 'No Account';
     const poNumber = record.po_number || 'No PO Number';
     const currency = record.currency || 'USD';
     const total = record.total_amount ? parseFloat(record.total_amount).toFixed(2) : '0.00';
     const balance = record.remaining_balance ? parseFloat(record.remaining_balance).toFixed(2) : '0.00';
-    
+
     item.innerHTML = `
       <div class="record-item-header">
         <div class="record-account">${account}</div>
@@ -2090,7 +2410,7 @@ function updateBulkRecordPreview() {
         <span>👤 ${record.sdm || 'No SDM'}</span>
       </div>
     `;
-    
+
     previewDiv.appendChild(item);
   });
 }
@@ -2099,33 +2419,33 @@ function updateBulkRecordPreview() {
 document.getElementById('bulk-import-btn').addEventListener('click', async () => {
   const customerSelect = document.getElementById('bulk-customer');
   const customerNew = document.getElementById('bulk-customer-new').value.trim();
-  
+
   if (!customerSelect.value && !customerNew) {
     alert('Please select a customer or enter a new customer name');
     return;
   }
-  
+
   const accountFilter = document.getElementById('bulk-account-filter').value;
-  
+
   if (!confirm(`Import ${document.getElementById('bulk-import-count').textContent} POs?`)) {
     return;
   }
-  
+
   const importBtn = document.getElementById('bulk-import-btn');
   const importText = document.getElementById('bulk-import-text');
   const importSpinner = document.getElementById('bulk-import-spinner');
-  
+
   importBtn.disabled = true;
   importText.style.display = 'none';
   importSpinner.style.display = 'inline-block';
-  
+
   try {
     const data = {
       customer_id: customerSelect.value || null,
       customer_name: customerNew || null,
       account_filter: accountFilter || null
     };
-    
+
     const response = await fetch('{% url "purchase_orders:bulk_create_from_csv" %}', {
       method: 'POST',
       headers: {
@@ -2134,9 +2454,9 @@ document.getElementById('bulk-import-btn').addEventListener('click', async () =>
       },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       let message = `Successfully imported ${result.created_pos} POs`;
       if (result.created_accounts > 0) {
@@ -2169,27 +2489,347 @@ document.querySelectorAll('.sortable').forEach(header => {
   header.addEventListener('click', function() {
     const sortField = this.dataset.sort;
     const currentParams = new URLSearchParams(window.location.search);
-    
+
     // Get current sort and order
     const currentSort = currentParams.get('sort');
     const currentOrder = currentParams.get('order') || 'desc';
-    
+
     // Determine new order
     let newOrder = 'asc';
     if (currentSort === sortField && currentOrder === 'asc') {
       newOrder = 'desc';
     }
-    
+
     // Set new sort parameters
     currentParams.set('sort', sortField);
     currentParams.set('order', newOrder);
-    
+
     // Reset to page 1 when sorting changes
     currentParams.delete('page');
-    
+
     // Navigate to new URL
     window.location.href = '?' + currentParams.toString();
   });
 });
+
+
+
+// =====================================================================================
+//                        Exchange Rate Modal
+// =====================================================================================
+let currentPage = 1;
+const pageSize = 10; // Show 10 per page
+let exchangeRateData = []
+
+function openExchangeRateModal() {
+  const exchangeRateModal = new bootstrap.Modal(document.getElementById('po-convert-currency'));
+  exchangeRateModal.show();
+  loadExchangeRates();
+}
+
+// Table functions
+function loadExchangeRates(page = 1) {
+  const tableBody = document.getElementById('exchange-rate-tbody');
+  const info = document.getElementById('exchange-rate-info');
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+
+  if (!tableBody) return; // Safety check if table not rendered yet
+
+  fetch('{% url "exchange_rates:api" %}')
+    .then(res => res.json())
+    .then(data => {
+      exchangeRateData = data
+
+      if (!Array.isArray(data) || data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No exchange rates found</td></tr>';
+        if (info) info.textContent = '';
+        return;
+      }
+
+      // Pagination
+      const totalPages = Math.ceil(data.length / pageSize);
+      currentPage = Math.min(Math.max(page, 1), totalPages);
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = data.slice(start, end);
+
+      // ✅ Only update pagination buttons if they exist
+      if (prevBtn && nextBtn) {
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+        prevBtn.onclick = () => loadExchangeRates(currentPage - 1);
+        nextBtn.onclick = () => loadExchangeRates(currentPage + 1);
+      }
+
+      if (info) {
+        info.textContent = `Showing ${start + 1}-${Math.min(end, data.length)} of ${data.length}`;
+      }
+
+      // Populate table
+      tableBody.innerHTML = '';
+      pageData.forEach(rate => {
+        const row = `
+          <tr id="rate-row-${rate.id}">
+            <td>${rate.currency_code}</td>
+            <td>${rate.currency_name}</td>
+            <td class="text-end" id="usd-cell-${rate.id}">${parseFloat(rate.usd_per_unit).toFixed(6)}</td>
+            <td>${rate.last_updated}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-primary" onclick="editRate(${rate.id})">Edit</button>
+              <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRate(${rate.id})">Delete</button>
+            </td>
+          </tr>`;
+        tableBody.insertAdjacentHTML('beforeend', row);
+      });
+
+      // Exchange Dropdown
+      const projectSelectEl = document.getElementById("slctExchangeCurrency");
+      projectSelectEl.innerHTML = "";
+
+      const defaultOption = new Option("-- Select Currency --", "");
+      projectSelectEl.add(defaultOption);
+
+      data.forEach(item => {
+        const newOption = document.createElement("option");
+        const optionText = document.createTextNode(`${item.currency_name} (${item.currency_code})`);
+        newOption.appendChild(optionText);
+        newOption.setAttribute('value', item.currency_code);
+        projectSelectEl.appendChild(newOption);
+      });
+
+      $('#slctExchangeCurrency').selectpicker('refresh');
+    })
+    .catch(err => {
+      console.error(err);
+      tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Error loading exchange rates</td></tr>`;
+    });
+}
+
+function editRate(rateId) {
+  const usdCell = document.getElementById(`usd-cell-${rateId}`);
+  const row = document.getElementById(`rate-row-${rateId}`);
+  if (!usdCell || !row) return;
+
+  const currentValue = usdCell.textContent.trim();
+  usdCell.innerHTML = `<input type="number" class="form-control form-control-sm text-end" id="edit-input-${rateId}" value="${currentValue}" step="0.000001">`;
+
+  const actionCell = row.querySelector('td:last-child');
+  actionCell.innerHTML = `
+    <button class="btn btn-sm btn-success" onclick="saveRate(${rateId})">Save</button>
+    <button class="btn btn-sm btn-secondary ms-1" onclick="cancelEdit(${rateId}, '${currentValue}')">Cancel</button>
+  `;
+}
+
+function cancelEdit(rateId, originalValue) {
+  const usdCell = document.getElementById(`usd-cell-${rateId}`);
+  if (!usdCell) return;
+  usdCell.textContent = parseFloat(originalValue).toFixed(6);
+
+  const actionCell = document.querySelector(`#rate-row-${rateId} td:last-child`);
+  actionCell.innerHTML = `
+    <button class="btn btn-sm btn-outline-primary" onclick="editRate(${rateId})">Edit</button>
+    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRate(${rateId})">Delete</button>
+  `;
+}
+
+function saveRate(rateId) {
+  const newValue = document.getElementById(`edit-input-${rateId}`).value;
+  if (!newValue || isNaN(newValue)) {
+    alert("Please enter a valid number");
+    return;
+  }
+
+  fetch(`{% url "exchange_rates:api_detail" 0 %}`.replace("0", rateId), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify({ usd_per_unit: newValue })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to update rate");
+    return res.json();
+  })
+  .then(() => loadExchangeRates(currentPage))
+  .catch(err => alert("Error updating rate: " + err.message));
+}
+
+function deleteRate(rateId) {
+  if (!confirm('Are you sure you want to delete this currency?')) return;
+
+  fetch(`{% url "exchange_rates:api_detail" 0 %}`.replace("0", rateId), {
+    method: 'DELETE',
+    headers: { 'X-CSRFToken': csrftoken },
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to delete rate");
+    return res.json();
+  })
+  .then(() => loadExchangeRates(currentPage))
+  .catch(err => alert("Error deleting exchange rate: " + err.message));
+}
+
+// Import functions
+async function handleExchangeRateUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const statusDiv = document.getElementById('exchange-rate-upload-status');
+  statusDiv.innerHTML = `
+    <div class="d-flex align-items-center text-secondary small">
+      <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+      Uploading and parsing exchange rate file...
+    </div>`;
+
+  try {
+    const formData = new FormData();
+    formData.append('csv_file', file);
+
+    const response = await fetch('{% url "exchange_rates:upload_csv" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      statusDiv.innerHTML = `
+        <div class="alert alert-success py-2 mb-0 small" role="alert">
+          ✅ Exchange rates uploaded successfully.
+          <br><strong>Last updated:</strong> ${result.last_updated}
+        </div>`;
+
+      // ✅ Reload table with latest data
+      reloadExchangeRateTable(result.data);
+    } else {
+      statusDiv.innerHTML = `
+        <div class="alert alert-danger py-2 mb-0 small" role="alert">
+          ❌ ${result.error || 'Upload failed.'}
+        </div>`;
+    }
+  } catch (error) {
+    statusDiv.innerHTML = `
+      <div class="alert alert-danger py-2 mb-0 small" role="alert">
+        ❌ Upload failed: ${error.message}
+      </div>`;
+  }
+
+  // Allow re-upload of same file
+  event.target.value = '';
+}
+
+function reloadExchangeRateTable(data) {
+  const tbody = document.getElementById('exchange-rate-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-muted py-3">
+          No exchange rate data available.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  data.forEach(rate => {
+    const tr = document.createElement('tr');
+    tr.id = `rate-row-${rate.id || rate.currency_code}`;
+    tr.innerHTML = `
+      <td>${rate.currency_code}</td>
+      <td>${rate.currency_name}</td>
+      <td class="text-end" id="usd-cell-${rate.id || rate.currency_code}">
+        ${parseFloat(rate.usd_per_unit).toFixed(6)}
+      </td>
+      <td>${rate.last_updated || '-'}</td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-primary" onclick="editRate(${rate.id})">Edit</button>
+        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRate(${rate.id})">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Optional helper: format date strings (YYYY-MM-DD → Oct 30, 2025)
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  if (isNaN(date)) return dateStr;
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+}
+
+
+// Calculations functions
+function btnCalculateCurrency(type) {
+  // slctCurrencyAll -> all, usd, other
+  // slctExchangeCurrency -> e.g. CYN
+  const selectEl = document.getElementById(type === 'all_currency' ? 'slctCurrencyAll' : 'slctExchangeCurrency');
+  const selectValue = selectEl.value;
+
+  const payload = {
+    rates: [],
+    type: type !== 'all_currency' ? 'single' : selectValue
+  };
+
+  if (type !== 'all_currency') { // Specific Currency
+    payload.rates = exchangeRateData.filter(item => item.currency_code === selectValue).map(item => ({
+        currency_code: item.currency_code,
+        currency_name: item.currency_name,
+        usd_per_unit: item.usd_per_unit
+      }));
+  } else if (selectValue === 'all') {
+    payload.rates = exchangeRateData.map(item => ({
+        currency_code: item.currency_code,
+        currency_name: item.currency_name,
+        usd_per_unit: item.usd_per_unit
+      }));
+  } else if (selectValue === 'other') {
+    payload.rates = exchangeRateData.filter(item => item.currency_code !== "USD").map(item => ({
+        currency_code: item.currency_code,
+        currency_name: item.currency_name,
+        usd_per_unit: item.usd_per_unit
+      }));
+  }
+
+  fetch('{% url "purchase_orders:currency_exchange" %}', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrftoken },
+    body: JSON.stringify(payload)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      const params = new URLSearchParams();
+      // Display All Currency
+      if (selectValue === 'all')  params.set('currency', 'All');
+
+      // Display Specific Currency
+      if (type === 'single_currency') params.set('currency', payload.rates[0].currency_code);
+
+       // Display Only USD
+      if (selectValue === 'usd') params.set('currency', 'USD');
+
+       // Display Non-USD Only
+      if (selectValue === 'other') params.set('currency', 'Non-USD');
+
+      window.location.href = '?' + params.toString();
+    }
+  })
+  .catch(error => console.error('Error:', error));
+}
+
+
+
+
+
+
+
+
 </script>
 {% endblock %}
