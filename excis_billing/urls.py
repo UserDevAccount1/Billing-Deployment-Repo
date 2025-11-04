@@ -28,6 +28,7 @@ urlpatterns = [
     path('purchase-orders/', include('apps.purchase_orders.urls')),
     path('billing/', include('apps.billing.urls')),
     path('rate-cards/', include('apps.rate_cards.urls')),
+    path('exchange-rates/', include('apps.exchange_rates.urls')),
     path('', lambda request: redirect('dashboard:home')),
 ]
 
