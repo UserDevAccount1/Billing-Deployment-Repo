@@ -663,6 +663,8 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
       return;
     }
 
+    const showExtra = svcType === 'service-rate'; // only show these for service-rate
+
     listEl.innerHTML = svc.map(s=>{
       const sid = s.id || s._tmpId || `tmp-${Math.random().toString(36).slice(2,8)}`;
       s._tmpId = sid;
@@ -672,9 +674,13 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
           <div class="rcFormRow"><label>Rate</label><div class="rcValue">${esc(String(s.rate_value ?? '—'))} ${s.currency?esc(s.currency):''}</div></div>
           <div class="rcFormRow"><label>Type</label><div class="rcValue">${esc(s.rate_type||'—')}</div></div>
           <div class="rcFormRow"><label>Region</label><div class="rcValue">${esc(s.region||'—')}</div></div>
+          ${ showExtra ? `<div class="rcFormRow"><label>After hours</label><div class="rcValue">${esc(String(s.after_hours_multiplier ?? '—'))}</div></div>
+                          <div class="rcFormRow"><label>Weekend</label><div class="rcValue">${esc(String(s.weekend_multiplier ?? '—'))}</div></div>
+                          <div class="rcFormRow"><label>Travel</label><div class="rcValue">${esc(String(s.travel_charge ?? '—'))}</div></div>` : '' }
           <div class="rcFormRow"><label>Remarks</label><div class="rcValue">${esc(s.remarks||'')}</div></div>
         </div>`;
       } else {
+        // editable layout uses same rcFormRow rows for visual consistency
         return `<div data-sid="${sid}" style="padding:8px;border-bottom:1px solid #f8f8f8">
           <div class="rcFormRow"><label>Category</label><input class="rc_svc_field" data-field="category" value="${esc(s.category||'')}" placeholder="e.g. Band 0"></div>
 
@@ -690,6 +696,13 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
           </div>
 
           <div class="rcFormRow"><label>Region</label><input class="rc_svc_field" data-field="region" value="${esc(s.region||'')}" placeholder="Region / Location"></div>
+
+          ${ showExtra ? `
+            <div class="rcFormRow"><label>After hours</label><input class="rc_svc_field" data-field="after_hours_multiplier" value="${esc(s.after_hours_multiplier??'')}" placeholder="e.g. 1.5" style="width:120px"></div>
+            <div class="rcFormRow"><label>Weekend</label><input class="rc_svc_field" data-field="weekend_multiplier" value="${esc(s.weekend_multiplier??'')}" placeholder="e.g. 2.0" style="width:120px"></div>
+            <div class="rcFormRow"><label>Travel</label><input class="rc_svc_field" data-field="travel_charge" value="${esc(s.travel_charge??'')}" placeholder="e.g. 150.00" style="width:140px"></div>
+          ` : '' }
+
           <div class="rcFormRow"><label>Remarks</label><input class="rc_svc_field" data-field="remarks" value="${esc(s.remarks||'')}" placeholder="Optional remarks"></div>
         </div>`;
       }
@@ -771,6 +784,7 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
       });
     }
   } // end renderSvcEditor
+
 
   // when modal is opened, load this svcType for this record if not already loaded
   (async ()=>{
