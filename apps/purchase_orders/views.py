@@ -1,5 +1,6 @@
 import json
 import csv
+import os
 import io
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -7,13 +8,13 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, F, FloatField
 from django.db.models.functions import Cast
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, FileResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from datetime import date, timedelta, datetime
 from django.utils import timezone
 import logging
 
-from .models import PurchaseOrder, POBalanceNotification, PurchaseOrderCSV
+from .models import PurchaseOrder, POBalanceNotification, PurchaseOrderCSV, PurchaseOrderAttachment
 from apps.customers.models import Customer, Account
 
 logger = logging.getLogger(__name__)
@@ -145,6 +146,88 @@ def purchase_order_list(request):
         'total_converted_currency_to_non_usd': total_converted_currency_to_non_usd,
     }
     return render(request, 'purchase_orders/list.html', context)
+
+
+@login_required
+@require_POST
+def upload_po_attachment(request):
+    """Handle PO PDF upload and parse data"""
+    try:
+        if 'pdf_file' not in request.FILES:
+            return JsonResponse({'success': False, 'error': 'No file uploaded'}, status=400)
+
+        po_id = request.POST.get('po_id')
+        if not po_id:
+            return JsonResponse({'success': False, 'error': 'Missing PO ID'}, status=400)
+
+        po = get_object_or_404(PurchaseOrder, id=po_id)
+
+        pdf_file = request.FILES['pdf_file']
+
+        # Validate file
+        if not pdf_file.name.endswith('.pdf'):
+            return JsonResponse({'success': False, 'error': 'Only PDF files allowed'}, status=400)
+
+        # Create CSV upload record
+        attachment = PurchaseOrderAttachment.objects.create(
+            purchase_order=po,
+            pdf_file=pdf_file,
+            original_filename=pdf_file.name,
+            uploaded_by=request.user
+        )
+
+        return JsonResponse({
+            'success': True,
+            'data': {
+                'id': attachment.id,
+                'filename': attachment.original_filename,
+                'uploaded_at': attachment.uploaded_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+            'message': 'PDF successfully uploaded'
+        })
+
+    except Exception as e:
+        logger.error(f"PDF upload error: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def download_po_attachment(request, attachment_id):
+    """Return FileResponse for download"""
+    attachment = get_object_or_404(PurchaseOrderAttachment, pk=attachment_id)
+    file_path = attachment.pdf_file.path
+    if not os.path.exists(file_path):
+        return JsonResponse({
+                'success': False,
+                'error': 'No PO Attachment found.'
+            }, status=400)
+    response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=attachment.original_filename)
+    return response
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_po_attachment(request, attachment_id):
+    attachment = get_object_or_404(PurchaseOrderAttachment, pk=attachment_id)
+
+    # optionally check permission: only uploader or staff can delete
+    # if request.user != attachment.uploaded_by and not request.user.is_staff:
+    #     return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+
+    # delete file from storage then DB record
+    storage_path = attachment.pdf_file.path
+    attachment.delete()
+    try:
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+    except Exception:
+        pass
+    return JsonResponse({'success': True, 'message': 'Deleted'})
+
 
 
 @login_required
@@ -521,7 +604,7 @@ def create_purchase_order_api(request):
         # ============================================
         account = None
         account_id_param = data.get('account_id')
-        account_name = data.get('account_name', '').strip()
+        account_name = (data.get('account_name') or '').strip()
 
         if account_id_param:
             # If account ID is provided, use it directly

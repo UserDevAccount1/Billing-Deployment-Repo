@@ -1037,7 +1037,12 @@
             <input type="text" id="billing-address" placeholder="Full billing address" />
           </div>
 
-          <div class="form-field full">
+          <div class="form-field">
+            <label>Excis Entity</label>
+            <input type="text" id="excis-entity" placeholder="Where it will be raised" />
+          </div>
+
+          <div class="form-field">
             <label>About</label>
             <textarea id="about" rows="2" placeholder="Description"></textarea>
           </div>
@@ -1068,7 +1073,12 @@
           </div>
         </div>
       </form>
-    </div>
+
+      <!-- PO Attachment -->
+       <div class="form-field full my-3">
+          <label style="font-weight:600;margin-bottom:8px;display:block;">Attach Copy of PO (optional)</label>
+          <input class="form-control" type="file" id="po-attachment-input">
+      </div>
 
     <div class="modal-footer">
       <button type="button" class="po-btn" id="modal-cancel">Cancel</button>
@@ -1524,6 +1534,9 @@ function closeModal() {
   modal.classList.remove('active');
   document.body.style.overflow = '';
   resetForm();
+
+  // Delete attachment
+  deleteAttachment()
 }
 
 function resetForm() {
@@ -1543,13 +1556,59 @@ function resetForm() {
 
 // Event Listeners
 document.getElementById('po-new').addEventListener('click', () => openModal(false));
-document.getElementById('modal-close').addEventListener('click', closeModal);
-document.getElementById('modal-cancel').addEventListener('click', closeModal);
+['modal-close', 'modal-cancel'].forEach(id => {
+  document.getElementById(id).addEventListener('click', closeModal);
+});
 
 // Close modal on overlay click
 modal.addEventListener('click', (e) => {
   if (e.target === modal) closeModal();
 });
+
+
+
+// ==================================================================
+// ==================== PO File Attachment =========================
+// ==================================================================
+const poAttachmentInput = document.getElementById('po-attachment-input');
+
+function uploadPOAttachment(file, poId) {
+  const formData = new FormData();
+  formData.append('pdf_file', file);
+  formData.append('po_id', poId);
+
+  fetch(`{% url "purchase_orders:upload_po" %}`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrftoken },
+    body: formData
+  })
+  .then(res => res.json())
+  .then(result => {
+    if (!result.success) throw new Error(result.error);
+    console.log("✅ Uploaded:", result.data);
+  })
+  .catch(err => {
+    console.error("Upload failed:", err);
+  });
+}
+
+
+function deleteAttachment(poID){
+  fetch(`{% url "purchase_orders:delete_po" 0 %}`.replace("0", poID), {
+    method: 'DELTE',
+    headers: { 'X-CSRFToken': csrftoken },
+    body: JSON.stringify({ usd_per_unit: newValue })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to delete attachment");
+    return res.json();
+  })
+  .then(() => console.log('Attachment deleted successfully'))
+  .catch(err => alert("Error updating rate: " + err.message));
+}
+
+
+
 
 // CSV Upload
 const csvUploadArea = document.getElementById('csv-upload-area');
@@ -1920,6 +1979,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
     sdm: document.getElementById('sdm').value,
     bill_to: document.getElementById('bill-to').value,
     billing_address: document.getElementById('billing-address').value,
+    excis_entity: document.getElementById('excis-entity').value,
     about: document.getElementById('about').value,
     work_done: document.getElementById('work-done').value,
     comment: document.getElementById('comment').value,
@@ -1950,6 +2010,11 @@ document.getElementById('modal-save').addEventListener('click', async () => {
     const result = await response.json();
 
     if (result.success) {
+      // Handle PDF attachment upload
+      if (poAttachmentInput.files.length > 0) {
+        uploadPOAttachment(poAttachmentInput.files[0], result.po_id);
+      }
+
       alert(result.message);
       window.location.reload();
     } else {
@@ -2013,6 +2078,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
           document.getElementById('sdm').value = data.sdm || '';
           document.getElementById('bill-to').value = data.bill_to || '';
           document.getElementById('billing-address').value = data.billing_address || '';
+          document.getElementById('excis-entity').value = data.excis_entity || '';
           document.getElementById('about').value = data.about || '';
           document.getElementById('payment-terms').value = data.payment_terms || '';
           document.getElementById('client-year').value = data.client_year || '';
