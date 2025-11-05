@@ -23,30 +23,17 @@ logger = logging.getLogger(__name__)
 def purchase_order_list(request):
     """Enhanced purchase order list with KPIs and sorting"""
     pos = PurchaseOrder.objects.select_related('customer', 'account')
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> feature/po-attachment-copy
     # Filters
     status_filter = request.GET.get('status')
     customer_filter = request.GET.get('customer')
     currency_filter = request.GET.get('currency')
     project_filter = request.GET.get('project')  # NEW: Project filter
     search_query = request.GET.get('search')
-<<<<<<< HEAD
-    
-    # NEW: Sorting
-    sort_by = request.GET.get('sort', 'created_at')  # Default sort by created date
-    order = request.GET.get('order', 'desc')  # Default order is descending
-    
-=======
 
     # NEW: Sorting
     sort_by = request.GET.get('sort', 'created_at')  # Default sort by created date
     order = request.GET.get('order', 'desc')  # Default order is descending
 
->>>>>>> feature/po-attachment-copy
     # Map frontend sort fields to database fields
     sort_mapping = {
         'po_number': 'po_number',
@@ -59,27 +46,15 @@ def purchase_order_list(request):
         'project': 'project',
         'created_at': 'created_at',
     }
-<<<<<<< HEAD
-    
-    # Get the actual database field
-    db_field = sort_mapping.get(sort_by, 'created_at')
-    
-=======
 
     # Get the actual database field
     db_field = sort_mapping.get(sort_by, 'created_at')
 
->>>>>>> feature/po-attachment-copy
     # Apply order direction
     if order == 'desc':
         order_field = f'-{db_field}'
     else:
         order_field = db_field
-<<<<<<< HEAD
-    
-    pos = pos.order_by(order_field)
-    
-=======
 
     pos = pos.order_by(order_field)
     all_pos = PurchaseOrder.objects.all()
@@ -88,19 +63,12 @@ def purchase_order_list(request):
     total_converted_currency_to_usd = request.session.get('total_converted_currency', None)
     total_converted_currency_to_non_usd = 0
 
->>>>>>> feature/po-attachment-copy
     # Apply filters
     if status_filter:
         pos = pos.filter(status=status_filter)
 
     if customer_filter:
         pos = pos.filter(customer_id=customer_filter)
-<<<<<<< HEAD
-    if currency_filter:
-        pos = pos.filter(currency=currency_filter)
-    if project_filter:  # NEW: Apply project filter
-        pos = pos.filter(project=project_filter)
-=======
 
     if currency_filter and currency_filter != "all":
         if currency_filter == "USD":
@@ -119,7 +87,6 @@ def purchase_order_list(request):
     if project_filter:
         pos = pos.filter(project=project_filter)
 
->>>>>>> feature/po-attachment-copy
     if search_query:
         pos = pos.filter(Q(po_number__icontains=search_query))
 
@@ -151,16 +118,11 @@ def purchase_order_list(request):
     customers = Customer.objects.filter(is_active=True).order_by('name')
     currencies = PurchaseOrder.objects.values_list('currency', flat=True).distinct().order_by('currency')
     projects = PurchaseOrder.objects.exclude(project__isnull=True).exclude(project='').values_list('project', flat=True).distinct().order_by('project')  # NEW: Get unique projects
-<<<<<<< HEAD
-    
-    
-=======
 
 
 
     request.session.pop("total_converted_currency", None)
 
->>>>>>> feature/po-attachment-copy
     context = {
         'purchase_orders': pos,
         'kpis': kpis,
@@ -176,15 +138,11 @@ def purchase_order_list(request):
         'total_count': total_count,
         'unread_notifications': unread_notifications,
         'sort_by': sort_by,  # NEW: Add sort parameter
-<<<<<<< HEAD
-        'order': order,  # NEW: Add order parameter
-=======
         'order': order,  # NEW: Add order parameter,
 
         # Converted currency
         'total_converted_currency_to_usd': total_converted_currency_to_usd,
         'total_converted_currency_to_non_usd': total_converted_currency_to_non_usd,
->>>>>>> feature/po-attachment-copy
     }
     return render(request, 'purchase_orders/list.html', context)
 
@@ -451,22 +409,12 @@ def bulk_create_pos_from_csv(request):
                     # ============================================
                     # CRITICAL FIX: Try multiple matching strategies
                     # ============================================
-<<<<<<< HEAD
-                    
-=======
-
->>>>>>> feature/po-attachment-copy
                     # Strategy 1: Exact case-insensitive match by name
                     account = Account.objects.filter(
                         customer=customer,
                         name__iexact=account_name,
                         is_active=True
                     ).first()
-<<<<<<< HEAD
-                    
-=======
-
->>>>>>> feature/po-attachment-copy
                     # Strategy 2: Try matching by account_id if provided in CSV
                     if not account:
                         account_id_from_csv = record.get('account_id', '').strip()
@@ -476,41 +424,21 @@ def bulk_create_pos_from_csv(request):
                                 account_id__iexact=account_id_from_csv,
                                 is_active=True
                             ).first()
-<<<<<<< HEAD
-                    
-=======
-
->>>>>>> feature/po-attachment-copy
                     # Strategy 3: Fuzzy match - check for similar names
                     # (e.g., "Google Inc" vs "Google Inc." vs "Google")
                     if not account:
                         # Remove common suffixes and punctuation for matching
                         clean_name = account_name.replace('.', '').replace(',', '').strip()
-<<<<<<< HEAD
-                        
-=======
-
->>>>>>> feature/po-attachment-copy
                         similar_accounts = Account.objects.filter(
                             customer=customer,
                             is_active=True
                         )
-<<<<<<< HEAD
-                        
-=======
-
->>>>>>> feature/po-attachment-copy
                         for acc in similar_accounts:
                             acc_clean = acc.name.replace('.', '').replace(',', '').strip()
                             if acc_clean.lower() == clean_name.lower():
                                 account = acc
                                 logger.info(f"Matched '{account_name}' to existing account '{acc.name}' (fuzzy match)")
                                 break
-<<<<<<< HEAD
-                    
-=======
-
->>>>>>> feature/po-attachment-copy
                     # Only create NEW account if no match found
                     if not account:
                         from apps.customers.models import Currency, BillingCycle
@@ -525,11 +453,6 @@ def bulk_create_pos_from_csv(request):
                             name='Monthly',
                             defaults={'cycle_type': 'monthly', 'customer': customer}
                         )
-<<<<<<< HEAD
-                        
-=======
-
->>>>>>> feature/po-attachment-copy
                         # Generate unique account_id
                         account_id_str = f"{customer.code}-{account_name[:3].upper()}-{idx+1:03d}"
                         counter = 1
@@ -537,11 +460,6 @@ def bulk_create_pos_from_csv(request):
                         while Account.objects.filter(account_id=account_id_str).exists():
                             account_id_str = f"{original_id[:-3]}{counter:03d}"
                             counter += 1
-<<<<<<< HEAD
-                        
-=======
-
->>>>>>> feature/po-attachment-copy
                         account = Account.objects.create(
                             customer=customer,
                             name=account_name,
@@ -556,30 +474,15 @@ def bulk_create_pos_from_csv(request):
                     else:
                         matched_accounts.append(account.name)
                         logger.info(f"Matched EXISTING account: {account.name} ({account.account_id})")
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 # Generate PO number if not provided
                 po_number = record.get('po_number', '').strip()
                 if not po_number:
                     po_number = f"PO-{customer.code}-{date.today().year}-{idx+1:04d}"
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 # Check if PO already exists
                 if PurchaseOrder.objects.filter(po_number=po_number).exists():
                     errors.append(f"Row {idx + 1}: PO {po_number} already exists")
                     logger.warning(f"Skipping duplicate PO: {po_number}")
                     continue
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 # Create PO
                 po = PurchaseOrder.objects.create(
                     po_number=po_number,
@@ -606,11 +509,6 @@ def bulk_create_pos_from_csv(request):
 
                 created_pos.append(po.po_number)
                 logger.info(f"Created PO: {po.po_number} for account {account.name}")
-<<<<<<< HEAD
-            
-=======
-
->>>>>>> feature/po-attachment-copy
             except Exception as e:
                 errors.append(f"Row {idx + 1}: {str(e)}")
                 logger.error(f"Error creating PO for row {idx + 1}: {e}", exc_info=True)
@@ -643,11 +541,7 @@ def bulk_create_pos_from_csv(request):
             'new_account_names': created_accounts,
             'matched_account_names': matched_accounts,
             'error_details': errors if errors else None,
-<<<<<<< HEAD
-            'message': f'Created {len(created_pos)} POs successfully' + 
-=======
             'message': f'Created {len(created_pos)} POs successfully' +
->>>>>>> feature/po-attachment-copy
                       (f' ({len(created_accounts)} new accounts, {len(matched_accounts)} matched existing)' if created_accounts or matched_accounts else '') +
                       (f' with {len(errors)} errors' if errors else '')
         })
@@ -691,103 +585,55 @@ def create_purchase_order_api(request):
             messages.success(request, f"Created new customer: {customer.name}")
         else:
             return JsonResponse({'success': False, 'error': 'Customer is required'}, status=400)
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> feature/po-attachment-copy
         # ============================================
         # CRITICAL FIX: Get or create account with proper matching
         # ============================================
         account = None
         account_id_param = data.get('account_id')
-<<<<<<< HEAD
-        account_name = data.get('account_name', '').strip()
-        
-=======
         account_name = (data.get('account_name') or '').strip()
 
->>>>>>> feature/po-attachment-copy
         if account_id_param:
             # If account ID is provided, use it directly
             account = get_object_or_404(Account, id=account_id_param, customer=customer, is_active=True)
             logger.info(f"Using existing account by ID: {account.name} ({account.account_id})")
-<<<<<<< HEAD
-            
-        elif account_name:
-            # Try to find existing account first
-            
-=======
 
         elif account_name:
             # Try to find existing account first
 
->>>>>>> feature/po-attachment-copy
             # Strategy 1: Exact case-insensitive match by name
             account = Account.objects.filter(
                 customer=customer,
                 name__iexact=account_name,
                 is_active=True
             ).first()
-<<<<<<< HEAD
-            
-            # Strategy 2: Fuzzy match - check for similar names
-            if not account:
-                clean_name = account_name.replace('.', '').replace(',', '').strip()
-                
-=======
 
             # Strategy 2: Fuzzy match - check for similar names
             if not account:
                 clean_name = account_name.replace('.', '').replace(',', '').strip()
 
->>>>>>> feature/po-attachment-copy
                 similar_accounts = Account.objects.filter(
                     customer=customer,
                     is_active=True
                 )
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 for acc in similar_accounts:
                     acc_clean = acc.name.replace('.', '').replace(',', '').strip()
                     if acc_clean.lower() == clean_name.lower():
                         account = acc
                         logger.info(f"Matched '{account_name}' to existing account '{acc.name}' (fuzzy match)")
                         break
-<<<<<<< HEAD
-            
-            # Only create NEW account if no match found
-            if not account:
-                from apps.customers.models import Currency, BillingCycle
-                
-=======
 
             # Only create NEW account if no match found
             if not account:
                 from apps.customers.models import Currency, BillingCycle
 
->>>>>>> feature/po-attachment-copy
                 currency, _ = Currency.objects.get_or_create(
                     code=data.get('currency', 'USD'),
                     defaults={'name': data.get('currency', 'USD')}
                 )
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 billing_cycle, _ = BillingCycle.objects.get_or_create(
                     name='Monthly',
                     defaults={'cycle_type': 'monthly', 'customer': customer}
                 )
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 # Generate unique account_id
                 account_id_str = f"{customer.code}-{account_name[:3].upper()}-001"
                 counter = 1
@@ -795,11 +641,6 @@ def create_purchase_order_api(request):
                 while Account.objects.filter(account_id=account_id_str).exists():
                     account_id_str = f"{original_id[:-3]}{counter:03d}"
                     counter += 1
-<<<<<<< HEAD
-                
-=======
-
->>>>>>> feature/po-attachment-copy
                 account = Account.objects.create(
                     customer=customer,
                     name=account_name,
@@ -813,22 +654,12 @@ def create_purchase_order_api(request):
                 logger.info(f"Created NEW account: {account.name} ({account.account_id})")
             else:
                 logger.info(f"Using EXISTING account: {account.name} ({account.account_id})")
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> feature/po-attachment-copy
         # Check if account was found or created
         if not account:
             return JsonResponse({
                 'success': False,
                 'error': 'Account is required. Please provide account_id or account_name.'
             }, status=400)
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> feature/po-attachment-copy
         # Parse dates from string to date objects
         from datetime import datetime
 
@@ -844,11 +675,6 @@ def create_purchase_order_api(request):
             valid_until = datetime.strptime(valid_until_str, '%Y-%m-%d').date() if valid_until_str else date.today()
         except (ValueError, TypeError):
             valid_until = date.today()
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> feature/po-attachment-copy
         # Validate PO number is unique
         po_number = data.get('po_number', '').strip()
         if not po_number:
@@ -856,21 +682,11 @@ def create_purchase_order_api(request):
                 'success': False,
                 'error': 'PO number is required'
             }, status=400)
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> feature/po-attachment-copy
         if PurchaseOrder.objects.filter(po_number=po_number).exists():
             return JsonResponse({
                 'success': False,
                 'error': f'PO number {po_number} already exists'
             }, status=400)
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> feature/po-attachment-copy
         # Create PO
         po = PurchaseOrder.objects.create(
             po_number=po_number,
@@ -893,15 +709,9 @@ def create_purchase_order_api(request):
             client_year=data.get('client_year', ''),
             created_by=request.user
         )
-<<<<<<< HEAD
-        
-        logger.info(f"Created PO: {po.po_number} for customer {customer.name}, account {account.name}")
-        
-=======
 
         logger.info(f"Created PO: {po.po_number} for customer {customer.name}, account {account.name}")
 
->>>>>>> feature/po-attachment-copy
         # Link CSV if exists
         csv_upload_id = request.session.get('csv_upload_id')
         if csv_upload_id:
