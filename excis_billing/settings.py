@@ -46,11 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    
+
     # Third party apps
     'crispy_forms',
     'crispy_bootstrap5',
-    
+
     # Local apps
     'apps.accounts',
     'apps.dashboard',
@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'apps.purchase_orders',
     'apps.billing',
     'apps.rate_cards',
+    'apps.exchange_rates'
 ]
 
 MIDDLEWARE = [
@@ -215,7 +216,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
-        
+
         # File handler for general app logs
         'file': {
             'level': 'DEBUG',
@@ -223,7 +224,7 @@ LOGGING = {
             'filename': LOGS_DIR / 'django_app.log',
             'formatter': 'detailed',
         },
-        
+
         # Rotating file handler (creates new files when they get too big)
         'rotating_file': {
             'level': 'DEBUG',
@@ -233,7 +234,7 @@ LOGGING = {
             'backupCount': 5,
             'formatter': 'detailed',
         },
-        
+
         # Separate file for errors only
         'error_file': {
             'level': 'ERROR',
@@ -241,7 +242,7 @@ LOGGING = {
             'filename': LOGS_DIR / 'errors.log',
             'formatter': 'verbose',
         },
-        
+
         # Time-based rotating handler (new file each day)
         'daily_file': {
             'level': 'DEBUG',
@@ -260,20 +261,20 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        
+
         # Django's built-in loggers
         'django': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
         },
-        
+
         # Database queries (useful for debugging)
         'django.db.backends': {
             'handlers': ['daily_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        
+
         # Root logger (catches everything)
         '': {
             'handlers': ['console', 'error_file'],
