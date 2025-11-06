@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from apps.customers.models import Customer
 from apps.purchase_orders.models import PurchaseOrder
 from apps.rate_cards.models import DedicatedRate, RateCard, ServiceRate, ScheduledRate, ProjectRate, DispatchRate
+from django.db.utils import DataError
 
 
 if not RateCard or not ServiceRate:
@@ -68,6 +69,7 @@ class Command(BaseCommand):
             if PurchaseOrder:
                 today = timezone.now().date()
                 for i, cust in enumerate(created_customers):
+                    # short po_number so it won't conflict with DB column size issues
                     po_number = f"PO-{cust.code}-{uuid.uuid4().hex[:6].upper()}"
                     valid_from = today
                     valid_until = today + timedelta(days=365)
@@ -81,16 +83,74 @@ class Command(BaseCommand):
                         "valid_from": valid_from,
                         "valid_until": valid_until,
                         "excis_entity": excis_entity,
-                        "created_by": user if PurchaseOrder._meta.get_field("created_by").remote_field.model == User else None,
                     }
+                    # If your model requires created_by and it's a FK to User, include it
+                    if hasattr(PurchaseOrder, "_meta") and "created_by" in [f.name for f in PurchaseOrder._meta.fields]:
+                        po_defaults["created_by"] = user
 
-                    # Some PurchaseOrder fields may be required; attempt get_or_create by po_number
-                    po, created = PurchaseOrder.objects.get_or_create(po_number=po_number, defaults=po_defaults)
-                    created_pos.append(po)
-                    if created:
-                        self.stdout.write(self.style.SUCCESS(f"Created PurchaseOrder: {po_number} -> entity {excis_entity}"))
-                    else:
-                        self.stdout.write(self.style.NOTICE(f"PurchaseOrder exists: {po_number}"))
+                    # We'll try a few insertion strategies to handle different DB uuid column formats.
+                    tried = []
+                    created_po = None
+                    try_variants = [
+                        {},  # 1) don't pass uuid - let model default (preferred)
+                        {"uuid_obj": uuid.uuid4()},          # 2) pass a uuid.UUID object (Django handles conversion)
+                        {"uuid_bytes": lambda u: u.bytes},  # 3) pass raw bytes (BINARY(16) DB column)
+                        {"uuid_str": lambda u: str(u)},     # 4) pass 36-char string
+                        {"uuid_hex": lambda u: u.hex},      # 5) pass 32-char hex string
+                    ]
+
+                    for variant in try_variants:
+                        try:
+                            defaults = dict(po_defaults)  # copy base defaults
+                            if variant:
+                                u = uuid.uuid4()
+                                key = next(iter(variant.keys()))
+                                val = variant[next(iter(variant.keys()))]
+                                # if val is callable generate representation (for bytes/str/hex)
+                                if callable(val):
+                                    uuid_value = val(u)
+                                else:
+                                    uuid_value = val
+                                # Assign to the actual model field name 'uuid' (not 'uuid_obj' etc.)
+                                defaults["uuid"] = uuid_value
+                                tried.append((key, type(uuid_value), uuid_value if isinstance(uuid_value, (str, bytes)) else str(uuid_value)))
+                            else:
+                                tried.append(("no-uuid", None, None))
+
+                            po, created = PurchaseOrder.objects.get_or_create(po_number=po_number, defaults=defaults)
+                            created_po = po
+                            if created:
+                                self.stdout.write(self.style.SUCCESS(f"Created PurchaseOrder: {po_number} -> entity {excis_entity} (variant: {tried[-1][0]})"))
+                            else:
+                                self.stdout.write(self.style.NOTICE(f"PurchaseOrder exists: {po_number} (variant: {tried[-1][0]})"))
+                            break
+                        except DataError as de:
+                            # Try next variant
+                            self.stdout.write(self.style.WARNING(f"DataError with variant {variant.keys() if variant else 'no-uuid'}: {de}"))
+                            continue
+                        except Exception as e:
+                            # Unexpected error (permissions, constraints, etc.) — re-raise for visibility
+                            self.stdout.write(self.style.ERROR(f"Unexpected error creating PO (variant {variant.keys() if variant else 'no-uuid'}): {e}"))
+                            raise
+
+                    if not created_po:
+                        # all attempts failed — print helpful diagnostic and re-raise final DataError
+                        self.stdout.write(self.style.ERROR(
+                            "Failed to create PurchaseOrder after multiple uuid strategies. "
+                            "Tried variants: " + ", ".join(str(t[0]) for t in tried)
+                        ))
+                        # Optional: show database column info (best-effort) - requires DB privileges
+                        try:
+                            from django.db import connection
+                            with connection.cursor() as cur:
+                                cur.execute("SHOW COLUMNS FROM %s LIKE 'uuid';" % PurchaseOrder._meta.db_table)
+                                cols = cur.fetchall()
+                                self.stdout.write(self.style.ERROR(f"uuid column metadata: {cols}"))
+                        except Exception:
+                            self.stdout.write(self.style.WARNING("Could not retrieve column metadata (insufficient DB privileges)."))
+                        raise DataError("Failed to create PurchaseOrder due to uuid/column mismatch")
+
+                    created_pos.append(created_po)
             else:
                 self.stdout.write(self.style.WARNING("PurchaseOrder model not available; skipping PO creation."))
 
