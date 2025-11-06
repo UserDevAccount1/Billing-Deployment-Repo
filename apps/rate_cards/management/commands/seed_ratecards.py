@@ -94,7 +94,7 @@ class Command(BaseCommand):
                     try_variants = [
                         {},  # 1) don't pass uuid - let model default (preferred)
                         {"uuid_obj": uuid.uuid4()},          # 2) pass a uuid.UUID object (Django handles conversion)
-                        {"uuid_bytes": lambda u: u.bytes},  # 3) pass raw bytes (BINARY(16) DB column)
+                        # {"uuid_bytes": lambda u: u.bytes},  # 3) pass raw bytes (BINARY(16) DB column)
                         {"uuid_str": lambda u: str(u)},     # 4) pass 36-char string
                         {"uuid_hex": lambda u: u.hex},      # 5) pass 32-char hex string
                     ]
