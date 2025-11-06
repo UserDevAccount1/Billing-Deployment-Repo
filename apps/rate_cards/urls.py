@@ -22,5 +22,9 @@ urlpatterns = [
     path('api/<str:svc_type>/create/', views.svc_create, name='svc_create'),
     path('api/<str:svc_type>/<int:pk>/update/', views.svc_update, name='svc_update'),
     path('api/<str:svc_type>/<int:pk>/delete/', views.svc_delete, name='svc_delete'),
+
+    # customers list
+    path('api/customers/', views.customer_list, name='api_customers'),
+
 ]
 

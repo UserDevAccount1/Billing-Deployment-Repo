@@ -38,6 +38,13 @@ def svc_rate_to_dict(obj):
         'updated_at': obj.updated_at.isoformat(),
     }
 
+
+@require_http_methods(['GET'])
+def customer_list(request):
+    qs = Customer.objects.filter(is_active=True).order_by('name')
+    data = [{'id': c.id, 'display': str(c)} for c in qs]
+    return JsonResponse({'results': data})
+
 # list service-like entries for a ratecard (GET)
 @require_http_methods(['GET'])
 def svc_list_for_ratecard(request, pk, svc_type):
@@ -212,13 +219,42 @@ def ratecard_list(request):
     data = [ratecard_to_dict(r) for r in qs]
     return JsonResponse({'results': data})
 
+# @login_required
+# @require_http_methods(['POST'])
+# def ratecard_create(request):
+#     cust_name = request.POST.get('customer') or request.POST.get('customer_name')
+#     if not cust_name:
+#         return HttpResponseBadRequest("customer is required")
+#     customer, _ = Customer.objects.get_or_create(name=cust_name)
+#     r = RateCard.objects.create(
+#         customer=customer,
+#         created_by=request.user,
+#         region=request.POST.get('region',''),
+#         country=request.POST.get('country',''),
+#         supplier=request.POST.get('supplier',''),
+#         currency=request.POST.get('currency','USD'),
+#         entity=request.POST.get('entity',''),
+#         payment_terms=request.POST.get('payment',''),
+#         status=request.POST.get('status','Active'),
+#     )
+#     return JsonResponse({'success': True, 'ratecard': ratecard_to_dict(r)})
+
 @login_required
 @require_http_methods(['POST'])
 def ratecard_create(request):
-    cust_name = request.POST.get('customer') or request.POST.get('customer_name')
-    if not cust_name:
-        return HttpResponseBadRequest("customer is required")
-    customer, _ = Customer.objects.get_or_create(name=cust_name)
+    # prefer customer_id if provided (from frontend select)
+    cust_id = request.POST.get('customer_id')
+    if cust_id:
+        try:
+            customer = Customer.objects.get(pk=int(cust_id))
+        except (Customer.DoesNotExist, ValueError):
+            return HttpResponseBadRequest("invalid customer_id")
+    else:
+        cust_name = request.POST.get('customer') or request.POST.get('customer_name')
+        if not cust_name:
+            return HttpResponseBadRequest("customer is required")
+        customer, _ = Customer.objects.get_or_create(name=cust_name)
+
     r = RateCard.objects.create(
         customer=customer,
         created_by=request.user,
@@ -232,12 +268,6 @@ def ratecard_create(request):
     )
     return JsonResponse({'success': True, 'ratecard': ratecard_to_dict(r)})
 
-@require_http_methods(['GET'])
-def ratecard_detail(request, pk):
-    r = get_object_or_404(RateCard, pk=pk)
-    data = ratecard_to_dict(r)
-    data['service_rates'] = [service_rate_to_dict(s) for s in r.service_rates.all()]
-    return JsonResponse({'ratecard': data})
 
 @login_required
 @require_http_methods(['POST'])
@@ -246,10 +276,19 @@ def ratecard_update(request, pk):
     if not (request.user == r.created_by or request.user.is_staff):
         return HttpResponseForbidden("Not allowed")
 
-    customer_name = request.POST.get('customer')
-    if customer_name:
-        customer,_ = Customer.objects.get_or_create(name=customer_name)
-        r.customer = customer
+    cust_id = request.POST.get('customer_id')
+    if cust_id:
+        try:
+            customer = Customer.objects.get(pk=int(cust_id))
+            r.customer = customer
+        except (Customer.DoesNotExist, ValueError):
+            return HttpResponseBadRequest("invalid customer_id")
+    else:
+        customer_name = request.POST.get('customer')
+        if customer_name:
+            customer,_ = Customer.objects.get_or_create(name=customer_name)
+            r.customer = customer
+
     r.region = request.POST.get('region', r.region)
     r.country = request.POST.get('country', r.country)
     r.supplier = request.POST.get('supplier', r.supplier)
@@ -259,6 +298,35 @@ def ratecard_update(request, pk):
     r.status = request.POST.get('status', r.status)
     r.save()
     return JsonResponse({'success': True, 'ratecard': ratecard_to_dict(r)})
+
+
+@require_http_methods(['GET'])
+def ratecard_detail(request, pk):
+    r = get_object_or_404(RateCard, pk=pk)
+    data = ratecard_to_dict(r)
+    data['service_rates'] = [service_rate_to_dict(s) for s in r.service_rates.all()]
+    return JsonResponse({'ratecard': data})
+
+# @login_required
+# @require_http_methods(['POST'])
+# def ratecard_update(request, pk):
+#     r = get_object_or_404(RateCard, pk=pk)
+#     if not (request.user == r.created_by or request.user.is_staff):
+#         return HttpResponseForbidden("Not allowed")
+
+#     customer_name = request.POST.get('customer')
+#     if customer_name:
+#         customer,_ = Customer.objects.get_or_create(name=customer_name)
+#         r.customer = customer
+#     r.region = request.POST.get('region', r.region)
+#     r.country = request.POST.get('country', r.country)
+#     r.supplier = request.POST.get('supplier', r.supplier)
+#     r.currency = request.POST.get('currency', r.currency)
+#     r.entity = request.POST.get('entity', r.entity)
+#     r.payment_terms = request.POST.get('payment', r.payment_terms)
+#     r.status = request.POST.get('status', r.status)
+#     r.save()
+#     return JsonResponse({'success': True, 'ratecard': ratecard_to_dict(r)})
 
 @login_required
 @require_http_methods(['POST'])

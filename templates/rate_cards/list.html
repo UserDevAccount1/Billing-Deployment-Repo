@@ -225,6 +225,11 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
 
   // initial load: get ratecards, then load each svc type incrementally for each ratecard
   async function loadRateCards(){
+
+    // load customers 
+    await loadCustomers();
+
+
     const res = await fetch(`${API_BASE}/ratecards/`);
     const j = await res.json();
     ns.data = j.results || [];
@@ -335,6 +340,19 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
     return await res.json();
   }
 
+  ns.customers = [];
+
+  async function loadCustomers(){
+    try{
+      const res = await fetch(`${API_BASE}/customers/`);
+      if(!res.ok) return;
+      const j = await res.json();
+      ns.customers = j.results || [];
+    }catch(e){
+      console.warn('Failed to load customers', e);
+      ns.customers = [];
+    }
+  }
 
 
   // --- Keep your UI wiring but use ns.data from backend
@@ -607,7 +625,18 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
 
   // base fields
   let html = `
-    <div class="rcFormRow"><label>Customer</label><input id="rcf_customer" value="${esc(rec.customer||'')}" ${readonly}></div>
+    <div class="rcFormRow">
+      <label>Customer</label>
+      ${readonly ?
+        `<div id="rcf_customer_display">${esc(rec.customer||'')}</div>` :
+        // single input + hidden id; dropdown container appended below input
+        `<div style="position:relative">
+          <input id="rcf_customer_picker" autocomplete="off" placeholder="Type to search customers..." style="width:100%;box-sizing:border-box" />
+          <input type="hidden" id="rcf_customer_id" value="${esc(rec.customer && rec.customer.id ? rec.customer.id : '')}" />
+          <div id="rcf_customer_dropdown" style="position:absolute;left:0;right:0;z-index:50;max-height:220px;overflow:auto;border:1px solid #ddd;background:#fff;display:none;border-radius:4px"></div>
+        </div>`
+      }
+    </div>
     <div class="rcFormRow"><label>Region</label><input id="rcf_region" value="${esc(rec.region||'')}" ${readonly}></div>
     <div class="rcFormRow"><label>Country</label><input id="rcf_country" value="${esc(rec.country||'')}" ${readonly}></div>
     <div class="rcFormRow"><label>Supplier</label><input id="rcf_supplier" value="${esc(rec.supplier||'')}" ${readonly}></div>
@@ -616,6 +645,7 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
     <div class="rcFormRow"><label>Payment</label><input id="rcf_payment" value="${esc(rec.payment||'')}" ${readonly}></div>
     <div class="rcFormRow"><label>Status</label><input id="rcf_status" value="${esc(rec.status||'Active')}" ${readonly}></div>
   `;
+
 
   // determine service key and label
   const svcKey = serviceKeyMap[svcType] || 'service_rates';
@@ -630,6 +660,102 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
 
   modalBody.innerHTML = html;
   modalBackdrop.style.display = 'flex';
+
+  if(!readonly){
+    const picker = document.getElementById('rcf_customer_picker');
+    const hid = document.getElementById('rcf_customer_id');
+    const dropdown = document.getElementById('rcf_customer_dropdown');
+
+    // helper to render list of matches (arr of {id, display})
+    function renderCustomerList(arr){
+      if(!dropdown) return;
+      if(!arr || arr.length === 0){
+        dropdown.innerHTML = `<div style="padding:8px;color:#777">No matches</div>`;
+        return;
+      }
+      dropdown.innerHTML = arr.map(c => `<div class="rcf_c_item" data-id="${c.id}" style="padding:8px;cursor:pointer;border-bottom:1px solid #f3f3f3">${esc(c.display)}</div>`).join('');
+    }
+
+    // open/close helpers
+    function openDropdown(){ dropdown.style.display = 'block'; }
+    function closeDropdown(){ dropdown.style.display = 'none'; }
+
+    // initialize: prefill input from rec.customer (if available)
+    (function initPicker(){
+      const preId = rec.customer && (rec.customer.id || rec.customer);
+      if(preId){
+        const found = ns.customers.find(c => String(c.id) === String(preId));
+        if(found){
+          picker.value = found.display;
+          hid.value = found.id;
+        } else {
+          // if rec.customer is a plain string (legacy), keep it as input value but no id
+          picker.value = typeof rec.customer === 'string' ? rec.customer : '';
+        }
+      }
+    })();
+
+    // show full list on focus
+    picker.addEventListener('focus', () => {
+      renderCustomerList(ns.customers.slice(0,200)); // show initial items (cap to avoid huge DOM)
+      openDropdown();
+    });
+
+    // filter on input
+    picker.addEventListener('input', () => {
+      const q = (picker.value||'').toLowerCase();
+      const matched = ns.customers.filter(c => c.display.toLowerCase().includes(q));
+      renderCustomerList(matched.slice(0,200));
+      openDropdown();
+      // clear hidden id since user is typing a new string
+      hid.value = '';
+    });
+
+    // click to select
+    dropdown.addEventListener('click', (ev) => {
+      const it = ev.target.closest('.rcf_c_item');
+      if(!it) return;
+      const id = it.dataset.id;
+      const txt = it.textContent;
+      picker.value = txt;
+      hid.value = id;
+      closeDropdown();
+      picker.focus(); // keep focus for keyboard flow
+    });
+
+    // basic keyboard support: ArrowDown to move, Enter to pick, Esc to close
+    let focusedIndex = -1;
+    picker.addEventListener('keydown', (ev) => {
+      const items = Array.from(dropdown.querySelectorAll('.rcf_c_item'));
+      if(ev.key === 'ArrowDown'){
+        ev.preventDefault();
+        focusedIndex = Math.min(items.length - 1, focusedIndex + 1);
+        items.forEach((it,i)=> it.style.background = i===focusedIndex ? '#f0f0f0' : '');
+        if(items[focusedIndex]) items[focusedIndex].scrollIntoView({block:'nearest'});
+      } else if(ev.key === 'ArrowUp'){
+        ev.preventDefault();
+        focusedIndex = Math.max(0, focusedIndex - 1);
+        items.forEach((it,i)=> it.style.background = i===focusedIndex ? '#f0f0f0' : '');
+        if(items[focusedIndex]) items[focusedIndex].scrollIntoView({block:'nearest'});
+      } else if(ev.key === 'Enter'){
+        if(items[focusedIndex]){
+          ev.preventDefault();
+          items[focusedIndex].click();
+        } else {
+          // no focused item — allow form save to handle free-text fallback
+          closeDropdown();
+        }
+      } else if(ev.key === 'Escape'){
+        closeDropdown();
+      }
+    });
+
+    // close when clicking outside (with tiny timeout to allow item click)
+    document.addEventListener('click', (e) => {
+      if(!dropdown.contains(e.target) && e.target !== picker) closeDropdown();
+    });
+  }
+
 
   // helper to extract created/updated object from backend response (best-effort)
   function extractObjectFromResponse(resp, svcTypeKey){
@@ -833,8 +959,9 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
   // Save handler for the main ratecard (not svc items)
   saveBtn.onclick = async ()=>{
     if(mode === 'view'){ modalBackdrop.style.display = 'none'; return; }
+    
     const payload = {
-      customer: document.getElementById('rcf_customer').value,
+      // customer: document.getElementById('rcf_customer').value,
       region: document.getElementById('rcf_region').value,
       country: document.getElementById('rcf_country').value,
       supplier: document.getElementById('rcf_supplier').value,
@@ -843,6 +970,16 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
       payment: document.getElementById('rcf_payment').value,
       status: document.getElementById('rcf_status').value,
     };
+
+    // pick customer_id from select if present, else fall back to free text input (older behavior)
+    const customerIdEl = document.getElementById('rcf_customer_id');
+    if(customerIdEl && customerIdEl.value){
+      payload.customer_id = customerIdEl.value;
+    } else {
+      // backward-compatible: if user typed free text, send 'customer' so backend can create/get
+      payload.customer = document.getElementById('rcf_customer_picker') ? document.getElementById('rcf_customer_picker').value : '';
+    }
+
     try{
       if(mode === 'new'){
         const j = await createRateCard(payload);
