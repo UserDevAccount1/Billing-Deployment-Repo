@@ -38,7 +38,7 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('uuid', 'po_number', 'customer', 'account')
+            'fields': ('uuid', 'po_number', 'customer', 'account', 'excis_entity')
         }),
         ('Financial Details', {
             'fields': (

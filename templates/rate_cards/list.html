@@ -229,6 +229,9 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
     // load customers 
     await loadCustomers();
 
+    // load entities
+    await loadEntities();
+
 
     const res = await fetch(`${API_BASE}/ratecards/`);
     const j = await res.json();
@@ -354,6 +357,21 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
     }
   }
 
+  ns.entities = [];
+
+  async function loadEntities(){
+    try{
+      // adjust endpoint if your API exposes entities under another path
+      const res = await fetch(`${API_BASE}/purchase-orders/`);
+      if(!res.ok) return;
+      const j = await res.json();
+      // expecting results: array of {id, excis_entity, ...}
+      ns.entities = (j.results || []).map(x => ({ id: x.id, display: x.excis_entity || x.excis_entity }));
+    }catch(e){
+      console.warn('Failed to load entities', e);
+      ns.entities = [];
+    }
+  }
 
   // --- Keep your UI wiring but use ns.data from backend
   const container = document.getElementById('rcTableContainer');
@@ -385,7 +403,7 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
   }
 
   const baseCols=()=>`<th>#</th><th>Customer</th><th>Region</th><th>Country</th><th>Supplier</th><th>Currency</th><th>Entity</th><th>Payment</th>`;
-  const baseCells=(r,i)=>`<td>${i+1}</td><td>${esc(r.customer)}</td><td>${esc(r.region)}</td><td>${esc(r.country)}</td><td>${esc(r.supplier)}</td><td>${esc(r.currency)}</td><td>${esc(r.entity)}</td><td>${esc(r.payment)}</td>`;
+  const baseCells=(r,i)=>`<td>${i+1}</td><td>${esc(r.customer)}</td><td>${esc(r.region)}</td><td>${esc(r.country)}</td><td>${esc(r.supplier)}</td><td>${esc(r.currency)}</td><td>${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td><td>${esc(r.payment)}</td>`;
 
   function renderDefault(){
     const rows = filterData().map((r,i) => `
@@ -641,7 +659,15 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
     <div class="rcFormRow"><label>Country</label><input id="rcf_country" value="${esc(rec.country||'')}" ${readonly}></div>
     <div class="rcFormRow"><label>Supplier</label><input id="rcf_supplier" value="${esc(rec.supplier||'')}" ${readonly}></div>
     <div class="rcFormRow"><label>Currency</label><input id="rcf_currency" value="${esc(rec.currency||'USD')}" ${readonly}></div>
-    <div class="rcFormRow"><label>Entity</label><input id="rcf_entity" value="${esc(rec.entity||'')}" ${readonly}></div>
+
+    <div class="rcFormRow">
+      <label>Entity</label>
+      ${readonly ? `<div id="rcf_entity_display">${esc(rec.entity && rec.entity.display ? rec.entity.display : rec.entity || '')}</div>`
+                : `<select id="rcf_entity_select" style="width:100%;box-sizing:border-box">
+                    <option value="">-- choose entity --</option>
+                  </select>`}
+    </div>
+
     <div class="rcFormRow"><label>Payment</label><input id="rcf_payment" value="${esc(rec.payment||'')}" ${readonly}></div>
     <div class="rcFormRow"><label>Status</label><input id="rcf_status" value="${esc(rec.status||'Active')}" ${readonly}></div>
   `;
@@ -754,6 +780,15 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
     document.addEventListener('click', (e) => {
       if(!dropdown.contains(e.target) && e.target !== picker) closeDropdown();
     });
+  }
+
+    // populate entity select (if not readonly)
+  if(!readonly){
+    const entSel = document.getElementById('rcf_entity_select');
+    if(entSel){
+      entSel.innerHTML = '<option value="">-- choose entity --</option>' +
+        ns.entities.map(e => `<option value="${e.id}" ${rec.entity && rec.entity.id && String(rec.entity.id) === String(e.id) ? 'selected' : ''}>${esc(e.display)}</option>`).join('');
+    }
   }
 
 
@@ -966,7 +1001,7 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
       country: document.getElementById('rcf_country').value,
       supplier: document.getElementById('rcf_supplier').value,
       currency: document.getElementById('rcf_currency').value,
-      entity: document.getElementById('rcf_entity').value,
+      // entity: document.getElementById('rcf_entity').value,
       payment: document.getElementById('rcf_payment').value,
       status: document.getElementById('rcf_status').value,
     };
@@ -979,6 +1014,10 @@ thead tr.rc-band-sub th{background:#243b53;color:#fff;text-align:center;font-wei
       // backward-compatible: if user typed free text, send 'customer' so backend can create/get
       payload.customer = document.getElementById('rcf_customer_picker') ? document.getElementById('rcf_customer_picker').value : '';
     }
+
+    const entitySel = document.getElementById('rcf_entity_select');
+    if(entitySel && entitySel.value) payload.entity_id = entitySel.value;
+
 
     try{
       if(mode === 'new'){

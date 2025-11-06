@@ -4,6 +4,8 @@ from apps.customers.models import Customer
 
 from django.conf import settings
 
+from apps.purchase_orders.models import PurchaseOrder
+
 class RateCard(models.Model):
     STATUS_CHOICES = [
         ('Active','Active'),
@@ -17,7 +19,16 @@ class RateCard(models.Model):
     country = models.CharField(max_length=64, blank=True)
     supplier = models.CharField(max_length=128, blank=True)
     currency = models.CharField(max_length=8, default='USD')
-    entity = models.CharField(max_length=128, blank=True)
+    # entity = models.CharField(max_length=128, blank=True)
+
+    entity = models.ForeignKey(
+        PurchaseOrder,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='ratecards'
+    )
+    
     payment_terms = models.CharField(max_length=64, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
     created_at = models.DateTimeField(auto_now_add=True)

@@ -26,5 +26,7 @@ urlpatterns = [
     # customers list
     path('api/customers/', views.customer_list, name='api_customers'),
 
+    # purchase orders list
+    path('api/purchase-orders/', views.purchase_orders_list, name='api_purchase_orders'),
 ]
 

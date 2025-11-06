@@ -47,12 +47,12 @@ class PurchaseOrder(models.Model):
         default='USD',
         help_text='3-letter currency code (e.g., USD, EUR, GBP)'
     )
-    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     spent_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
     # Validity Period
     valid_from = models.DateField()
-    valid_until = models.DateField()
+    valid_until = models.DateField(default=date.today)
 
     # CSV Import Fields (Main additional info)
     project = models.CharField(max_length=200, blank=True, null=True)

@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
+
+from apps.purchase_orders.models import PurchaseOrder
 from .models import RateCard, ServiceRate
 from apps.customers.models import Customer
 from django.apps import apps
@@ -43,6 +45,12 @@ def svc_rate_to_dict(obj):
 def customer_list(request):
     qs = Customer.objects.filter(is_active=True).order_by('name')
     data = [{'id': c.id, 'display': str(c)} for c in qs]
+    return JsonResponse({'results': data})
+
+@require_http_methods(['GET'])
+def purchase_orders_list(request):
+    qs = PurchaseOrder.objects.all().order_by('-id')
+    data = [{'id': p.id, 'excis_entity': p.excis_entity} for p in qs]
     return JsonResponse({'results': data})
 
 # list service-like entries for a ratecard (GET)
@@ -191,7 +199,12 @@ def ratecard_to_dict(r: RateCard):
         'country': r.country,
         'supplier': r.supplier,
         'currency': r.currency,
-        'entity': r.entity,
+        # 'entity': r.entity,
+        'entity': {
+            'id': r.entity.id,
+            'display': r.entity.excis_entity
+        } if r.entity else None,
+
         'payment': r.payment_terms,
         'status': r.status,
         'created_by': r.created_by.username if r.created_by else None,
@@ -255,6 +268,20 @@ def ratecard_create(request):
             return HttpResponseBadRequest("customer is required")
         customer, _ = Customer.objects.get_or_create(name=cust_name)
 
+    # entity: prefer entity_id
+    entity = None
+    entity_id = request.POST.get('entity_id') or request.POST.get('entity')
+    if entity_id:
+        try:
+            # allow passing numeric PK (preferred)
+            entity = PurchaseOrder.objects.get(pk=int(entity_id))
+        except (ValueError, PurchaseOrder.DoesNotExist):
+            # fallback: maybe entity was submitted as free text (old behavior) - try to find by excis_entity
+            try:
+                entity = PurchaseOrder.objects.filter(excis_entity=str(entity_id)).first()
+            except Exception:
+                entity = None
+
     r = RateCard.objects.create(
         customer=customer,
         created_by=request.user,
@@ -262,7 +289,7 @@ def ratecard_create(request):
         country=request.POST.get('country',''),
         supplier=request.POST.get('supplier',''),
         currency=request.POST.get('currency','USD'),
-        entity=request.POST.get('entity',''),
+        entity=entity,
         payment_terms=request.POST.get('payment',''),
         status=request.POST.get('status','Active'),
     )
@@ -289,16 +316,28 @@ def ratecard_update(request, pk):
             customer,_ = Customer.objects.get_or_create(name=customer_name)
             r.customer = customer
 
+    # handle entity_id
+    entity_id = request.POST.get('entity_id') or request.POST.get('entity')
+    if entity_id:
+        try:
+            r.entity = PurchaseOrder.objects.get(pk=int(entity_id))
+        except (ValueError, PurchaseOrder.DoesNotExist):
+            # fallback try match by excis_entity text
+            maybe = PurchaseOrder.objects.filter(excis_entity=str(entity_id)).first()
+            if maybe:
+                r.entity = maybe
+            else:
+                return HttpResponseBadRequest("invalid entity_id")
+
     r.region = request.POST.get('region', r.region)
     r.country = request.POST.get('country', r.country)
     r.supplier = request.POST.get('supplier', r.supplier)
     r.currency = request.POST.get('currency', r.currency)
-    r.entity = request.POST.get('entity', r.entity)
+    # r.entity already set via FK above
     r.payment_terms = request.POST.get('payment', r.payment_terms)
     r.status = request.POST.get('status', r.status)
     r.save()
     return JsonResponse({'success': True, 'ratecard': ratecard_to_dict(r)})
-
 
 @require_http_methods(['GET'])
 def ratecard_detail(request, pk):
