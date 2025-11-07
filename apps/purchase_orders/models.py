@@ -18,13 +18,13 @@ class PurchaseOrder(models.Model):
     ]
 
     # UUID for external reference/tracking (keep integer pk as default)
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-        db_index=True,
-        help_text='Unique identifier for API and external references'
-    )
+    # uuid = models.UUIDField(
+    #     default=uuid.uuid4,
+    #     editable=False,
+    #     unique=True,
+    #     db_index=True,
+    #     help_text='Unique identifier for API and external references'
+    # )
 
     # Core fields
     po_number = models.CharField(max_length=100, unique=True)
@@ -171,7 +171,6 @@ class PurchaseOrder(models.Model):
             models.Index(fields=['customer', 'created_at']),
             models.Index(fields=['account', 'status']),
             models.Index(fields=['po_number']),
-            models.Index(fields=['uuid']),
         ]
         verbose_name = 'Purchase Order'
         verbose_name_plural = 'Purchase Orders'

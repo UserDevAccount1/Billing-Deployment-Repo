@@ -24,9 +24,8 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
         'created_at'
     ]
     list_filter = ['status', 'currency', 'created_at', 'valid_from', 'valid_until']
-    search_fields = ['po_number', 'uuid', 'customer__name', 'account__name']
+    search_fields = ['po_number', 'customer__name', 'account__name']
     readonly_fields = [
-        'uuid', 
         'created_at', 
         'updated_at', 
         'display_utilization', 
@@ -38,7 +37,7 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('uuid', 'po_number', 'customer', 'account', 'excis_entity')
+            'fields': ( 'po_number', 'customer', 'account', 'excis_entity')
         }),
         ('Financial Details', {
             'fields': (
