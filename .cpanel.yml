@@ -1,22 +1,34 @@
 ---
 deployment:
+  # The commands run in order on deploy. Update DEPLOYPATH below
   tasks:
-    # 1. Define deployment path (update this to match your hosting account)
-    - export DEPLOYPATH=/home/jayant/public_html/
+    - export DEPLOYPATH=/home/jayant/tempo/Billing-Deployment-Repo  
+    - echo "Deploy path: $DEPLOYPATH"
+    - mkdir -p $DEPLOYPATH
+    - /bin/cp -R --preserve=mode,timestamps --no-dereference . $DEPLOYPATH
 
-    # 2. Copy all repository files (excluding .gitignored ones)
-    - /bin/cp -R * $DEPLOYPATH
+    # Ensure .env is in the deploy path (if you keep secrets outside the repo, create .env in cPanel file manager)
+    - if [ -f ".env" ]; then /bin/cp .env $DEPLOYPATH/.env; else echo ".env not in repo — ensure you create $DEPLOYPATH/.env via cPanel"; fi
 
-    # 3. Create or reuse a Python virtual environment
-    - python3 -m venv $DEPLOYPATH/venv
+    # create venv if missing
+    - if [ ! -d "$DEPLOYPATH/venv" ]; then python3 -m venv $DEPLOYPATH/venv || python -m venv $DEPLOYPATH/venv; fi
 
-    # 4. Activate venv and install dependencies
-    - source $DEPLOYPATH/venv/bin/activate && pip install --upgrade pip
-    - source $DEPLOYPATH/venv/bin/activate && pip install -r $DEPLOYPATH/requirements.txt
+    # Activate venv, upgrade pip and install wheel + requirements
+    - source $DEPLOYPATH/venv/bin/activate && python -m pip install --upgrade pip setuptools wheel
+    - source $DEPLOYPATH/venv/bin/activate && if [ -f "$DEPLOYPATH/requirements.txt" ]; then pip install -r $DEPLOYPATH/requirements.txt; else echo "No requirements.txt found in repo"; fi
 
-    # 5. Run Django management commands
-    - source $DEPLOYPATH/venv/bin/activate && python $DEPLOYPATH/manage.py collectstatic --noinput
-    - source $DEPLOYPATH/venv/bin/activate && python $DEPLOYPATH/manage.py migrate --noinput
+    # Ensure media/static/logs dirs exist and have write perms
+    - mkdir -p $DEPLOYPATH/staticfiles $DEPLOYPATH/media $DEPLOYPATH/tmp $DEPLOYPATH/logs
+    - chown -R $(whoami) $DEPLOYPATH/staticfiles $DEPLOYPATH/media $DEPLOYPATH/tmp $DEPLOYPATH/logs || true
+    - chmod -R 755 $DEPLOYPATH/staticfiles $DEPLOYPATH/media $DEPLOYPATH/tmp $DEPLOYPATH/logs || true
 
-    # 6. Restart Passenger (reloads your Django app)
-    - touch $DEPLOYPATH/tmp/restart.txt
+    # Export environment file for the process (some host setups require this; your manage.py will read os.environ)
+    - if [ -f "$DEPLOYPATH/.env" ]; then set -a && . $DEPLOYPATH/.env && set +a || true; fi
+
+    # Run Django management commands using the venv python
+    - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && python manage.py migrate --noinput
+    - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && python manage.py collectstatic --noinput
+
+
+    # Touch restart file so Passenger reloads the app (ensure tmp dir exists)
+    - mkdir -p $DEPLOYPATH/tmp && touch $DEPLOYPATH/tmp/restart.txt
