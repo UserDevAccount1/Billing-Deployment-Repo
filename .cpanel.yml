@@ -2,6 +2,7 @@
 deployment:
   # The commands run in order on deploy. Update DEPLOYPATH below
   tasks:
+    - echo "Starting deployment process..." > /home/jayant/tempo/deploy.log
     - export DEPLOYPATH=/home/jayant/tempo/current
     - echo "Deploy path: $DEPLOYPATH"
     - mkdir -p $DEPLOYPATH
