@@ -7,8 +7,8 @@ deployment:
     - LOGFILE=/home/jayant/tempo/deploy.log
     # - echo "=== DEPLOY START $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" >> $LOGFILE 2>&1
     # - echo "Running deploy as: $(whoami)" >> $LOGFILE 2>&1
-    - echo "Working repo path: $(pwd)" >> $LOGFILE 2>&1
-    - echo "Target deploy path: $DEPLOYPATH" >> $LOGFILE 2>&1
+    # - echo "Working repo path: $(pwd)" >> $LOGFILE 2>&1
+    # - echo "Target deploy path: $DEPLOYPATH" >> $LOGFILE 2>&1
 
     # Catch-all to log environment and python info (useful debug lines)
     - echo "---- PATH ----" >> $LOGFILE 2>&1
