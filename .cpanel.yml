@@ -4,7 +4,7 @@ deployment:
     # Redirect all output (stdout & stderr) to deploy.log so we can debug easily
     - mkdir -p /home/jayant/tempo
     - export DEPLOYPATH=/home/jayant/tempo/current
-    - LOGFILE=/home/jayant/tempo/deploy.log
+    - LOGFILE=$DEPLOYPATH/deploy.log
     - echo "=== DEPLOY START $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" > $LOGFILE
 
     # Catch-all to log environment and python info (useful debug lines)

@@ -18,3 +18,4 @@ python-dotenv
 pandas
 openpyxl
 requests
+gunicorn
