@@ -2,7 +2,7 @@
 deployment:
   # The commands run in order on deploy. Update DEPLOYPATH below
   tasks:
-    - export DEPLOYPATH=/home/jayant/tempo/Billing-Deployment-Repo  
+    - export DEPLOYPATH=/home/jayant/tempo/current
     - echo "Deploy path: $DEPLOYPATH"
     - mkdir -p $DEPLOYPATH
     - /bin/cp -R --preserve=mode,timestamps --no-dereference . $DEPLOYPATH
