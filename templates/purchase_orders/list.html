@@ -632,40 +632,40 @@
       <div class="po-card">
         <div class="label">Total Amount Invoiced USD</div>
         <div class="value">
-          {% if currency_filter == 'USD' %}
+          {% if converted_currency_code == "USD" %}
             $ {{ total_converted_currency_to_usd|floatformat:2|intcomma }}
           {% else %}
-            $ 0
+            $ 0.00
           {% endif %}
         </div>
-        <div class="hint">Total amount invoiced in USD</div>
+        <div class="hint">
+          {% if converted_currency_code == "USD" %}
+            Total amount invoiced in USD
+          {% else %}
+            Only displays total invoiced when USD is selected
+          {% endif %}
+        </div>
       </div>
 
       <!-- Total Amount Invoiced Non-USD -->
       <div class="po-card">
         <div class="label">Total Amount Invoiced Non-USD</div>
         <div class="value">
-          {% if total_converted_currency_to_usd and currency_filter != "USD" %}
-            {% if currency_filter == 'Non-USD' %}
-              {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
-            {% else %}
-              {{ currency_filter }} {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
-            {% endif %}
+          {% if converted_currency_code == "Non-USD" %}
+            {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
+          {% elif converted_currency_code != "USD" and converted_currency_code != "All Currencies" and converted_currency_code %}
+            {{ converted_currency_code }} {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
           {% else %}
-            $ 0
+            0.00
           {% endif %}
         </div>
         <div class="hint">
-          {% if total_converted_currency_to_non_usd and currency_filter != "USD" %}
-            {% if currency_filter == 'All' %}
-              Total amount invoiced all currencies
-            {% elif currency_filter == 'Non-USD' %}
-              Total amount invoiced in all currency except USD
-            {% else %}
-            Total amount invoiced in {{ currency_filter }} currency
-            {% endif %}
+          {% if converted_currency_code == "Non-USD" %}
+            Total amount invoiced excluding USD
+          {% elif converted_currency_code != "USD" and converted_currency_code %}
+            Total amount invoiced in {{ converted_currency_code }} currency
           {% else %}
-            Total amount invoiced all currencies
+            Total amount invoiced across all non-USD currencies
           {% endif %}
         </div>
       </div>
@@ -674,14 +674,25 @@
       <div class="po-card">
         <div class="label">Total Amount Invoiced Converted</div>
         <div class="value">
-          {% if total_converted_currency_to_usd and currency_filter != "USD" %}
-            ${{ total_converted_currency_to_usd|floatformat:2|intcomma }}
+          {% if converted_currency_code != "USD" and total_converted_currency_to_usd %}
+            $ {{ total_converted_currency_to_usd|floatformat:2|intcomma }}
           {% else %}
-            $ 0
+            $ 0.00
           {% endif %}
         </div>
-        <div class="hint">Total amount invoiced converted to USD</div>
+        <div class="hint">
+          {% if converted_currency_code == "All Currencies" %}
+            Total amount invoiced converted to USD (all currencies)
+          {% elif converted_currency_code == "Non-USD" %}
+            Total amount invoiced converted to USD (non-USD only)
+          {% elif converted_currency_code and converted_currency_code != "USD" %}
+            Total amount invoiced converted from {{ converted_currency_code }} to USD
+          {% else %}
+            Total amount invoiced converted to USD
+          {% endif %}
+        </div>
       </div>
+
       <div class="po-card">
         <div class="label">Active POs</div>
         <div class="value">{{ kpis.active_pos }}</div>
@@ -1241,7 +1252,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h6 class="fw-semibold mb-0">Exchange Rate Data</h6>
           <div>
-            <input type="file" id="importRatesInput" accept=".csv"
+            <input type="file" id="importRatesInput" accept=".csv, .xlsx"
                    style="display:none" onchange="handleExchangeRateUpload(event)">
             <button class="btn btn-sm btn-primary" onclick="document.getElementById('importRatesInput').click()">
               <i class="bi bi-upload me-2"></i> Import Rates
@@ -2745,15 +2756,17 @@ async function handleExchangeRateUpload(event) {
 
   try {
     const formData = new FormData();
-    formData.append('csv_file', file);
+    formData.append('exchange_rates', file);
 
-    const response = await fetch('{% url "exchange_rates:upload_csv" %}', {
+    const response = await fetch('{% url "exchange_rates:upload_exchange_rates" %}', {
       method: 'POST',
       headers: { 'X-CSRFToken': csrftoken },
       body: formData
     });
 
     const result = await response.json();
+
+    console.log('result', result)
 
     if (result.success) {
       statusDiv.innerHTML = `
@@ -2863,24 +2876,7 @@ function btnCalculateCurrency(type) {
     body: JSON.stringify(payload)
   })
   .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      const params = new URLSearchParams();
-      // Display All Currency
-      if (selectValue === 'all')  params.set('currency', 'All');
-
-      // Display Specific Currency
-      if (type === 'single_currency') params.set('currency', payload.rates[0].currency_code);
-
-       // Display Only USD
-      if (selectValue === 'usd') params.set('currency', 'USD');
-
-       // Display Non-USD Only
-      if (selectValue === 'other') params.set('currency', 'Non-USD');
-
-      window.location.href = '?' + params.toString();
-    }
-  })
+  .then(data => data.success && window.location.reload())
   .catch(error => console.error('Error:', error));
 }
 

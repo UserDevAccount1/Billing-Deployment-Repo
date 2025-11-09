@@ -59,37 +59,17 @@ def purchase_order_list(request):
     pos = pos.order_by(order_field)
     all_pos = PurchaseOrder.objects.all()
 
-    # Currency Exchange Filter
-    total_converted_currency_to_usd = request.session.get('total_converted_currency', None)
-    total_converted_currency_to_non_usd = 0
-
     # Apply filters
     if status_filter:
         pos = pos.filter(status=status_filter)
-
     if customer_filter:
         pos = pos.filter(customer_id=customer_filter)
-
-    if currency_filter and currency_filter != "all":
-        if currency_filter == "USD":
-            pos = pos.filter(currency="USD")
-
-        elif currency_filter == "Non-USD":
-            pos = pos.exclude(currency="USD")
-            if 'total_converted_currency' in request.session:
-                total_converted_currency_to_non_usd = (all_pos.exclude(currency="USD").aggregate(total=Sum('total_amount'))['total'] or 0)
-
-        else:
-            pos = pos.filter(currency=currency_filter)
-            if 'total_converted_currency' in request.session:
-                total_converted_currency_to_non_usd = (all_pos.filter(currency=currency_filter).aggregate(total=Sum('total_amount'))['total'] or 0)
-
+    if currency_filter:
+        pos = pos.filter(currency=currency_filter)
     if project_filter:
         pos = pos.filter(project=project_filter)
-
     if search_query:
         pos = pos.filter(Q(po_number__icontains=search_query))
-
 
     # KPIs
     today = date.today()
@@ -119,10 +99,6 @@ def purchase_order_list(request):
     currencies = PurchaseOrder.objects.values_list('currency', flat=True).distinct().order_by('currency')
     projects = PurchaseOrder.objects.exclude(project__isnull=True).exclude(project='').values_list('project', flat=True).distinct().order_by('project')  # NEW: Get unique projects
 
-
-
-    request.session.pop("total_converted_currency", None)
-
     context = {
         'purchase_orders': pos,
         'kpis': kpis,
@@ -141,8 +117,9 @@ def purchase_order_list(request):
         'order': order,  # NEW: Add order parameter,
 
         # Converted currency
-        'total_converted_currency_to_usd': total_converted_currency_to_usd,
-        'total_converted_currency_to_non_usd': total_converted_currency_to_non_usd,
+        'converted_currency_code': request.session.get("converted_currency_code"),
+        'total_converted_currency_to_usd': request.session.get("total_converted_currency_to_usd", 0),
+        'total_converted_currency_to_non_usd': request.session.get("total_converted_currency_to_non_usd", 0),
     }
     return render(request, 'purchase_orders/list.html', context)
 
@@ -1033,41 +1010,57 @@ def currency_exchange(request):
         exchange_type = data.get("type")  # all, usd, other, single
 
         pos = PurchaseOrder.objects.all()
-        total_converted = 0
+        total_converted_to_usd = 0
+        total_converted_to_non_usd = 0
+        converted_currency_code = ""
 
         if exchange_type == "usd":
-            pos_filtered = pos.filter(currency="USD")
-            total_converted = pos_filtered.aggregate(total=Sum("total_amount"))["total"] or 0
+            # ✅ Show total in USD only
+            pos_usd = pos.filter(currency="USD")
+            total_converted_to_usd = pos_usd.aggregate(total=Sum("total_amount"))["total"] or 0
+            converted_currency_code = "USD"
 
         else:
-            # Applies to "all", "other", "single"
             for rate in rates:
                 currency_code = rate.get("currency_code")
                 exchange_rate = float(rate.get("usd_per_unit", 0))
 
-                queryset = pos
                 if exchange_type == "single":
-                    queryset = queryset.filter(currency=currency_code)
+                    queryset = pos.filter(currency=currency_code)
+                    converted_currency_code = currency_code
                 elif exchange_type == "other":
-                    queryset = queryset.exclude(currency="USD")
+                    queryset = pos.exclude(currency="USD")
+                    converted_currency_code = "Non-USD"
                 elif exchange_type == "all":
-                    queryset = queryset.filter(currency=currency_code)
+                    queryset = pos.filter(currency=currency_code)
+                    converted_currency_code = "All Currencies"
+                else:
+                    queryset = pos
 
+                # total amount in original currency
+                total_non_usd = queryset.aggregate(total=Sum("total_amount"))["total"] or 0
+                total_converted_to_non_usd += total_non_usd
+
+                # total converted to USD equivalent
                 pos_converted = queryset.annotate(
                     usd_equivalent=Cast(F("total_amount"), FloatField()) * exchange_rate
                 )
-                total_converted += pos_converted.aggregate(total=Sum("usd_equivalent"))["total"] or 0
+                total_converted_to_usd += pos_converted.aggregate(total=Sum("usd_equivalent"))["total"] or 0
 
-        # ✅ Safe for session
-        request.session["total_converted_currency"] = float(total_converted)
+        # ✅ Save both values to session
+        request.session["total_converted_currency_to_usd"] = float(total_converted_to_usd or 0)
+        request.session["total_converted_currency_to_non_usd"] = float(total_converted_to_non_usd or 0)
+        request.session["converted_currency_code"] = converted_currency_code
 
-        return JsonResponse({"success": True})
+        return JsonResponse({
+            "success": True,
+            "converted_currency_code": converted_currency_code,
+            "total_converted_currency_to_usd": total_converted_to_usd,
+            "total_converted_currency_to_non_usd": total_converted_to_non_usd,
+        })
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
-
-
-
 
 
 def handle_filtered_export(customer, project, range):

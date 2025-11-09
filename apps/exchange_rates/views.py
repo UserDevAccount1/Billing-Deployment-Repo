@@ -2,6 +2,7 @@
 import json
 import csv
 import io
+import pandas as pd
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
@@ -29,57 +30,67 @@ def exchange_rate_list(request):
 @csrf_exempt
 @login_required
 @require_http_methods(["POST"])
-def upload_exchange_rate_csv(request):
-    """Upload and parse exchange rate CSV."""
-    csv_file = request.FILES.get("csv_file")
+def upload_exchange_rates(request):
+    """Upload and parse exchange rate CSV or Excel file."""
+    uploaded_file = request.FILES.get("exchange_rates")
 
-    if not csv_file or not csv_file.name.endswith(".csv"):
-        return JsonResponse({"success": False, "error": "Please upload a valid CSV file."})
+    if not uploaded_file:
+        return JsonResponse({"success": False, "error": "No file uploaded."})
+
+    # ✅ Determine file type
+    file_name = uploaded_file.name.lower()
+    if not (file_name.endswith(".csv") or file_name.endswith(".xlsx")):
+        return JsonResponse({
+            "success": False,
+            "error": "Invalid file type. Only CSV or Excel (.xlsx) allowed."
+        })
 
     try:
-        try:
-            decoded = csv_file.read().decode("utf-8")
-        except UnicodeDecodeError:
-            csv_file.seek(0)
-            decoded = csv_file.read().decode("latin-1")
+        # ✅ Read file into a dataframe
+        if file_name.endswith(".csv"):
+            try:
+                decoded = uploaded_file.read().decode("utf-8")
+            except UnicodeDecodeError:
+                uploaded_file.seek(0)
+                decoded = uploaded_file.read().decode("latin-1")
 
-        io_string = io.StringIO(decoded)
-        reader = csv.reader(io_string)
+            df = pd.read_csv(io.StringIO(decoded), skiprows=1)  # skip first header
+        else:
+            df = pd.read_excel(uploaded_file, skiprows=1, engine='openpyxl')
 
-        # Skip headers (adjust if needed)
-        next(reader, None)
-        next(reader, None)
+        # ✅ Clean and validate columns
+        required_cols = ["Currency", "USD per Unit"]
+        if not all(col in df.columns for col in required_cols):
+            return JsonResponse({
+                "success": False,
+                "error": "Invalid file format. Columns must include 'Currency' and 'USD per Unit'."
+            })
 
-        created, updated = 0, 0
-        data_list = []
+        # ✅ Clear all existing records
+        ExchangeRate.objects.all().delete()
 
-        for row in reader:
-            if len(row) < 2:
+        # ✅ Parse and save
+        new_records = []
+        for _, row in df.iterrows():
+            currency_info = str(row["Currency"]).strip()
+            usd_value = str(row["USD per Unit"]).strip()
+
+            if not currency_info or not usd_value:
                 continue
-
-            currency_info = row[0].strip()
-            usd_value = row[1].strip()
 
             try:
                 code, name = currency_info.split(" ", 1)
             except ValueError:
                 code, name = currency_info, ""
 
-            obj, created_flag = ExchangeRate.objects.update_or_create(
+            obj = ExchangeRate.objects.create(
                 currency_code=code,
-                defaults={
-                    "currency_name": name,
-                    "usd_per_unit": usd_value,
-                    "uploaded_by": request.user,
-                }
+                currency_name=name,
+                usd_per_unit=usd_value,
+                uploaded_by=request.user,
             )
 
-            if created_flag:
-                created += 1
-            else:
-                updated += 1
-
-            data_list.append({
+            new_records.append({
                 "currency_code": code,
                 "currency_name": name,
                 "usd_per_unit": usd_value,
@@ -88,14 +99,13 @@ def upload_exchange_rate_csv(request):
 
         return JsonResponse({
             "success": True,
-            "message": f"✅ Uploaded successfully. {created} new, {updated} updated.",
+            "message": f"✅ {len(new_records)} exchange rates uploaded successfully.",
             "last_updated": timezone.now().strftime("%Y-%m-%d"),
-            "data": data_list
+            "data": new_records
         })
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
 
 @csrf_exempt
 def exchange_rate_api(request):
