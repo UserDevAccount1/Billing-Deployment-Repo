@@ -5,7 +5,7 @@ deployment:
     - mkdir -p /home/jayant/tempo
     - export DEPLOYPATH=/home/jayant/tempo/current
     - LOGFILE=/home/jayant/tempo/deploy.log
-    # - echo "=== DEPLOY START $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" >> $LOGFILE 2>&1
+    - echo "=== DEPLOY START $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" >> $LOGFILE
     # - echo "Running deploy as: $(whoami)" >> $LOGFILE 2>&1
     # - echo "Working repo path: $(pwd)" >> $LOGFILE 2>&1
     # - echo "Target deploy path: $DEPLOYPATH" >> $LOGFILE 2>&1
