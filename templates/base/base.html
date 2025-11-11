@@ -434,9 +434,9 @@
 
                             <li class="nav-item">
                                 <div class="dropdown header-profile2">
-                                    <a id="profileDropdown" 
-                                    class="nav-link ms-0" 
-                                    href="javascript:void(0);" 
+                                    <a id="profileDropdown"
+                                    class="nav-link ms-0"
+                                    href="javascript:void(0);"
                                     role="button">
                                     <div class="header-info2 d-flex align-items-center">
                                         <div class="d-flex align-items-center sidebar-info"></div>
@@ -606,6 +606,13 @@
                     </li>
 
                     <li>
+                        <a class="has-arrow {% if request.resolver_match.url_name == 'user_management' %}mm-active{% endif %}" aria-expanded="false" href="{% url 'accounts:user_management' %}">
+                            <i class="material-symbols-outlined">manage_accounts</i>
+                            <span class="nav-text">User Management</span>
+                        </a>
+                    </li>
+
+                    <li>
                         <a class="has-arrow {% if 'customers' in request.resolver_match.app_name %}mm-active{% endif %}"
                             aria-expanded="false" href="{% url 'customers:list' %}">
                             <i class="material-symbols-outlined">people</i>
@@ -693,12 +700,12 @@
     <script src="{% static 'js/styleSwitcher.js' %}"></script>
     {% load static %}
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js" 
-        integrity="sha256-/JqT3SQfawR/h/1FhFA79//1w5w6wLw6t+wJm1jM/lHw=" 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawR/h/1FhFA79//1w5w6wLw6t+wJm1jM/lHw="
         crossorigin="anonymous"></script>
 
 <script>
-    
+
     function toggleMenuIconsJQuery(menuButtonSelector, openIconSelector, closedIconSelector) {
         $(document).ready(function() {
             const $button = $(menuButtonSelector);
@@ -706,7 +713,7 @@
             const $closedIcon = $(closedIconSelector);
 
             $openIcon.hide();
-            $closedIcon.show(); 
+            $closedIcon.show();
 
             $button.on('click', function() {
                 $openIcon.toggle();
