@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum, F, FloatField
+from django.db.models import Q, Sum, F, FloatField, ExpressionWrapper, DecimalField
 from django.db.models.functions import Cast
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.views.decorators.http import require_http_methods, require_POST
@@ -57,7 +57,6 @@ def purchase_order_list(request):
         order_field = db_field
 
     pos = pos.order_by(order_field)
-    all_pos = PurchaseOrder.objects.all()
 
     # Apply filters
     if status_filter:
@@ -73,11 +72,24 @@ def purchase_order_list(request):
 
     # KPIs
     today = date.today()
+    all_pos = PurchaseOrder.objects.all()
+    filtered_pos = all_pos.filter(status__in=['active', 'expiring_soon'])
+
+    # Calculate remaining balance per PO
+    remaining_expr = ExpressionWrapper(
+        F('total_amount') - F('spent_amount'),
+        output_field=DecimalField(max_digits=15, decimal_places=2)
+    )
+
     kpis = {
-        'total_amount': all_pos.aggregate(total=Sum('total_amount'))['total'] or 0,
+        # Total Remaining Balance (only active/expiring POs)
+        'total_amount': filtered_pos.aggregate(total=Sum(remaining_expr))['total'] or 0,
+
+        # Total Value (sum of all PO total_amounts for active/expiring)
+        'total_value': filtered_pos.aggregate(total=Sum('total_amount'))['total'] or 0,
+
+        # Other KPIs
         'active_pos': all_pos.filter(status='active').count(),
-        'total_value': all_pos.filter(status__in=['active', 'expiring_soon']).aggregate(
-            total=Sum('total_amount'))['total'] or 0,
         'low_balance_pos': all_pos.filter(status='low_balance').count(),
         'expiring_soon': all_pos.filter(status='expiring_soon').count(),
     }
@@ -1007,23 +1019,43 @@ def currency_exchange(request):
     try:
         data = json.loads(request.body)
         rates = data.get("rates", [])
-        exchange_type = data.get("type")  # all, usd, other, single
+        exchange_type = data.get("type")  # "all", "usd", "other", "single"
 
         pos = PurchaseOrder.objects.all()
-        total_converted_to_usd = 0
-        total_converted_to_non_usd = 0
+        total_value_usd = 0
+        total_remaining_usd = 0
         converted_currency_code = ""
 
+        # ✅ USD only
         if exchange_type == "usd":
-            # ✅ Show total in USD only
-            pos_usd = pos.filter(currency="USD")
-            total_converted_to_usd = pos_usd.aggregate(total=Sum("total_amount"))["total"] or 0
             converted_currency_code = "USD"
+            queryset = pos.filter(currency="USD")
 
+            # Check if you actually have USD POs
+            if not queryset.exists():
+                return JsonResponse({
+                    "success": True,
+                    "message": "No USD Purchase Orders found",
+                    "converted_currency_code": converted_currency_code,
+                    "total_converted_currency_to_usd": 0,
+                })
+
+            queryset_converted = queryset.annotate(
+                total_usd=Cast(F("total_amount"), FloatField()),
+                remaining_usd=(Cast(F("total_amount"), FloatField()) - Cast(F("spent_amount"), FloatField())),
+            )
+
+            total_value_usd = queryset_converted.aggregate(total=Sum("total_usd"))["total"] or 0
+            total_remaining_usd = queryset_converted.aggregate(total=Sum("remaining_usd"))["total"] or 0
+
+        # ✅ All / Other / Single
         else:
             for rate in rates:
                 currency_code = rate.get("currency_code")
-                exchange_rate = float(rate.get("usd_per_unit", 0))
+                exchange_rate = float(rate.get("usd_per_unit", 0) or 0)
+
+                if not exchange_rate:
+                    continue
 
                 if exchange_type == "single":
                     queryset = pos.filter(currency=currency_code)
@@ -1037,26 +1069,30 @@ def currency_exchange(request):
                 else:
                     queryset = pos
 
-                # total amount in original currency
-                total_non_usd = queryset.aggregate(total=Sum("total_amount"))["total"] or 0
-                total_converted_to_non_usd += total_non_usd
+                if not queryset.exists():
+                    continue
 
-                # total converted to USD equivalent
-                pos_converted = queryset.annotate(
-                    usd_equivalent=Cast(F("total_amount"), FloatField()) * exchange_rate
+                queryset_converted = queryset.annotate(
+                    total_usd=Cast(F("total_amount"), FloatField()) * exchange_rate,
+                    remaining_usd=(Cast(F("total_amount"), FloatField()) - Cast(F("spent_amount"), FloatField())) * exchange_rate,
                 )
-                total_converted_to_usd += pos_converted.aggregate(total=Sum("usd_equivalent"))["total"] or 0
 
-        # ✅ Save both values to session
-        request.session["total_converted_currency_to_usd"] = float(total_converted_to_usd or 0)
-        request.session["total_converted_currency_to_non_usd"] = float(total_converted_to_non_usd or 0)
+                total_value_usd += queryset_converted.aggregate(total=Sum("total_usd"))["total"] or 0
+                total_remaining_usd += queryset_converted.aggregate(total=Sum("remaining_usd"))["total"] or 0
+
+        # ✅ Calculate total invoiced
+        total_invoiced_usd = total_value_usd - total_remaining_usd
+
+        # ✅ Save session values
+        request.session["total_converted_currency_to_usd"] = float(total_invoiced_usd or 0)
         request.session["converted_currency_code"] = converted_currency_code
 
         return JsonResponse({
             "success": True,
             "converted_currency_code": converted_currency_code,
-            "total_converted_currency_to_usd": total_converted_to_usd,
-            "total_converted_currency_to_non_usd": total_converted_to_non_usd,
+            "total_converted_currency_to_usd": total_invoiced_usd,
+            "total_value_usd": total_value_usd,
+            "total_remaining_usd": total_remaining_usd,
         })
 
     except Exception as e:
