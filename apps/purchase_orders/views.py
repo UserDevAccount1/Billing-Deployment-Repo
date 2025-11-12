@@ -129,6 +129,7 @@ def purchase_order_list(request):
         'order': order,  # NEW: Add order parameter,
 
         # Converted currency
+        'total_usd_only': request.session.get("total_usd_only", 0),
         'converted_currency_code': request.session.get("converted_currency_code"),
         'total_converted_currency_to_usd': request.session.get("total_converted_currency_to_usd", 0),
         'total_converted_currency_to_non_usd': request.session.get("total_converted_currency_to_non_usd", 0),
@@ -1024,6 +1025,9 @@ def currency_exchange(request):
         pos = PurchaseOrder.objects.all()
         total_value_usd = 0
         total_remaining_usd = 0
+        total_converted_to_non_usd = 0
+        total_value_usd_only = 0
+        total_remaining_usd_only = 0
         converted_currency_code = ""
 
         # ✅ USD only
@@ -1031,7 +1035,6 @@ def currency_exchange(request):
             converted_currency_code = "USD"
             queryset = pos.filter(currency="USD")
 
-            # Check if you actually have USD POs
             if not queryset.exists():
                 return JsonResponse({
                     "success": True,
@@ -1045,16 +1048,40 @@ def currency_exchange(request):
                 remaining_usd=(Cast(F("total_amount"), FloatField()) - Cast(F("spent_amount"), FloatField())),
             )
 
-            total_value_usd = queryset_converted.aggregate(total=Sum("total_usd"))["total"] or 0
-            total_remaining_usd = queryset_converted.aggregate(total=Sum("remaining_usd"))["total"] or 0
+            total_value_usd_only = queryset_converted.aggregate(total=Sum("total_usd"))["total"] or 0
+            total_remaining_usd_only = queryset_converted.aggregate(total=Sum("remaining_usd"))["total"] or 0
+            total_invoiced_usd = total_value_usd_only - total_remaining_usd_only
+
+            # ✅ Save to session
+            request.session["total_usd_only"] = float(total_value_usd_only or 0)
+            request.session["total_converted_currency_to_usd"] = float(total_invoiced_usd or 0)
+            request.session["total_converted_currency_to_non_usd"] = 0
+            request.session["converted_currency_code"] = converted_currency_code
+
+            return JsonResponse({
+                "success": True,
+                "converted_currency_code": converted_currency_code,
+                "total_converted_currency_to_usd": total_invoiced_usd,
+                "total_value_usd": total_value_usd_only,
+                "total_remaining_usd": total_remaining_usd_only,
+            })
 
         # ✅ All / Other / Single
         else:
+            # Include USD first
+            usd_queryset = pos.filter(currency="USD")
+            if usd_queryset.exists():
+                usd_agg = usd_queryset.annotate(
+                    total_usd=Cast(F("total_amount"), FloatField()),
+                    remaining_usd=(Cast(F("total_amount"), FloatField()) - Cast(F("spent_amount"), FloatField())),
+                )
+                total_value_usd_only = usd_agg.aggregate(total=Sum("total_usd"))["total"] or 0
+                total_remaining_usd_only = usd_agg.aggregate(total=Sum("remaining_usd"))["total"] or 0
+
             for rate in rates:
                 currency_code = rate.get("currency_code")
                 exchange_rate = float(rate.get("usd_per_unit", 0) or 0)
-
-                if not exchange_rate:
+                if not exchange_rate or currency_code == "USD":
                     continue
 
                 if exchange_type == "single":
@@ -1072,6 +1099,9 @@ def currency_exchange(request):
                 if not queryset.exists():
                     continue
 
+                total_non_usd = queryset.aggregate(total=Sum("total_amount"))["total"] or 0
+                total_converted_to_non_usd += total_non_usd
+
                 queryset_converted = queryset.annotate(
                     total_usd=Cast(F("total_amount"), FloatField()) * exchange_rate,
                     remaining_usd=(Cast(F("total_amount"), FloatField()) - Cast(F("spent_amount"), FloatField())) * exchange_rate,
@@ -1080,20 +1110,26 @@ def currency_exchange(request):
                 total_value_usd += queryset_converted.aggregate(total=Sum("total_usd"))["total"] or 0
                 total_remaining_usd += queryset_converted.aggregate(total=Sum("remaining_usd"))["total"] or 0
 
-        # ✅ Calculate total invoiced
-        total_invoiced_usd = total_value_usd - total_remaining_usd
+            # add USD to converted totals when ALL is selected
+            if exchange_type == "all":
+                total_value_usd += total_value_usd_only
+                total_remaining_usd += total_remaining_usd_only
 
-        # ✅ Save session values
-        request.session["total_converted_currency_to_usd"] = float(total_invoiced_usd or 0)
-        request.session["converted_currency_code"] = converted_currency_code
+            total_invoiced_usd = total_value_usd - total_remaining_usd
 
-        return JsonResponse({
-            "success": True,
-            "converted_currency_code": converted_currency_code,
-            "total_converted_currency_to_usd": total_invoiced_usd,
-            "total_value_usd": total_value_usd,
-            "total_remaining_usd": total_remaining_usd,
-        })
+            # ✅ Save to session
+            request.session["total_converted_currency_to_usd"] = float(total_invoiced_usd or 0)
+            request.session["total_converted_currency_to_non_usd"] = float(total_converted_to_non_usd or 0)
+            request.session["total_usd_only"] = float(total_value_usd_only or 0)
+            request.session["converted_currency_code"] = converted_currency_code
+
+            return JsonResponse({
+                "success": True,
+                "converted_currency_code": converted_currency_code,
+                "total_converted_currency_to_usd": total_invoiced_usd,
+                "total_converted_currency_to_non_usd": total_converted_to_non_usd,
+                "total_usd_only": total_value_usd_only,
+            })
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
