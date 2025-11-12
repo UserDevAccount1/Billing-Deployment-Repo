@@ -156,6 +156,8 @@
                                 {% block page_title %}Dashboard{% endblock %} </div>
                         </div>
                         <ul class="navbar-nav header-right d-none d-lg-flex">
+
+                            <!-- ??? -->
                             <li class="nav-item dropdown notification_dropdown all">
                                 <a class="nav-link" href="javascript:void(0);" role="button" data-bs-toggle="dropdown">
                                     <svg height="24" class="svg-main-icon" viewBox="0 0 32 32" width="24"
@@ -248,6 +250,8 @@
 
                                 </div>
                             </li>
+
+                            <!-- Search -->
                             <li class="nav-item dropdown notification_dropdown search-area-header">
                                 <a class="nav-link" href="javascript:void(0);" role="button" data-bs-toggle="dropdown">
                                     <svg width="24" height="24" viewBox="0 0 32 32" fill="none"
@@ -353,6 +357,8 @@
                                     </div>
                                 </div>
                             </li>
+
+                            <!-- Applications -->
                             <li class="nav-item dropdown notification_dropdown">
                                 <a class="nav-link  menu-wallet" href="javascript:void(0);">
                                     <svg id="Layer_2" enable-background="new 0 0 512 512" height="18"
@@ -370,6 +376,8 @@
                                     </svg>
                                 </a>
                             </li>
+
+                            <!-- Toggle Theme -->
                             <li class="nav-item dropdown notification_dropdown">
                                 <a class="nav-link bell dz-theme-mode" href="javascript:void(0);">
                                     <i id="icon-light-1"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -392,6 +400,8 @@
                                         </svg></i>
                                 </a>
                             </li>
+
+                            <!-- FullScreen -->
                             <li class="nav-item dropdown notification_dropdown">
                                 <a class="nav-link bell dz-fullscreen" href="javascript:void(0);">
                                     <svg id="icon-full-1" viewBox="0 0 24 24" width="20" height="20"
@@ -411,6 +421,7 @@
                                 </a>
                             </li>
 
+                            <!-- Chatbot -->
                             <li class="nav-item dropdown notification_dropdown">
                                 <a class="nav-link bell-link" href="javascript:void(0);">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
@@ -421,8 +432,10 @@
                                 </a>
                             </li>
 
+                            <!-- Settings -->
+                            {% if user.is_superuser or user.profile.role.name == 'system_admin' %}
                             <li class="nav-item dropdown notification_dropdown">
-                                <a class="nav-link me-0 " href="javascript:void(0);" data-bs-toggle="dropdown">
+                                <a class="nav-link me-0" href="javascript:void(0);" role="button" data-bs-toggle="dropdown">
                                     <svg width="20" class="setting-svg" height="20" viewBox="0 0 32 32" fill="none"
                                         xmlns="http://www.w3.org/2000/svg">
                                         <path
@@ -430,9 +443,23 @@
                                             fill="#A098AE" />
                                     </svg>
                                 </a>
+                                <ul class="dropdown-menu dropdown-menu-end p-0">
+                                    <div class="card mb-0">
+                                        <!-- User Management -->
+                                        <div class="card-body p-3">
+                                            <!-- User Management -->
+                                            <a class="ai-icon align-items-center d-flex dropdown-item" href="{% url 'accounts:user_management' %}">
+                                                <i class="material-symbols-outlined">manage_accounts</i>
+                                                <span class="ms-2">User Management</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </ul>
                             </li>
+                            {% endif %}
 
-                            <li class="nav-item">
+                            <!-- Profile -->
+                            <li class="nav-item notification_dropdown">
                                 <div class="dropdown header-profile2">
                                     <a id="profileDropdown"
                                     class="nav-link ms-0"
@@ -446,6 +473,7 @@
 
                                     <div id="profileMenu" class="dropdown-menu dropdown-menu-end pb-0">
                                         <div class="card mb-0">
+                                            <!-- User info and picture -->
                                             <div class="card-header p-3">
                                                 <ul class="d-flex align-items-center">
                                                     <li>
@@ -458,7 +486,10 @@
                                                 </ul>
 
                                             </div>
+
+                                            <!-- Profile, Message, Notification, Settings -->
                                             <div class="card-body p-3">
+                                                <!-- Profile -->
                                                 <a href="./app_profile" class="dropdown-item ai-icon ">
                                                     <svg xmlns="http://www.w3.org/2000/svg"
                                                         xmlns:xlink="http://www.w3.org/1999/xlink" width="24px"
@@ -477,7 +508,9 @@
                                                     </svg>
                                                     <span class="ms-2">Profile </span>
                                                 </a>
-                                                <a href="./chat" class="dropdown-item ai-icon ">
+
+                                                <!-- Message -->
+                                                <!-- <a href="./chat" class="dropdown-item ai-icon ">
                                                     <svg xmlns="http://www.w3.org/2000/svg"
                                                         xmlns:xlink="http://www.w3.org/1999/xlink" width="24px"
                                                         height="24px" viewBox="0 0 24 24" version="1.1"
@@ -491,8 +524,10 @@
                                                         </g>
                                                     </svg>
                                                     <span class="ms-2">Message </span>
-                                                </a>
-                                                <a href="./email_inbox" class="dropdown-item ai-icon ">
+                                                </a> -->
+
+                                                <!-- Notification -->
+                                                <!-- <a href="./email_inbox" class="dropdown-item ai-icon ">
                                                     <svg xmlns="http://www.w3.org/2000/svg"
                                                         xmlns:xlink="http://www.w3.org/1999/xlink" width="24px"
                                                         height="24px" viewBox="0 0 24 24" version="1.1"
@@ -508,8 +543,10 @@
                                                         </g>
                                                     </svg>
                                                     <span class="ms-2">Notification </span>
-                                                </a>
-                                                <a href="javascript:void(0);" class="dropdown-item ai-icon ">
+                                                </a> -->
+
+                                                <!-- Settings -->
+                                                <!-- <a href="javascript:void(0);" class="dropdown-item ai-icon ">
                                                     <svg xmlns="http://www.w3.org/2000/svg"
                                                         xmlns:xlink="http://www.w3.org/1999/xlink" width="24px"
                                                         height="24px" viewBox="0 0 24 24" version="1.1"
@@ -526,9 +563,10 @@
                                                         </g>
                                                     </svg>
                                                     <span class="ms-2">Settings </span>
-                                                </a>
-
+                                                </a> -->
                                             </div>
+
+                                            <!-- Logout -->
                                             <div class="card-footer text-center p-3">
                                                 <a href="{% url 'accounts:logout' %}"
                                                     class="dropdown-item ai-icon btn btn-primary light">
@@ -602,13 +640,6 @@
                             href="{% url 'dashboard:home' %}" aria-expanded="false">
                             <i class="material-symbols-outlined">dashboard</i>
                             <span class="nav-text">Dashboard</span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a class="has-arrow {% if request.resolver_match.url_name == 'user_management' %}mm-active{% endif %}" aria-expanded="false" href="{% url 'accounts:user_management' %}">
-                            <i class="material-symbols-outlined">manage_accounts</i>
-                            <span class="nav-text">User Management</span>
                         </a>
                     </li>
 
