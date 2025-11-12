@@ -634,17 +634,19 @@
       <div class="po-card">
         <div class="label">Total Amount Invoiced USD</div>
         <div class="value">
-          {% if converted_currency_code == "USD" %}
-            $ {{ total_converted_currency_to_usd|floatformat:2|intcomma }}
+          {% if converted_currency_code == "USD" or converted_currency_code == "All Currencies" %}
+            $ {{ total_usd_only|floatformat:2|intcomma }}
           {% else %}
             $ 0.00
           {% endif %}
         </div>
         <div class="hint">
-          {% if converted_currency_code == "USD" %}
+          {% if converted_currency_code == "All Currencies" %}
+            Total amount invoiced in USD (included in all currencies)
+          {% elif converted_currency_code == "USD" %}
             Total amount invoiced in USD
           {% else %}
-            Only displays total invoiced when USD is selected
+            Only displays total invoiced when USD or All is selected
           {% endif %}
         </div>
       </div>
@@ -653,7 +655,7 @@
       <div class="po-card">
         <div class="label">Total Amount Invoiced Non-USD</div>
         <div class="value">
-          {% if converted_currency_code == "Non-USD" %}
+          {% if converted_currency_code == "Non-USD" or converted_currency_code == "All Currencies" %}
             {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
           {% elif converted_currency_code != "USD" and converted_currency_code != "All Currencies" and converted_currency_code %}
             {{ converted_currency_code }} {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
@@ -662,9 +664,9 @@
           {% endif %}
         </div>
         <div class="hint">
-          {% if converted_currency_code == "Non-USD" %}
-            Total amount invoiced excluding USD
-          {% elif converted_currency_code != "USD" and converted_currency_code %}
+          {% if converted_currency_code == "All Currencies" %}
+            Total amount invoiced in all non-USD currencies
+          {% elif converted_currency_code and converted_currency_code != "USD" %}
             Total amount invoiced in {{ converted_currency_code }} currency
           {% else %}
             Total amount invoiced across all non-USD currencies
@@ -690,7 +692,7 @@
           {% elif converted_currency_code and converted_currency_code != "USD" %}
             Total amount invoiced converted from {{ converted_currency_code }} to USD
           {% else %}
-            Total amount invoiced converted to USD
+            Only displays converted total for non-USD selections
           {% endif %}
         </div>
       </div>
