@@ -587,9 +587,7 @@
 {% block content %}
 <section id="po-app">
   <div class="po-wrap">
-
     <!-- Header -->
-     <!-- Convert Currency, Exports, Imports -->
     <div class="po-header">
       <!-- <h2 class="po-title">Purchase Orders</h2> -->
       <!-- <button type="button" class="po-btn" data-bs-toggle="modal" data-bs-target="#po-convert-currency">
@@ -626,7 +624,7 @@
       </div>
       <div class="po-card">
         <div class="label">Total Value</div>
-        <div class="value">${{ kpis.total_value|floatformat:0|intcomma|default:"0" }}</div>
+        <div class="value">{{ kpis.total_value|floatformat:0|intcomma|default:"0" }}</div>
         <div class="hint">Combined PO value</div>
       </div>
 
@@ -2870,15 +2868,7 @@ function btnCalculateCurrency(type) {
         currency_name: item.currency_name,
         usd_per_unit: item.usd_per_unit
       }));
-  } else {
-    payload.rates = exchangeRateData.filter(item => item.currency_code === "USD").map(item => ({
-        currency_code: item.currency_code,
-        currency_name: item.currency_name,
-        usd_per_unit: item.usd_per_unit
-      }));
   }
-
-  console.log("rates", payload)
 
   fetch('{% url "purchase_orders:currency_exchange" %}', {
     method: 'POST',
