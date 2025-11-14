@@ -50,7 +50,7 @@ def customer_list(request):
 @require_http_methods(['GET'])
 def purchase_orders_list(request):
     qs = PurchaseOrder.objects.all().order_by('-id')
-    data = [{'id': p.id, 'excis_entity': p.excis_entity} for p in qs]
+    data = [{'id': p.id, 'excis_entity': f"{p.excis_entity}({str(p)})"} for p in qs if p.excis_entity]
     return JsonResponse({'results': data})
 
 # list service-like entries for a ratecard (GET)
