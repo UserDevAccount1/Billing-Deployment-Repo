@@ -647,6 +647,13 @@
                         </a>
                     </li>
 
+                    <li >
+                        <a class="has-arrow mm-active" href="{% url 'accounts:user_management' %}" aria-expanded="false">
+                            <i class="material-symbols-outlined">manage_accounts</i>
+                            <span class="nav-text">Manage Users</span>
+                        </a>
+                    </li>
+
                     <li>
                         <a class="has-arrow {% if 'customers' in request.resolver_match.app_name %}mm-active{% endif %}"
                             aria-expanded="false" href="{% url 'customers:list' %}">
