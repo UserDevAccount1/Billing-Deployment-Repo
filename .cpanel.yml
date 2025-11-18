@@ -1,12 +1,13 @@
 ---
 deployment:
   tasks:
+    # Redirect all output (stdout & stderr) to deploy.log so we can debug easily
     - mkdir -p /home/jayant/tempo
     - export DEPLOYPATH=/home/jayant/tempo/current
     - LOGFILE=$DEPLOYPATH/deploy.log
     - echo "=== DEPLOY START $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" > $LOGFILE
 
-    # Environment / python info
+    # Catch-all to log environment and python info (useful debug lines)
     - echo "---- PATH ----" >> $LOGFILE 2>&1
     - echo "$PATH" >> $LOGFILE 2>&1
     - echo "---- python versions ----" >> $LOGFILE 2>&1
@@ -46,20 +47,9 @@ deployment:
     - echo "Running collectstatic" >> $LOGFILE 2>&1
     - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && python manage.py collectstatic --noinput >> $LOGFILE 2>&1 || echo "collectstatic failed with exit $? (see above)" >> $LOGFILE 2>&1
 
-    # Decide whether to start via Docker Compose or fallback to Gunicorn
-    # - echo "Checking for Docker and docker compose" >> $LOGFILE 2>&1
-    # - if command -v docker >/dev/null 2>&1; then echo "docker found: $(docker --version)" >> $LOGFILE 2>&1; else echo "docker NOT found" >> $LOGFILE 2>&1; fi
-    # - if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose found (legacy): $(docker-compose --version)" >> $LOGFILE 2>&1; fi
-    # - if docker compose version >/dev/null 2>&1; then echo "docker compose plugin found: $(docker compose version)" >> $LOGFILE 2>&1; fi
-
-    # Attempt to start with Docker Compose (requires sudo privileges)
-    - echo "Bringing up Docker Compose (if available)" >> $LOGFILE 2>&1
-    - cd $DEPLOYPATH && if sudo docker compose up --build -d >> $LOGFILE 2>&1; then echo "docker compose up succeeded" >> $LOGFILE 2>&1; else echo "docker compose up failed or docker not available; will attempt fallback" >> $LOGFILE 2>&1 && echo "Attempting fallback to Gunicorn" >> $LOGFILE 2>&1 && source $DEPLOYPATH/venv/bin/activate && nohup $DEPLOYPATH/venv/bin/gunicorn excis_billing.wsgi:application --bind 127.0.0.1:8000 --daemon --reload >> $LOGFILE 2>&1 || echo "fallback gunicorn failed" >> $LOGFILE 2>&1; fi
-
-    # If docker compose started but containers unhealthy/failed, dump recent container logs (best-effort)
-    - echo "If Docker started, capture compose ps and logs" >> $LOGFILE 2>&1
-    - cd $DEPLOYPATH && if sudo docker compose ps >> $LOGFILE 2>&1; then sudo docker compose ps >> $LOGFILE 2>&1; else echo "no docker compose ps" >> $LOGFILE 2>&1; fi
-    - cd $DEPLOYPATH && if sudo docker compose logs --tail=100 >> $LOGFILE 2>&1; then echo "wrote compose logs" >> $LOGFILE 2>&1; else echo "no compose logs available" >> $LOGFILE 2>&1; fi
+    # Run Gunicorn
+    - echo "Starting Gunicorn server" >> $LOGFILE 2>&1
+    - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && nohup gunicorn excis_billing.wsgi:application --bind 127.0.0.1:8000 --daemon --reload >> $LOGFILE 2>&1 || echo "gunicorn failed to start" >> $LOGFILE 2>&1
 
     # Finalize deployment
     - mkdir -p $DEPLOYPATH/tmp >> $LOGFILE 2>&1
