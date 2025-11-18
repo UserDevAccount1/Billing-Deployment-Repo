@@ -16,6 +16,7 @@ import logging
 
 from .models import PurchaseOrder, POBalanceNotification, PurchaseOrderCSV, PurchaseOrderAttachment
 from apps.customers.models import Customer, Account
+from apps.exchange_rates.models import ExchangeRate
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,49 @@ def purchase_order_list(request):
     paginator = Paginator(pos, 15)
     page_number = request.GET.get('page')
     pos = paginator.get_page(page_number)
+
+    # Fetch exchange rates and create a dictionary for quick lookup
+    exchange_rates = {}
+    for rate in ExchangeRate.objects.all():
+        exchange_rates[rate.currency_code.upper()] = float(rate.usd_per_unit)
+    
+    # Add exchange rate data to each PO
+    for po in pos:
+        currency_code = po.currency.upper() if po.currency else 'USD'
+        # Get exchange rate (default to 1.0 for USD or if not found)
+        exchange_rate = exchange_rates.get(currency_code, 1.0 if currency_code == 'USD' else 0.0)
+        po.exchange_rate = exchange_rate
+        po.total_amount_usd = float(po.total_amount) * exchange_rate
+        po.remaining_balance_usd = float(po.remaining_balance) * exchange_rate
+
+    # Helper to get exchange rate for a currency (used for aggregated KPIs)
+    def _get_rate_for_currency(curr):
+        if not curr:
+            return 1.0
+        c = curr.upper()
+        return exchange_rates.get(c, 1.0 if c == 'USD' else 0.0)
+
+    # Compute USD totals and invoiced totals for filtered_pos (not paginated)
+    try:
+        total_value_usd = 0.0
+        total_remaining_usd = 0.0
+        total_invoiced_usd = 0.0
+
+        for po_obj in filtered_pos:
+            rate = _get_rate_for_currency(po_obj.currency)
+            total_value_usd += float(po_obj.total_amount or 0) * rate
+            remaining = float((po_obj.total_amount or 0) - (po_obj.spent_amount or 0))
+            total_remaining_usd += remaining * rate
+            total_invoiced_usd += float(po_obj.total_invoiced or 0) * rate
+
+        # Attach to KPI dict (rounded to 2 decimals)
+        kpis['total_value_usd'] = round(total_value_usd, 2)
+        kpis['total_amount_usd'] = round(total_remaining_usd, 2)
+        kpis['total_invoiced_usd'] = round(total_invoiced_usd, 2)
+    except Exception:
+        kpis['total_value_usd'] = 0.0
+        kpis['total_amount_usd'] = 0.0
+        kpis['total_invoiced_usd'] = 0.0
 
     # Filter options
     customers = Customer.objects.filter(is_active=True).order_by('name')

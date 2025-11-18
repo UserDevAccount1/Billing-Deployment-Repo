@@ -194,7 +194,7 @@
     width: 100%;
     border-collapse: separate;
     border-spacing: 0 8px;
-    min-width: 1500px;
+    min-width: 1800px;
   }
   .po-table thead th {
     color: var(--muted);
@@ -620,35 +620,21 @@
     <!-- KPI Cards -->
     <div class="po-cards">
       <div class="po-card">
-        <div class="label">Total Remaining Balance</div>
-        <div class="value">${{ kpis.total_amount|floatformat:0|intcomma|default:"0" }}</div>
-        <div class="hint">All customers balance</div>
+        <div class="label">Total Remaining Balance (USD)</div>
+        <div class="value">${{ kpis.total_amount_usd|floatformat:2|intcomma|default:"0.00" }}</div>
+        <div class="hint">All customers remaining balance (converted to USD)</div>
       </div>
       <div class="po-card">
-        <div class="label">Total Value</div>
-        <div class="value">${{ kpis.total_value|floatformat:0|intcomma|default:"0" }}</div>
-        <div class="hint">Combined PO value</div>
+        <div class="label">Total Value (USD)</div>
+        <div class="value">${{ kpis.total_value_usd|floatformat:2|intcomma|default:"0.00" }}</div>
+        <div class="hint">Combined PO value (converted to USD)</div>
       </div>
 
-      <!-- Total Amount Invoiced USD -->
+      <!-- Total Amount Invoiced USD (aggregated from model) -->
       <div class="po-card">
-        <div class="label">Total Amount Invoiced USD</div>
-        <div class="value">
-          {% if converted_currency_code == "USD" or converted_currency_code == "All Currencies" %}
-            $ {{ total_usd_only|floatformat:2|intcomma }}
-          {% else %}
-            $ 0.00
-          {% endif %}
-        </div>
-        <div class="hint">
-          {% if converted_currency_code == "All Currencies" %}
-            Total amount invoiced in USD (included in all currencies)
-          {% elif converted_currency_code == "USD" %}
-            Total amount invoiced in USD
-          {% else %}
-            Only displays total invoiced when USD or All is selected
-          {% endif %}
-        </div>
+        <div class="label">Total Amount Invoiced (USD)</div>
+        <div class="value">$ {{ kpis.total_invoiced_usd|floatformat:2|intcomma|default:"0.00" }}</div>
+        <div class="hint">Sum of `total_invoiced` from POs (converted to USD)</div>
       </div>
 
       <!-- Total Amount Invoiced Non-USD -->
@@ -805,11 +791,23 @@
               <th class="sortable {% if sort_by == 'customer' %}active {{ order }}{% endif %}" data-sort="customer">
                 CUSTOMER<span class="sort-icon"></span>
               </th>
+              <th>
+                CURRENCY
+              </th>
+              <th>
+                EXCHANGE RATE
+              </th>
               <th class="sortable right {% if sort_by == 'total' %}active {{ order }}{% endif %}" data-sort="total">
                 TOTAL<span class="sort-icon"></span>
               </th>
+              <th class="right">
+                TOTAL PO IN USD
+              </th>
               <th>
                 BALANCE</span>
+              </th>
+              <th class="right">
+                TOTAL REMAINING IN USD
               </th>
               <th class="sortable {% if sort_by == 'valid_from' %}active {{ order }}{% endif %}" data-sort="valid_from">
                 VALID FROM<span class="sort-icon"></span>
@@ -846,7 +844,24 @@
               <td>
                 <div style="font-weight:600">{{ po.customer.name }}</div>
               </td>
+              <td>
+                <div style="font-weight:500">{{ po.currency|default:"USD" }}</div>
+              </td>
+              <td class="right">
+                {% if po.exchange_rate and po.exchange_rate > 0 %}
+                  {{ po.exchange_rate|floatformat:6 }}
+                {% else %}
+                  <span style="color:var(--muted);">-</span>
+                {% endif %}
+              </td>
               <td class="right">{{ po.total_amount|floatformat:2|intcomma }} {{ po.currency }}</td>
+              <td class="right">
+                {% if po.total_amount_usd and po.total_amount_usd >= 0 %}
+                  ${{ po.total_amount_usd|floatformat:2|intcomma }}
+                {% else %}
+                  <span style="color:var(--muted);">-</span>
+                {% endif %}
+              </td>
               <td class="right">
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                   <div>{{ po.remaining_balance|floatformat:2|intcomma }} {{ po.currency }}</div>
@@ -854,6 +869,13 @@
                     <div class="bar" style="width:{{ po.utilization_percentage|floatformat:0 }}%"></div>
                   </div>
                 </div>
+              </td>
+              <td class="right">
+                {% if po.remaining_balance_usd and po.remaining_balance_usd >= 0 %}
+                  ${{ po.remaining_balance_usd|floatformat:2|intcomma }}
+                {% else %}
+                  <span style="color:var(--muted);">-</span>
+                {% endif %}
               </td>
               <td>{{ po.valid_from|date:"Y-m-d" }}</td>
               <td>{{ po.valid_until|date:"Y-m-d" }}</td>
@@ -876,7 +898,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="16" style="text-align:center;color:var(--muted);padding:30px;">
+              <td colspan="20" style="text-align:center;color:var(--muted);padding:30px;">
                 No purchase orders found
               </td>
             </tr>
