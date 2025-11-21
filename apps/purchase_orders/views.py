@@ -134,21 +134,55 @@ def purchase_order_list(request):
         total_remaining_usd = 0.0
         total_invoiced_usd = 0.0
 
+        total_non_usd_converted = 0.0
+        total_usd_native = 0.0
         for po_obj in filtered_pos:
             rate = _get_rate_for_currency(po_obj.currency)
-            total_value_usd += float(po_obj.total_amount or 0) * rate
+            amt = float(po_obj.total_amount or 0)
+            total_value_usd += amt * rate
             remaining = float((po_obj.total_amount or 0) - (po_obj.spent_amount or 0))
             total_remaining_usd += remaining * rate
-            total_invoiced_usd += float(po_obj.total_invoiced or 0) * rate
+            if (po_obj.currency or '').upper() == 'USD':
+                total_usd_native += amt
+            else:
+                total_non_usd_converted += amt * rate
 
         # Attach to KPI dict (rounded to 2 decimals)
         kpis['total_value_usd'] = round(total_value_usd, 2)
         kpis['total_amount_usd'] = round(total_remaining_usd, 2)
-        kpis['total_invoiced_usd'] = round(total_invoiced_usd, 2)
+        # Per request: total invoiced should be sum of PO totals (not total_invoiced field)
+        kpis['total_invoiced_usd'] = round(total_value_usd, 2)
+        # Model breakdowns
+        kpis['model_invoiced_usd_native'] = round(total_usd_native, 2)
+        kpis['model_invoiced_non_usd_converted'] = round(total_non_usd_converted, 2)
     except Exception:
         kpis['total_value_usd'] = 0.0
         kpis['total_amount_usd'] = 0.0
         kpis['total_invoiced_usd'] = 0.0
+    # Session-based converted totals (from convert-currency feature)
+    try:
+        session_usd_only = float(request.session.get('total_usd_only', 0) or 0)
+        session_conv_to_usd = float(request.session.get('total_converted_currency_to_usd', 0) or 0)
+        session_conv_non_usd = float(request.session.get('total_converted_currency_to_non_usd', 0) or 0)
+
+        # Sum of invoiced values represented in session (converted to USD where applicable)
+        session_total_invoiced_converted_usd = session_usd_only + session_conv_to_usd
+
+        # If the user has used the convert-currency selection, prefer session totals
+        if request.session.get('converted_currency_code') is not None:
+            kpis['total_invoiced_all_currency_usd'] = round(session_total_invoiced_converted_usd, 2)
+            kpis['total_invoiced_non_usd_session'] = round(session_conv_non_usd, 2)
+        else:
+            # Fallback to model-derived total (sum of PO totals in USD)
+            kpis['total_invoiced_all_currency_usd'] = round(kpis.get('total_invoiced_usd', 0.0), 2)
+            kpis['total_invoiced_non_usd_session'] = 0.0
+
+        # Total Net Invoiced Balance: (Total Invoiced All Currency in USD) - (Total Remaining in USD)
+        kpis['total_net_invoiced_balance'] = round(kpis['total_invoiced_all_currency_usd'] - kpis['total_amount_usd'], 2)
+    except Exception:
+        kpis['total_invoiced_all_currency_usd'] = kpis.get('total_invoiced_usd', 0.0)
+        kpis['total_invoiced_non_usd_session'] = 0.0
+        kpis['total_net_invoiced_balance'] = round(kpis.get('total_invoiced_usd', 0.0) - kpis.get('total_amount_usd', 0.0), 2)
 
     # Filter options
     customers = Customer.objects.filter(is_active=True).order_by('name')

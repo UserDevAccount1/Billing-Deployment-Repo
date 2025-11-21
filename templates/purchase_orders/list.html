@@ -620,67 +620,69 @@
     <!-- KPI Cards -->
     <div class="po-cards">
       <div class="po-card">
-        <div class="label">Total Remaining Balance (USD)</div>
-        <div class="value">${{ kpis.total_amount_usd|floatformat:2|intcomma|default:"0.00" }}</div>
-        <div class="hint">All customers remaining balance (converted to USD)</div>
-      </div>
-      <div class="po-card">
-        <div class="label">Total Value (USD)</div>
+        <div class="label">Total PO Value in USD</div>
         <div class="value">${{ kpis.total_value_usd|floatformat:2|intcomma|default:"0.00" }}</div>
         <div class="hint">Combined PO value (converted to USD)</div>
       </div>
 
-      <!-- Total Amount Invoiced USD (aggregated from model) -->
       <div class="po-card">
-        <div class="label">Total Amount Invoiced (USD)</div>
-        <div class="value">$ {{ kpis.total_invoiced_usd|floatformat:2|intcomma|default:"0.00" }}</div>
-        <div class="hint">Sum of `total_invoiced` from POs (converted to USD)</div>
+        <div class="label">Total Remaining in USD</div>
+        <div class="value">${{ kpis.total_amount_usd|floatformat:2|intcomma|default:"0.00" }}</div>
+        <div class="hint">All customers remaining balance (converted to USD)</div>
       </div>
 
-      <!-- Total Amount Invoiced Non-USD -->
+      <!-- Total Invoiced (All Currency) -->
       <div class="po-card">
-        <div class="label">Total Amount Invoiced Non-USD</div>
+        <div class="label">Total Invoiced (All Currency)</div>
+        <div class="value">$ {{ kpis.total_invoiced_all_currency_usd|floatformat:2|intcomma|default:"0.00" }}</div>
+        <div class="hint">Sum of invoiced amounts (uses convert-currency selection when available)</div>
+      </div>
+
+      <!-- Total Amount Invoiced (Non-USD) -->
+      <div class="po-card">
+        <div class="label">Total Amount Invoiced (Non-USD)</div>
         <div class="value">
-          {% if converted_currency_code == "Non-USD" or converted_currency_code == "All Currencies" %}
-            {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
-          {% elif converted_currency_code != "USD" and converted_currency_code != "All Currencies" and converted_currency_code %}
-            {{ converted_currency_code }} {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
+          {% if converted_currency_code %}
+            {% if converted_currency_code == "All Currencies" or converted_currency_code == "Non-USD" %}
+              {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
+            {% elif converted_currency_code != "USD" %}
+              {{ converted_currency_code }} {{ total_converted_currency_to_non_usd|floatformat:2|intcomma }}
+            {% else %}
+              {{ kpis.model_invoiced_non_usd_converted|floatformat:2|intcomma }}
+            {% endif %}
           {% else %}
-            0.00
+            {{ kpis.model_invoiced_non_usd_converted|floatformat:2|intcomma }}
           {% endif %}
         </div>
         <div class="hint">
           {% if converted_currency_code == "All Currencies" %}
-            Total amount invoiced in all non-USD currencies
+            Total amount invoiced in all non-USD currencies (displayed from convert selection)
           {% elif converted_currency_code and converted_currency_code != "USD" %}
-            Total amount invoiced in {{ converted_currency_code }} currency
+            Total amount invoiced in {{ converted_currency_code }} (from convert selection)
           {% else %}
-            Total amount invoiced across all non-USD currencies
+            Total amount invoiced across all non-USD currencies (shown converted to USD)
           {% endif %}
         </div>
       </div>
 
-      <!-- Total Amount Invoiced Converted -->
+      <!-- Total Amount Invoiced Converted to USD -->
       <div class="po-card">
-        <div class="label">Total Amount Invoiced Converted</div>
+        <div class="label">Total Amount Invoiced Converted to USD</div>
         <div class="value">
-          {% if converted_currency_code != "USD" and total_converted_currency_to_usd %}
+          {% if total_converted_currency_to_usd %}
             $ {{ total_converted_currency_to_usd|floatformat:2|intcomma }}
           {% else %}
-            $ 0.00
+            $ {{ kpis.model_invoiced_non_usd_converted|floatformat:2|intcomma|default:"0.00" }}
           {% endif %}
         </div>
-        <div class="hint">
-          {% if converted_currency_code == "All Currencies" %}
-            Total amount invoiced converted to USD (all currencies)
-          {% elif converted_currency_code == "Non-USD" %}
-            Total amount invoiced converted to USD (non-USD only)
-          {% elif converted_currency_code and converted_currency_code != "USD" %}
-            Total amount invoiced converted from {{ converted_currency_code }} to USD
-          {% else %}
-            Only displays converted total for non-USD selections
-          {% endif %}
-        </div>
+        <div class="hint">Non-USD invoiced amounts converted to USD (uses convert selection when present)</div>
+      </div>
+
+      <!-- Total Net Invoiced Balance -->
+      <div class="po-card">
+        <div class="label">Total Net Invoiced Balance (USD)</div>
+        <div class="value">$ {{ kpis.total_net_invoiced_balance|floatformat:2|intcomma|default:"0.00" }}</div>
+        <div class="hint">(Total Invoiced in USD) - (Total Remaining in USD)</div>
       </div>
 
       <div class="po-card">
