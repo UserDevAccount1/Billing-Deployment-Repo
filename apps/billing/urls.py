@@ -5,7 +5,7 @@ app_name = 'billing'
 
 urlpatterns = [
     # Main billing run pages
-    path('', views.billing_run_list, name='list'),
+    path('', views.billing_run_list, name='list'), 
     path('create/', views.create_billing_run, name='create'),
     path('create-wizard/', views.create_billing_run_wizard, name='create_wizard'),
     
