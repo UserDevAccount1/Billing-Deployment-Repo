@@ -132,33 +132,84 @@ def purchase_order_list(request):
     try:
         total_value_usd = 0.0
         total_remaining_usd = 0.0
-        total_invoiced_usd = 0.0
 
         total_non_usd_converted = 0.0
         total_usd_native = 0.0
+
+        # Selected (convert-currency) driven display totals
+        selected_code = request.session.get('converted_currency_code')
+        selected_total_value_usd = 0.0
+        selected_total_remaining_usd = 0.0
+
         for po_obj in filtered_pos:
             rate = _get_rate_for_currency(po_obj.currency)
             amt = float(po_obj.total_amount or 0)
-            total_value_usd += amt * rate
             remaining = float((po_obj.total_amount or 0) - (po_obj.spent_amount or 0))
+
+            # model-wide sums (convert each PO to USD using rate)
+            total_value_usd += amt * rate
             total_remaining_usd += remaining * rate
+
+            # model breakdowns by native vs non-USD
             if (po_obj.currency or '').upper() == 'USD':
                 total_usd_native += amt
             else:
                 total_non_usd_converted += amt * rate
 
+            # Selection logic: decide whether this PO falls into the selected set
+            po_curr = (po_obj.currency or '').upper()
+            include_in_selected = False
+
+            if not selected_code:
+                include_in_selected = True
+            elif selected_code == 'All Currencies':
+                include_in_selected = True
+            elif selected_code == 'Non-USD':
+                include_in_selected = (po_curr != 'USD')
+            elif selected_code == 'USD':
+                include_in_selected = (po_curr == 'USD')
+            else:
+                # specific currency code like 'EUR'
+                include_in_selected = (po_curr == selected_code.upper())
+
+            if include_in_selected:
+                selected_total_value_usd += amt * rate
+                selected_total_remaining_usd += remaining * rate
+
         # Attach to KPI dict (rounded to 2 decimals)
         kpis['total_value_usd'] = round(total_value_usd, 2)
         kpis['total_amount_usd'] = round(total_remaining_usd, 2)
-        # Per request: total invoiced should be sum of PO totals (not total_invoiced field)
+        # Per request: total invoiced should be sum of PO totals (model-wide)
         kpis['total_invoiced_usd'] = round(total_value_usd, 2)
         # Model breakdowns
         kpis['model_invoiced_usd_native'] = round(total_usd_native, 2)
         kpis['model_invoiced_non_usd_converted'] = round(total_non_usd_converted, 2)
+
+        # Displayed (selection-aware) totals used by cards 1,2,5,6
+        kpis['display_total_value_usd'] = round(selected_total_value_usd, 2)
+        kpis['display_total_remaining_usd'] = round(selected_total_remaining_usd, 2)
+        # Card 5: Total Amount Invoiced Converted to USD equals the display total value
+        kpis['display_total_invoiced_converted_usd'] = round(selected_total_value_usd, 2)
+
+        # Card 3 (Total Invoiced All Currency) should always be the model-wide total (not change with selection)
+        kpis['total_invoiced_all_currency_usd'] = kpis['total_invoiced_usd']
+
+        # Card 4 (Total Amount Invoiced Non-USD) should always be model non-USD converted total
+        kpis['total_invoiced_non_usd_model'] = kpis['model_invoiced_non_usd_converted']
+
+        # Total Net Invoiced Balance (selection-aware) = display_invoiced_converted - display_remaining
+        kpis['total_net_invoiced_balance'] = round(kpis['display_total_invoiced_converted_usd'] - kpis['display_total_remaining_usd'], 2)
+
     except Exception:
         kpis['total_value_usd'] = 0.0
         kpis['total_amount_usd'] = 0.0
         kpis['total_invoiced_usd'] = 0.0
+        kpis['display_total_value_usd'] = 0.0
+        kpis['display_total_remaining_usd'] = 0.0
+        kpis['display_total_invoiced_converted_usd'] = 0.0
+        kpis['total_invoiced_all_currency_usd'] = 0.0
+        kpis['total_invoiced_non_usd_model'] = 0.0
+        kpis['total_net_invoiced_balance'] = 0.0
     # Session-based converted totals (from convert-currency feature)
     try:
         session_usd_only = float(request.session.get('total_usd_only', 0) or 0)

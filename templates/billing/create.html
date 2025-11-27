@@ -1,138 +1,1658 @@
 {% extends 'base/base.html' %}
 {% load static %}
 
-{% block title %}Create Billing Run - Excis Billing System{% endblock %}
+{% block page_title %}Create Billing Run{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --bg: #ffffff;
+        --panel: #ffffff;
+        --panel-2: #f9f9f9;
+        --muted: #555;
+        --text: #111;
+        --line: #ddd;
+        --brand: #5335ff;
+        --brand-2: #c3b8fe;
+        --radius: 10px;
+        --shadow: 0 2px 6px rgba(0, 0, 0, .08);
+    }
+
+    .topbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line);
+        background: #fff;
+        margin-bottom: 20px;
+    }
+
+    .topbar .title {
+        font-weight: 700;
+        font-size: 20px
+    }
+
+    .topbar .subtitle {
+        color: var(--muted);
+        font-size: 13px
+    }
+
+    .spacer {
+        flex: 1
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 36px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--text);
+        cursor: pointer;
+        transition: .2s;
+    }
+
+    .btn.primary {
+        background: var(--brand);
+        border: none;
+        color: #fff
+    }
+
+    .btn:hover {
+        box-shadow: var(--shadow)
+    }
+
+    .btn.small {
+        font-size: 12px;
+        padding: 4px 8px;
+        height: auto;
+    }
+
+    .stepper {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 10px;
+        margin-bottom: 14px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+    }
+
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .step.active {
+        border-color: var(--brand);
+        background: #f0f0ff
+    }
+
+    .badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        background: #f5f5f5;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .step.active .badge {
+        background: var(--brand);
+        color: #fff
+    }
+
+    .label {
+        font-weight: 600;
+        font-size: 13px
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1.5fr .8fr;
+        gap: 16px
+    }
+
+    @media (max-width:900px) {
+        .grid {
+            grid-template-columns: 1fr
+        }
+    }
+
+    .panel {
+        padding: 18px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+    }
+
+    .panel h3 {
+        margin: 0 0 6px;
+        font-size: 18px
+    }
+
+    .panel .hint {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 16px
+    }
+
+    .summary {
+        padding: 18px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+    }
+
+    .summary h4 {
+        margin: 0 0 12px
+    }
+
+    .kv {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px dashed #ddd;
+        font-size: 14px
+    }
+
+    .kv:last-child {
+        border-bottom: none
+    }
+
+    .muted {
+        color: var(--muted)
+    }
+
+    .hide {
+        display: none !important
+    }
+
+    /* Modal Styles */
+    .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        width: 360px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal.hide {
+        display: none;
+    }
+
+    .modal-content h4 {
+        margin-top: 0;
+    }
+
+    .input {
+        width: 100%;
+        padding: 6px 8px;
+        margin-top: 4px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+
+    /* Step 2 Specific Styles */
+    table.combinedTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    table.combinedTable th,
+    table.combinedTable td {
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+        text-align: center;
+    }
+
+    table.combinedTable th {
+        background: #f0f0f0;
+    }
+
+    .col-toggle-dropdown {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .col-toggle-dropdown-content {
+        display: none;
+        position: absolute;
+        background: #fff;
+        border: 1px solid #ccc;
+        padding: 10px;
+        z-index: 10;
+        width: 200px;
+        max-height: 300px;
+        overflow: auto;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .col-toggle-dropdown.show .col-toggle-dropdown-content {
+        display: block;
+    }
+
+    .col-toggle-dropdown-content label {
+        display: block;
+        margin-bottom: 4px;
+        cursor: pointer;
+    }
+
+    .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .modal-grid .full {
+        grid-column: 1 / 3;
+    }
+
+    .modal-grid label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .modal-grid input,
+    .modal-grid textarea,
+    .modal-grid select {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 13px;
+        box-sizing: border-box;
+    }
+
+    .modal-grid textarea {
+        min-height: 60px;
+        resize: vertical;
+    }
+
+    /* Modal adjustments for Step 2 */
+    #rcModalBackdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+    }
+
+    .rcModal {
+        background: #fff;
+        padding: 18px;
+        border-radius: 10px;
+        min-width: 360px;
+        max-width: 900px;
+        max-height: 85vh;
+        overflow: auto;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .rcActions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    /* Steps 3-7 Specific Styles */
+    .highlight {
+        background: #ffe7c4;
+    }
+
+    .cycle-status {
+        margin-top: 15px;
+        padding: 10px;
+        font-weight: bold;
+    }
+
+    .cycle-closed {
+        color: red;
+    }
+
+    .locked {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .section-title {
+        font-weight: 700;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+    }
+
+    .flex-row {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Chart containers */
+    #chartWrap {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Create Billing Run</h4>
-                    <div class="ms-auto">
-                        <a href="{% url 'billing:create_wizard' %}" class="btn btn-primary">
-                            <i class="material-symbols-outlined me-2">auto_fix_high</i>
-                            Use Wizard
-                        </a>
-                    </div>
+<div class="topbar">
+    <div>
+        <div class="title">Create Billing Run</div>
+        <div class="subtitle">Step-by-step wizard to generate billing files from ticket data</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn">Save Draft</button>
+    <button class="btn primary" id="globalContinueBtn">Continue</button>
+</div>
+
+<div class="stepper" id="stepper">
+    <div class="step active" data-step="1">
+        <div class="badge">1</div>
+        <div class="label">Ticket Data Distribution</div>
+    </div>
+    <div class="step" data-step="2">
+        <div class="badge">2</div>
+        <div class="label">Rate Card Assignment</div>
+    </div>
+    <div class="step" data-step="3">
+        <div class="badge">3</div>
+        <div class="label">Manual Computation and Verification</div>
+    </div>
+    <div class="step" data-step="4">
+        <div class="badge">4</div>
+        <div class="label">Consolidation</div>
+    </div>
+    <div class="step" data-step="5">
+        <div class="badge">5</div>
+        <div class="label">Review and Monitoring</div>
+    </div>
+    <div class="step" data-step="6">
+        <div class="badge">6</div>
+        <div class="label">Query resolution & resubmission</div>
+    </div>
+    <div class="step" data-step="7">
+        <div class="badge">7</div>
+        <div class="label">Final approval & Invoice Preparation</div>
+    </div>
+</div>
+
+<div id="steps">
+    <!-- STEP 1 -->
+    <section class="grid step-content" data-step="1">
+        <div class="panel">
+            <h3>Step 1 – Ticket Data Distribution</h3>
+            <div class="hint">
+                On the 1st business day of each month, Excis Service Desk generates ticket reports for all HCL accounts
+                and sends them to the corresponding SDM regional email aliases.
+            </div>
+
+            <div class="field">
+                <div class="label">HCL Regional Accounts</div>
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                    <thead>
+                        <tr style="background:#f0f0ff; text-align:left;">
+                            <th style="padding:10px; border-bottom:1px solid #ddd;">Region</th>
+                            <th style="padding:10px; border-bottom:1px solid #ddd;">Account Code</th>
+                            <th style="padding:10px; border-bottom:1px solid #ddd;">SDM Email Alias</th>
+                            <th style="padding:10px; border-bottom:1px solid #ddd;">Status</th>
+                            <th style="padding:10px; border-bottom:1px solid #ddd;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketTable">
+                        <tr>
+                            <td style="padding:10px;">Americas</td>
+                            <td style="padding:10px;">HCL-AM-001</td>
+                            <td style="padding:10px;"><a href="mailto:TestAmericas@gmail.com">TestAmericas@gmail.com</a>
+                            </td>
+                            <td style="padding:10px;" class="status">Pending</td>
+                            <td style="padding:10px;">
+                                <button class="btn small viewBtn">View</button>
+                                <button class="btn small editBtn">Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;">Europe / Africa</td>
+                            <td style="padding:10px;">HCL-EU-002</td>
+                            <td style="padding:10px;"><a
+                                    href="mailto:TestEurope-africa@gmail.com">TestEurope-africa@gmail.com</a></td>
+                            <td style="padding:10px;" class="status">Pending</td>
+                            <td style="padding:10px;">
+                                <button class="btn small viewBtn">View</button>
+                                <button class="btn small editBtn">Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;">APAC</td>
+                            <td style="padding:10px;">HCL-AP-003</td>
+                            <td style="padding:10px;"><a href="mailto:TestMapi@gmail.com">TestMapi@gmail.com</a></td>
+                            <td style="padding:10px;" class="status">Pending</td>
+                            <td style="padding:10px;">
+                                <button class="btn small viewBtn">View</button>
+                                <button class="btn small editBtn">Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;">Middle East</td>
+                            <td style="padding:10px;">HCL-ME-004</td>
+                            <td style="padding:10px;"><a
+                                    href="mailto:TestMiddleEast@gmail.com">TestMiddleEast@gmail.com</a></td>
+                            <td style="padding:10px;" class="status">Pending</td>
+                            <td style="padding:10px;">
+                                <button class="btn small viewBtn">View</button>
+                                <button class="btn small editBtn">Edit</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                <button id="distributeBtn" class="btn primary">
+                    <span class="material-symbols-outlined">send</span> Distribute Tickets
+                </button>
+            </div>
+        </div>
+
+        <aside class="summary">
+            <h4>Distribution Summary</h4>
+            <div id="summaryBox">
+                <div class="kv">
+                    <div class="muted">Total Regions</div>
+                    <div>4</div>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Customer <span class="text-danger">*</span></label>
-                                    <select name="customer" class="form-select" required onchange="loadAccountsAndPOs(this.value)">
-                                        <option value="">Select Customer</option>
-                                        {% for customer in customers %}
-                                        <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.code }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Account</label>
-                                    <select name="account" class="form-select" id="accountSelect">
-                                        <option value="">Select Customer First</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Purchase Order <span class="text-danger">*</span></label>
-                                    <select name="purchase_order" class="form-select" required id="poSelect">
-                                        <option value="">Select Customer First</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                    <input type="number" name="amount" class="form-control" step="0.01" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Billing Date <span class="text-danger">*</span></label>
-                                    <input type="date" name="billing_date" class="form-control" value="{{ today }}" required>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Notes</label>
-                                    <textarea name="notes" class="form-control" rows="3"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <a href="{% url 'billing:list' %}" class="btn btn-secondary">Cancel</a>
-                                    <button type="submit" class="btn btn-primary">Create Billing Run</button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+                <div class="kv">
+                    <div class="muted">Pending</div>
+                    <div id="pendingCount">4</div>
                 </div>
+                <div class="kv">
+                    <div class="muted">Completed</div>
+                    <div id="completedCount">0</div>
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step-content hide" data-step="2">
+        <div class="panel">
+            <h3>Step 2 – Rate Card Assignment</h3>
+            <p>Review and assign rate cards for the billing run.</p>
+
+            <!-- Filters for Step 2 -->
+            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                <input id="rc_search" class="input" placeholder="Search customer/country..."
+                    style="width:200px; margin:0;">
+                <select id="rc_region" class="input" style="width:150px; margin:0;">
+                    <option value="">All Regions</option>
+                    <option>EMEA</option>
+                    <option>APAC</option>
+                    <option>NA</option>
+                </select>
+                <select id="rc_currency" class="input" style="width:150px; margin:0;">
+                    <option value="">All Currencies</option>
+                    <option>USD</option>
+                    <option>EUR</option>
+                    <option>GBP</option>
+                </select>
+            </div>
+
+            <div id="rateCardContainer">Loading Rate Cards...</div>
+        </div>
+    </section>
+
+    <!-- Modal for Rate Card Editing (Step 2) -->
+    <div id="rcModalBackdrop" aria-hidden="true">
+        <div class="rcModal" role="dialog" aria-modal="true" aria-labelledby="rcModalTitle">
+            <h3 id="rcModalTitle">Edit Service Rate</h3>
+            <div id="rcModalBody"></div>
+            <div class="rcActions">
+                <button class="btn" id="rcCancelBtn">Cancel</button>
+                <button class="btn primary" id="rcSaveBtn">Save</button>
             </div>
         </div>
     </div>
+
+    <!-- STEP 3 (Ref Step 4) -->
+    <section class="step-content hide" data-step="3">
+        <div class="panel">
+            <h3>Step 3 – Manual Computation and Verification</h3>
+            <p class="muted"><strong>Performed by:</strong> FSO Team &nbsp; | &nbsp; <strong>Monitored by:</strong>
+                Admin</p>
+
+            <div class="controls" style="margin-bottom:15px; padding:10px; background:#f9f9f9; border-radius:6px;">
+                <label for="customerSelect">Select Customer:</label>
+                <select id="customerSelect" class="input"
+                    style="width:auto;display:inline-block;margin-right:10px;"></select>
+                <button id="downloadStateBtn" class="btn small">💾 Export State (JSON)</button>
+                <button id="loadStateBtn" class="btn small">↺ Load Last State</button>
+            </div>
+
+            <div id="step3-table-container"></div>
+            <div style="margin-top:10px;">
+                <button id="computeTotalsBtn" class="btn primary">Compute Totals & Highlight Anomalies</button>
+                <button id="resetSampleBtn" class="btn small" style="margin-left:8px;">🔁 Reset Customer Data</button>
+                <span style="margin-left:14px;" class="muted">Approve sends row to Step 4. Reject flags row for
+                    review.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- STEP 4 (Ref Step 5) -->
+    <section class="step-content hide" data-step="4">
+        <div class="panel">
+            <h3>Step 4 – Consolidation</h3>
+            <p class="muted"><strong>Performed by:</strong> Admin</p>
+
+            <div class="section-title">Before Consolidation / Prebilling</div>
+            <div style="overflow-x:auto;">
+                <table id="beforeRateCard" class="combinedTable">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Region</th>
+                            <th>Country</th>
+                            <th>Supplier</th>
+                            <th>Currency</th>
+                            <th>Entity</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Category</th>
+                            <th>SR Region</th>
+                            <th>Rate Type</th>
+                            <th>Rate Value</th>
+                            <th>After Hours</th>
+                            <th>Weekend</th>
+                            <th>Travel</th>
+                            <th>Includes Travel</th>
+                            <th>Remarks</th>
+                            <th>FTE</th>
+                            <th>Scheduled Visits</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="section-title">After Consolidation / Prebilling Update</div>
+            <div style="overflow-x:auto;">
+                <table id="afterRateCard" class="combinedTable">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Region</th>
+                            <th>Country</th>
+                            <th>Supplier</th>
+                            <th>Currency</th>
+                            <th>Entity</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Category</th>
+                            <th>SR Region</th>
+                            <th>Rate Type</th>
+                            <th>Rate Value</th>
+                            <th>After Hours</th>
+                            <th>Weekend</th>
+                            <th>Travel</th>
+                            <th>Includes Travel</th>
+                            <th>Remarks</th>
+                            <th>FTE</th>
+                            <th>Scheduled Visits</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:12px;">
+                <div class="flex-row">
+                    <button id="mergeUploadBtn" class="btn primary">Merge & Upload (Send to Review)</button>
+                    <button id="validateCurrencyBtn" class="btn small" style="margin-left:8px;">Validate Currency
+                        Consistency</button>
+                    <span class="muted" style="margin-left:12px;">Validate currency & totals before upload. Merge
+                        creates a consolidated file (simulated).</span>
+                </div>
+            </div>
+
+            <div class="section-title">Upload Log</div>
+            <table id="uploadLogTable" class="combinedTable">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Upload Date</th>
+                        <th>Uploader</th>
+                        <th>Reference #</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- STEP 5 (Ref Step 6) -->
+    <section class="step-content hide" data-step="5">
+        <div class="panel">
+            <h3>Step 5 – Review and Monitoring</h3>
+            <p class="muted"><strong>Performed by:</strong> Admin & FSO</p>
+
+            <div class="section-title">HCL Review Tracker</div>
+            <table id="reviewTracker" class="combinedTable">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Comments</th>
+                        <th>Updated By</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div style="margin-top:10px;">
+                <button id="notifySDM" class="btn primary">Notify SDM (Send Teams Message)</button>
+                <span class="muted" style="margin-left:10px;">(Simulation — shows a toast)</span>
+            </div>
+
+            <div class="section-title">Summary: Approved vs Rejected</div>
+            <div id="chartWrap">
+                <canvas id="reviewSummaryChart" width="300" height="200"
+                    style="border:1px solid #eee; border-radius:6px;"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- STEP 6 (Ref Step 7) -->
+    <section class="step-content hide" data-step="6">
+        <div class="panel">
+            <h3>Step 6 – Query resolution & resubmission</h3>
+            <p><strong>Performed by:</strong> SDM / FSO | <strong>Verified by:</strong> Admin</p>
+
+            <h4>❗ Rejected Files Queue</h4>
+            <table id="rejectedQueue" class="combinedTable">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Category</th>
+                        <th>Region</th>
+                        <th>Issue</th>
+                        <th>Rejected By</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div id="correctionModal" class="modal hide">
+                <div class="modal-content">
+                    <span id="closeCorrectionModal" class="close"
+                        style="float:right;cursor:pointer;font-size:20px;">&times;</span>
+                    <h3>Correction Details</h3>
+                    <label>Correction Notes:</label>
+                    <textarea id="correctionNotes" class="input" style="height:100px;"></textarea>
+                    <button id="submitCorrection" class="btn primary">Submit Correction</button>
+                </div>
+            </div>
+
+            <h4>📈 Resubmission Tracker</h4>
+            <canvas id="resubmissionChart" width="300" height="200"></canvas>
+        </div>
+    </section>
+
+    <!-- STEP 7 (Ref Step 8) -->
+    <section class="step-content hide" data-step="7">
+        <div class="panel">
+            <h3>Step 7 – Final approval & Invoice Preparation</h3>
+            <p><strong>Performed by:</strong> Admin</p>
+
+            <h4>📄 Invoice Summary</h4>
+            <table id="invoiceSummaryTable" class="combinedTable">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Category</th>
+                        <th>Region</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h4>⬇ Export Controls</h4>
+            <div style="margin-bottom:20px;">
+                <button id="exportCsv" class="btn primary">Export CSV</button>
+                <button id="exportExcel" class="btn primary">Export Excel</button>
+            </div>
+
+            <h4>🔒 Cycle Control</h4>
+            <button id="closeCycleBtn" class="btn danger" style="background:#dc3545;color:white;border:none;">Close
+                Billing Cycle</button>
+            <p id="cycleStatus" class="cycle-status"></p>
+        </div>
+    </section>
+
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function loadAccountsAndPOs(customerId) {
-    if (!customerId) {
-        document.getElementById('accountSelect').innerHTML = '<option value="">Select Customer First</option>';
-        document.getElementById('poSelect').innerHTML = '<option value="">Select Customer First</option>';
-        return;
-    }
-    
-    // Load accounts
-    fetch(`/customers/accounts/api/${customerId}/`)
-        .then(response => response.json())
-        .then(data => {
-            const accountSelect = document.getElementById('accountSelect');
-            accountSelect.innerHTML = '<option value="">No specific account</option>';
-            
-            if (data.accounts && data.accounts.length > 0) {
-                data.accounts.forEach(account => {
-                    accountSelect.innerHTML += `<option value="${account.id}">${account.account_id} - ${account.name}</option>`;
-                });
-            }
-        })
-        .catch(error => console.error('Error loading accounts:', error));
-    
-    // Load purchase orders
-    fetch(`/customers/purchase-orders/api/${customerId}/`)
-        .then(response => response.json())
-        .then(data => {
-            const poSelect = document.getElementById('poSelect');
-            poSelect.innerHTML = '<option value="">Select Purchase Order</option>';
-            
-            if (data.purchase_orders && data.purchase_orders.length > 0) {
-                data.purchase_orders.forEach(po => {
-                    poSelect.innerHTML += `<option value="${po.id}">${po.po_number} - $${po.remaining_balance}</option>`;
-                });
-            } else {
-                poSelect.innerHTML = '<option value="">No Purchase Orders Available</option>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading purchase orders:', error);
-            document.getElementById('poSelect').innerHTML = '<option value="">Error Loading Purchase Orders</option>';
+    // Stepper Logic
+    const steps = document.querySelectorAll('.step');
+    const contents = document.querySelectorAll('.step-content');
+    let currentStep = 1;
+
+    function setStep(step) {
+        currentStep = step;
+
+        // Update stepper UI
+        steps.forEach(s => {
+            const sNum = parseInt(s.dataset.step);
+            s.classList.toggle('active', sNum === step);
         });
-}
+
+        // Show/Hide content
+        contents.forEach(c => {
+            const cNum = parseInt(c.dataset.step);
+            if (cNum === step) c.classList.remove('hide');
+            else c.classList.add('hide');
+        });
+    }
+
+    steps.forEach(s => {
+        s.addEventListener('click', () => {
+            setStep(parseInt(s.dataset.step));
+        });
+    });
+
+    document.getElementById('globalContinueBtn').addEventListener('click', () => {
+        if (currentStep < 7) setStep(currentStep + 1);
+    });
+
+    // Step 1 Logic
+    document.getElementById('distributeBtn').addEventListener('click', () => {
+        const btn = document.getElementById('distributeBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined">hourglass_empty</span> Distributing...';
+
+        // Simulate API call
+        setTimeout(() => {
+            btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Distributed';
+
+            // Update table status
+            document.querySelectorAll('#ticketTable .status').forEach(el => {
+                el.textContent = 'Sent';
+                el.style.color = 'green';
+                el.style.fontWeight = 'bold';
+            });
+
+            // Update summary
+            document.getElementById('pendingCount').textContent = '0';
+            document.getElementById('completedCount').textContent = '4';
+
+            // Auto-advance after delay
+            setTimeout(() => setStep(2), 1000);
+        }, 1500);
+    });
+
+    // Check for URL param to jump to step
+    const urlParams = new URLSearchParams(window.location.search);
+    const stepParam = urlParams.get('step');
+    if (stepParam) {
+        setStep(parseInt(stepParam));
+    }
+
+    // ---------------------------------------------------------
+    // STEP 2: RATE CARD LOGIC
+    // ---------------------------------------------------------
+    (function Step2App() {
+        const ns = {
+            services: {},
+            data: [],
+            customers: [],
+            entities: []
+        };
+
+        // CSRF helper
+        function getCookie(name) {
+            const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+            return v ? decodeURIComponent(v.split('=')[1]) : null;
+        }
+        const csrftoken = getCookie('csrftoken');
+        const API_BASE = '/rate-cards/api';
+
+        // Endpoints map
+        const svcEndpointMap = {
+            'service-rate': 'service_rate',
+            'dedicated': 'dedicated_rate',
+            'scheduled': 'scheduled_rate',
+            'dispatch': 'dispatch_rate',
+            'projects': 'project_rate'
+        };
+        const serviceKeyMap = {
+            'service-rate': 'service_rates',
+            'dedicated': 'dedicated',
+            'scheduled': 'scheduled',
+            'dispatch': 'dispatch',
+            'projects': 'projects'
+        };
+
+        // --- Data Loading ---
+        async function loadServiceRatesForType(ratecard_id, svcType) {
+            const ep = svcEndpointMap[svcType];
+            if (!ep) return [];
+            try {
+                const res = await fetch(`${API_BASE}/ratecards/${ratecard_id}/${ep}s/`);
+                if (!res.ok) return [];
+                const j = await res.json();
+                return j.results || [];
+            } catch (e) { console.warn(e); return []; }
+        }
+
+        async function loadRateCards() {
+            try {
+                // Load dependencies
+                const [custRes, entRes, rcRes] = await Promise.all([
+                    fetch(`${API_BASE}/customers/`),
+                    fetch(`${API_BASE}/purchase-orders/`), // entities
+                    fetch(`${API_BASE}/ratecards/`)
+                ]);
+
+                if (custRes.ok) ns.customers = (await custRes.json()).results || [];
+                if (entRes.ok) {
+                    const j = await entRes.json();
+                    ns.entities = (j.results || []).map(x => ({ id: x.id, display: x.excis_entity || x.excis_entity }));
+                }
+                if (rcRes.ok) ns.data = (await rcRes.json()).results || [];
+
+                // Initialize services slots
+                ns.data.forEach(r => {
+                    ns.services[r.id] = ns.services[r.id] || {};
+                    ns.services[r.id]['service_rates'] = []; // We only care about service rates for Step 2
+                });
+
+                // Load service rates for all cards
+                await Promise.all(ns.data.map(async r => {
+                    const arr = await loadServiceRatesForType(r.id, 'service-rate');
+                    ns.services[r.id]['service_rates'] = arr;
+                }));
+
+                renderServiceRateCard();
+
+            } catch (e) {
+                console.error("Failed to load Step 2 data", e);
+                document.getElementById('rateCardContainer').textContent = "Error loading data.";
+            }
+        }
+
+        // --- Rendering ---
+        const container = document.getElementById('rateCardContainer');
+        const searchEl = document.getElementById('rc_search');
+        const regionEl = document.getElementById('rc_region');
+        const currencyEl = document.getElementById('rc_currency');
+
+        function filterData() {
+            const q = (searchEl.value || '').toLowerCase();
+            const r = regionEl.value;
+            const c = currencyEl.value;
+            return (ns.data || []).filter(d =>
+                (!r || d.region === r) && (!c || d.currency === c) &&
+                (!q || [d.customer, d.country, d.supplier].some(x => (x || '').toLowerCase().includes(q)))
+            );
+        }
+
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+        function renderServiceRateCard() {
+            const rowsData = filterData();
+
+            const allColumns = [
+                { key: "customer", label: "Customer" },
+                { key: "region", label: "Region" },
+                { key: "country", label: "Country" },
+                { key: "supplier", label: "Supplier" },
+                { key: "currency", label: "Currency" },
+                { key: "entity", label: "Entity" },
+                { key: "payment", label: "Payment" },
+                { key: "status", label: "Status" },
+                { key: "category", label: "Category" },
+                { key: "sr_region", label: "SR Region" },
+                { key: "rate_type", label: "Rate Type" },
+                { key: "rate_value", label: "Rate Value" },
+                { key: "after_hours", label: "After Hours" },
+                { key: "weekend", label: "Weekend" },
+                { key: "travel", label: "Travel" },
+                { key: "includes_travel", label: "Includes Travel" },
+                { key: "remarks", label: "Remarks" },
+                { key: "fte", label: "FTE" },
+                { key: "sv", label: "Scheduled Visits" }
+            ];
+
+            // LocalStorage for columns
+            let hiddenColumns = {};
+            const saved = localStorage.getItem("step2HiddenColumns");
+            if (saved) hiddenColumns = JSON.parse(saved);
+            else allColumns.forEach(c => hiddenColumns[c.key] = false);
+
+            let combinedRowsHtml = '';
+            let rowIndex = 0;
+
+            rowsData.forEach(r => {
+                const services = (ns.services[r.id] && ns.services[r.id].service_rates) ? ns.services[r.id].service_rates : [];
+
+                if (services.length === 0) {
+                    combinedRowsHtml += `
+            <tr class="combined-row" data-rcid="${r.id}" data-sidx="-1">
+              <td>${++rowIndex}</td>
+              <td class="col-customer">${esc(r.customer)}</td>
+              <td class="col-region">${esc(r.region)}</td>
+              <td class="col-country">${esc(r.country)}</td>
+              <td class="col-supplier">${esc(r.supplier)}</td>
+              <td class="col-currency">${esc(r.currency)}</td>
+              <td class="col-entity">${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td>
+              <td class="col-payment">${esc(r.payment)}</td>
+              <td class="col-status">${esc(r.status)}</td>
+              <td class="col-category">—</td><td class="col-sr_region">—</td><td class="col-rate_type">—</td><td class="col-rate_value">—</td>
+              <td class="col-after_hours">—</td><td class="col-weekend">—</td><td class="col-travel">—</td><td class="col-includes_travel">—</td><td class="col-remarks">—</td>
+              <td class="col-fte">—</td><td class="col-sv">—</td>
+              <td><button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="-1">Edit</button></td>
+            </tr>`;
+                } else {
+                    services.forEach((s, sIdx) => {
+                        combinedRowsHtml += `
+                <tr class="combined-row" data-rcid="${r.id}" data-sidx="${sIdx}">
+                  <td>${++rowIndex}</td>
+                  <td class="col-customer">${esc(r.customer)}</td>
+                  <td class="col-region">${esc(r.region)}</td>
+                  <td class="col-country">${esc(r.country)}</td>
+                  <td class="col-supplier">${esc(r.supplier)}</td>
+                  <td class="col-currency">${esc(r.currency)}</td>
+                  <td class="col-entity">${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td>
+                  <td class="col-payment">${esc(r.payment)}</td>
+                  <td class="col-status">${esc(r.status)}</td>
+
+                  <td class="col-category">${esc(s.category)}</td>
+                  <td class="col-sr_region">${esc(s.region)}</td>
+                  <td class="col-rate_type">${esc(s.rate_type)}</td>
+                  <td class="col-rate_value">${esc(s.rate_value)}</td>
+                  <td class="col-after_hours">${esc(s.after_hours_multiplier ?? '-')}</td>
+                  <td class="col-weekend">${esc(s.weekend_multiplier ?? '-')}</td>
+                  <td class="col-travel">${esc(s.travel_charge ?? '-')}</td>
+                  <td class="col-includes_travel">${s.includes_travel ? '✅' : '❌'}</td>
+                  <td class="col-remarks">${esc(s.remarks ?? '-')}</td>
+
+                  <td class="col-fte">${esc(s.prebilling?.fte ?? '-')}</td>
+                  <td class="col-sv">${esc(s.prebilling?.sv ?? '-')}</td>
+
+                  <td><button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="${sIdx}">Edit</button></td>
+                </tr>`;
+                    });
+                }
+            });
+
+            container.innerHTML = `
+        <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px">
+            <div class="col-toggle-dropdown" id="colToggle">
+              <button class="btn small">Columns ▼</button>
+              <div class="col-toggle-dropdown-content">
+                ${allColumns.map(c => `
+                  <label><input type="checkbox" class="col-toggle-checkbox" data-col="${c.key}"> ${c.label}</label>
+                `).join('')}
+              </div>
+            </div>
+            <button id="saveDefaultColsBtn" class="btn small primary">💾 Save Default</button>
+            <button id="revertColsBtn" class="btn small">🔄 Revert</button>
+        </div>
+
+        <table class="combinedTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th class="col-customer">Customer</th><th class="col-region">Region</th><th class="col-country">Country</th><th class="col-supplier">Supplier</th>
+              <th class="col-currency">Currency</th><th class="col-entity">Entity</th><th class="col-payment">Payment</th><th class="col-status">Status</th>
+              <th class="col-category">Category</th><th class="col-sr_region">SR Region</th><th class="col-rate_type">Rate Type</th><th class="col-rate_value">Rate Value</th>
+              <th class="col-after_hours">After Hours</th><th class="col-weekend">Weekend</th><th class="col-travel">Travel</th><th class="col-includes_travel">Includes Travel</th><th class="col-remarks">Remarks</th>
+              <th class="col-fte">FTE</th><th class="col-sv">Scheduled Visits</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${combinedRowsHtml || '<tr><td colspan="100%">No rows</td></tr>'}</tbody>
+        </table>
+      `;
+
+            // Event Handlers
+            const colToggleBtn = document.querySelector("#colToggle > button");
+            const colToggleDropdown = document.querySelector("#colToggle");
+            document.addEventListener('click', e => {
+                if (!colToggleDropdown.contains(e.target)) colToggleDropdown.classList.remove("show");
+            });
+            colToggleBtn.onclick = (e) => { e.stopPropagation(); colToggleDropdown.classList.toggle("show"); };
+
+            const checkboxes = container.querySelectorAll(".col-toggle-checkbox");
+            checkboxes.forEach(checkbox => {
+                const col = checkbox.dataset.col;
+                checkbox.checked = hiddenColumns[col] || false;
+                container.querySelectorAll(`.col-${col}`).forEach(td => td.style.display = hiddenColumns[col] ? "none" : "");
+                checkbox.onchange = () => {
+                    hiddenColumns[col] = checkbox.checked;
+                    container.querySelectorAll(`.col-${col}`).forEach(td => td.style.display = hiddenColumns[col] ? "none" : "");
+                };
+            });
+
+            document.getElementById("saveDefaultColsBtn").onclick = () => {
+                localStorage.setItem("step2HiddenColumns", JSON.stringify(hiddenColumns));
+                alert("Column settings saved!");
+            };
+            document.getElementById("revertColsBtn").onclick = () => {
+                localStorage.removeItem("step2HiddenColumns");
+                allColumns.forEach(c => hiddenColumns[c.key] = false);
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    container.querySelectorAll(`.col-${cb.dataset.col}`).forEach(td => td.style.display = "");
+                });
+            };
+
+            container.querySelectorAll(".rc-edit-modal").forEach(btn => {
+                btn.onclick = () => {
+                    const rcid = btn.dataset.rcid;
+                    const sidx = parseInt(btn.dataset.sidx);
+                    const r = ns.data.find(x => String(x.id) === String(rcid));
+                    if (!r) return;
+                    const s = (sidx >= 0 && ns.services[rcid] && ns.services[rcid].service_rates) ? ns.services[rcid].service_rates[sidx] : null;
+                    openServiceRateModal(r, s, sidx);
+                };
+            });
+        }
+
+        // --- Modal Logic ---
+        const modalBackdrop = document.getElementById('rcModalBackdrop');
+        const modalTitle = document.getElementById('rcModalTitle');
+        const modalBody = document.getElementById('rcModalBody');
+        const saveBtn = document.getElementById('rcSaveBtn');
+        const cancelBtn = document.getElementById('rcCancelBtn');
+
+        function openServiceRateModal(r, s, sidx) {
+            modalTitle.textContent = s ? `📌 Edit Rate & Prebilling: ${s.category} (${s.region})` : `Edit Rate Card: ${r.customer}`;
+            const safeVal = (v) => esc(v || '');
+
+            modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div><label>Customer</label><input type="text" value="${safeVal(r.customer)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Region</label><input type="text" value="${safeVal(r.region)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Country</label><input type="text" value="${safeVal(r.country)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Supplier</label><input type="text" value="${safeVal(r.supplier)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Currency</label><input type="text" value="${safeVal(r.currency)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Entity</label><input type="text" value="${safeVal(r.entity && r.entity.display ? r.entity.display : r.entity)}" readonly style="background:#f9f9f9"></div>
+          
+          ${s ? `
+          <hr class="full">
+          <div style="font-weight:bold;margin-bottom:10px" class="full">Service Rate Details</div>
+          
+          <div><label>Category</label><input type="text" id="m-category" value="${safeVal(s.category)}"></div>
+          <div><label>Rate Type</label><input type="text" id="m-rate_type" value="${safeVal(s.rate_type)}"></div>
+          <div><label>Rate Value</label><input type="number" id="m-rate_value" value="${safeVal(s.rate_value)}"></div>
+          <div><label>After Hours</label><input type="number" step="0.1" id="m-after_hours_multiplier" value="${safeVal(s.after_hours_multiplier)}"></div>
+          <div><label>Weekend</label><input type="number" step="0.1" id="m-weekend_multiplier" value="${safeVal(s.weekend_multiplier)}"></div>
+          <div><label>Travel Charge</label><input type="number" id="m-travel_charge" value="${safeVal(s.travel_charge)}"></div>
+          <div><label>Includes Travel</label>
+            <select id="m-includes_travel">
+              <option value="true" ${s.includes_travel ? 'selected' : ''}>Yes</option>
+              <option value="false" ${!s.includes_travel ? 'selected' : ''}>No</option>
+            </select>
+          </div>
+          <div class="full"><label>Remarks</label><textarea id="m-remarks">${safeVal(s.remarks)}</textarea></div>
+
+          <div class="full" style="font-weight:bold;margin-top:10px">Prebilling</div>
+          <div><label>FTE Count</label><input type="number" id="m-fte" value="${safeVal(s.prebilling?.fte)}"></div>
+          <div><label>Scheduled Visits</label><input type="number" id="m-sv" value="${safeVal(s.prebilling?.sv)}"></div>
+          ` : `<div class="full" style="padding:20px;text-align:center;color:#777">No service rate selected.</div>`}
+        </div>
+      `;
+
+            modalBackdrop.style.display = "flex";
+
+            saveBtn.onclick = async () => {
+                if (!s) { modalBackdrop.style.display = "none"; return; }
+
+                const payload = {
+                    category: document.getElementById("m-category").value,
+                    rate_type: document.getElementById("m-rate_type").value,
+                    rate_value: document.getElementById("m-rate_value").value,
+                    after_hours_multiplier: document.getElementById("m-after_hours_multiplier").value,
+                    weekend_multiplier: document.getElementById("m-weekend_multiplier").value,
+                    travel_charge: document.getElementById("m-travel_charge").value,
+                    includes_travel: document.getElementById("m-includes_travel").value === "true",
+                    remarks: document.getElementById("m-remarks").value,
+                    fte: document.getElementById("m-fte").value,
+                    sv: document.getElementById("m-sv").value
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/service_rate/${s.id}/update/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrftoken },
+                        body: new URLSearchParams(payload)
+                    });
+                    if (res.ok) {
+                        // Reload specific rate card's services
+                        const arr = await loadServiceRatesForType(r.id, 'service-rate');
+                        ns.services[r.id]['service_rates'] = arr;
+                        renderServiceRateCard();
+                        modalBackdrop.style.display = "none";
+                    } else {
+                        alert("Failed to save changes.");
+                    }
+                } catch (e) { alert("Error saving: " + e.message); }
+            };
+        }
+
+        cancelBtn.onclick = () => modalBackdrop.style.display = "none";
+
+        // Filters
+        [searchEl, regionEl, currencyEl].forEach(el => el.oninput = renderServiceRateCard);
+
+        // Initial Load
+        loadRateCards();
+
+    })();
+
+    // ---------------------------------------------------------
+    // STEPS 3-7: COMPUTATION & CONSOLIDATION LOGIC
+    // ---------------------------------------------------------
+    (function Steps3to7App() {
+        // Sample Data (Medium Sample)
+        const rateCardDatabase = [
+            {
+                account_name: "Acme Corp", region: "EMEA", country: "UK", supplier: "Supplier A", currency: "USD", entity: "Entity 1", payment: "Net 30", status: "Active",
+                service_rates: [
+                    { category: "Consulting", region: "EMEA", rate_type: "Hourly", rate_value: 120, after_hours_multiplier: 1.5, weekend_multiplier: 2, travel_charge: 50, includes_travel: true, remarks: "Urgent", prebilling: { fte: 2, sv: 5 } },
+                    { category: "Implementation", region: "EMEA", rate_type: "Fixed", rate_value: 150, after_hours_multiplier: null, weekend_multiplier: null, travel_charge: 0, includes_travel: false, remarks: null, prebilling: { fte: 1, sv: 3 } },
+                    { category: "Support", region: "EMEA", rate_type: "Hourly", rate_value: 0, after_hours_multiplier: 1.25, weekend_multiplier: 1.5, travel_charge: 30, includes_travel: true, remarks: "", prebilling: { fte: 3, sv: 4 } }
+                ]
+            },
+            {
+                account_name: "Globex Corporation", region: "APAC", country: "Singapore", supplier: "Supplier B", currency: "SGD", entity: "Entity G", payment: "Monthly", status: "Active",
+                service_rates: [
+                    { category: "Field Support", region: "APAC", rate_type: "Hourly", rate_value: 95, after_hours_multiplier: 1.2, weekend_multiplier: 1.5, travel_charge: 20, includes_travel: false, remarks: "Local team", prebilling: { fte: 3, sv: 4 } },
+                    { category: "Deployment", region: "APAC", rate_type: "Fixed", rate_value: 2000, after_hours_multiplier: null, weekend_multiplier: null, travel_charge: 0, includes_travel: true, remarks: "One-off", prebilling: { fte: 1, sv: 1 } }
+                ]
+            },
+            {
+                account_name: "Wayne Enterprises", region: "NA", country: "USA", supplier: "Supplier C", currency: "USD", entity: "Entity W", payment: "Quarterly", status: "Active",
+                service_rates: [
+                    { category: "Security Audit", region: "NA", rate_type: "Hourly", rate_value: 220, after_hours_multiplier: 1.75, weekend_multiplier: 2, travel_charge: 150, includes_travel: true, remarks: "High priority", prebilling: { fte: 1, sv: 2 } }
+                ]
+            },
+            {
+                account_name: "Stark Industries", region: "EU", country: "Germany", supplier: "Supplier D", currency: "EUR", entity: "Entity S", payment: "Net 45", status: "Active",
+                service_rates: [
+                    { category: "R&D Support", region: "EU", rate_type: "Hourly", rate_value: 300, after_hours_multiplier: 2, weekend_multiplier: 2.5, travel_charge: 200, includes_travel: true, remarks: "Confidential", prebilling: { fte: 2, sv: 1 } }
+                ]
+            },
+            {
+                account_name: "Umbrella Corp", region: "LATAM", country: "Brazil", supplier: "Supplier E", currency: "BRL", entity: "Entity U", payment: "Monthly", status: "Active",
+                service_rates: [
+                    { category: "Field Ops", region: "LATAM", rate_type: "Hourly", rate_value: 60, after_hours_multiplier: 1.2, weekend_multiplier: 1.5, travel_charge: 30, includes_travel: true, remarks: "Regional", prebilling: { fte: 4, sv: 6 } }
+                ]
+            }
+        ];
+
+        const workingData = {};
+        const approvedRowsMap = {};
+        let reviewData = [];
+        let uploadLog = [];
+
+        // Initialize Customer Select
+        const customerSelect = document.getElementById('customerSelect');
+        if (customerSelect) {
+            rateCardDatabase.forEach(rc => {
+                const opt = document.createElement('option');
+                opt.value = rc.account_name;
+                opt.textContent = rc.account_name;
+                customerSelect.appendChild(opt);
+            });
+
+            // Initialize working data
+            rateCardDatabase.forEach(rc => {
+                workingData[rc.account_name] = JSON.parse(JSON.stringify(rc));
+                approvedRowsMap[rc.account_name] = [];
+            });
+        }
+
+        let currentCustomer = rateCardDatabase[0].account_name;
+        if (customerSelect) {
+            customerSelect.value = currentCustomer;
+            customerSelect.addEventListener('change', () => {
+                currentCustomer = customerSelect.value;
+                renderStep3();
+                // Update previews if visible
+                const activeStep = document.querySelector('.step.active');
+                if (activeStep && activeStep.dataset.step === '4') renderStep4();
+                if (activeStep && activeStep.dataset.step === '5') renderStep5();
+            });
+        }
+
+        // --- Utils ---
+        function escapeHtml(str) {
+            return String(str || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+        }
+        function persistState() {
+            try {
+                const state = { workingData, approvedRowsMap, reviewData, uploadLog };
+                localStorage.setItem('billingWizardState_v1', JSON.stringify(state));
+            } catch (e) { }
+        }
+        function getWorking(customer) {
+            if (!workingData[customer]) {
+                const found = rateCardDatabase.find(r => r.account_name === customer);
+                workingData[customer] = found ? JSON.parse(JSON.stringify(found)) : { account_name: customer, service_rates: [] };
+            }
+            return workingData[customer];
+        }
+
+        // --- Step 3 (Manual Computation) ---
+        window.renderStep3 = function () { // Exposed for wizard navigation
+            const container = document.getElementById("step3-table-container");
+            if (!container) return;
+            const rateCardSample = getWorking(currentCustomer);
+
+            const rowsHtml = rateCardSample.service_rates.map((s, i) => {
+                const total = (parseFloat(s.rate_value) || 0) * ((parseFloat(s.prebilling?.fte) || 0) + (parseFloat(s.prebilling?.sv) || 0));
+                return `
+          <tr data-index="${i}">
+            <td>${escapeHtml(rateCardSample.account_name)}</td>
+            <td>${escapeHtml(rateCardSample.region)}</td>
+            <td>${escapeHtml(rateCardSample.country)}</td>
+            <td>${escapeHtml(rateCardSample.supplier)}</td>
+            <td>${escapeHtml(rateCardSample.currency)}</td>
+            <td>${escapeHtml(rateCardSample.entity)}</td>
+            <td>${escapeHtml(rateCardSample.payment)}</td>
+            <td>${escapeHtml(rateCardSample.status)}</td>
+            <td contenteditable="true">${escapeHtml(s.category)}</td>
+            <td contenteditable="true">${escapeHtml(s.region)}</td>
+            <td contenteditable="true">${escapeHtml(s.rate_type)}</td>
+            <td contenteditable="true">${escapeHtml(s.rate_value)}</td>
+            <td contenteditable="true">${s.after_hours_multiplier ?? '-'}</td>
+            <td contenteditable="true">${s.weekend_multiplier ?? '-'}</td>
+            <td contenteditable="true">${s.travel_charge ?? '-'}</td>
+            <td>${s.includes_travel ? '✅' : '❌'}</td>
+            <td contenteditable="true">${escapeHtml(s.remarks ?? '')}</td>
+            <td contenteditable="true">${s.prebilling?.fte ?? '-'}</td>
+            <td contenteditable="true">${s.prebilling?.sv ?? '-'}</td>
+            <td class="row-total">${total.toFixed(2)}</td>
+            <td>
+              <button class="btn small approve" style="background:#28a745;color:white;border:none;">Approve</button>
+              <button class="btn small reject" style="background:#dc3545;color:white;border:none;">Reject</button>
+            </td>
+          </tr>
+        `;
+            }).join('');
+
+            container.innerHTML = `<div style="overflow-x:auto;"><table class="combinedTable">
+        <thead>
+          <tr>
+            <th>Customer</th><th>Region</th><th>Country</th><th>Supplier</th><th>Currency</th><th>Entity</th><th>Payment</th><th>Status</th>
+            <th>Category</th><th>SR Region</th><th>Rate Type</th><th>Rate Value</th>
+            <th>After Hours</th><th>Weekend</th><th>Travel</th><th>Includes Travel</th>
+            <th>Remarks</th><th>FTE</th><th>Scheduled Visits</th><th>Total</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table></div>`;
+
+            attachStep3Events();
+            highlightAnomalies();
+        };
+
+        function attachStep3Events() {
+            const rows = document.querySelectorAll("#step3-table-container tbody tr");
+            const rateCardSample = getWorking(currentCustomer);
+            rows.forEach(tr => {
+                const idx = parseInt(tr.dataset.index, 10);
+                tr.querySelector(".approve").onclick = () => {
+                    const updated = readRowAsObject(tr);
+                    approvedRowsMap[currentCustomer].push(updated);
+                    rateCardSample.service_rates.splice(idx, 1);
+                    renderStep3();
+                    // alert(`Row approved for ${currentCustomer}.`);
+                    persistState();
+                };
+                tr.querySelector(".reject").onclick = () => {
+                    const updated = readRowAsObject(tr);
+                    tr.classList.add("highlight");
+                    alert(`Row rejected: ${updated.category}`);
+                };
+                tr.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                    cell.addEventListener('blur', () => {
+                        const updated = readRowAsObject(tr);
+                        const totalCell = tr.querySelector('.row-total');
+                        const total = (parseFloat(updated.rate_value) || 0) * ((parseFloat(updated.prebilling.fte) || 0) + (parseFloat(updated.prebilling.sv) || 0));
+                        totalCell.textContent = total.toFixed(2);
+                        highlightAnomalies();
+                        persistState();
+                    });
+                });
+            });
+        }
+
+        function readRowAsObject(tr) {
+            const cells = tr.children;
+            return {
+                category: cells[8].textContent.trim(),
+                region: cells[9].textContent.trim(),
+                rate_type: cells[10].textContent.trim(),
+                rate_value: parseFloat(cells[11].textContent.trim()) || 0,
+                after_hours_multiplier: parseFloat(cells[12].textContent.trim()) || null,
+                weekend_multiplier: parseFloat(cells[13].textContent.trim()) || null,
+                travel_charge: parseFloat(cells[14].textContent.trim()) || null,
+                includes_travel: cells[15].textContent.includes('✅'),
+                remarks: cells[16].textContent.trim(),
+                prebilling: {
+                    fte: parseFloat(cells[17].textContent.trim()) || 0,
+                    sv: parseFloat(cells[18].textContent.trim()) || 0
+                }
+            };
+        }
+
+        function highlightAnomalies() {
+            document.querySelectorAll("#step3-table-container tbody tr").forEach(tr => {
+                tr.classList.remove("highlight");
+                const rate = parseFloat(tr.children[11].textContent) || 0;
+                const total = parseFloat(tr.children[19].textContent) || 0;
+                if (rate <= 0 || total <= 0) tr.classList.add("highlight");
+            });
+        }
+
+        document.getElementById('computeTotalsBtn').onclick = () => {
+            // Re-trigger blur logic or just re-render
+            renderStep3();
+            alert("Totals recomputed.");
+        };
+        document.getElementById('resetSampleBtn').onclick = () => {
+            if (confirm("Reset data?")) {
+                const db = rateCardDatabase.find(r => r.account_name === currentCustomer);
+                workingData[currentCustomer] = JSON.parse(JSON.stringify(db));
+                approvedRowsMap[currentCustomer] = [];
+                renderStep3();
+                persistState();
+            }
+        };
+
+        // --- Step 4 (Consolidation) ---
+        window.renderStep4 = function () {
+            const beforeTbody = document.querySelector("#beforeRateCard tbody");
+            const afterTbody = document.querySelector("#afterRateCard tbody");
+            if (!beforeTbody || !afterTbody) return;
+
+            beforeTbody.innerHTML = "";
+            afterTbody.innerHTML = "";
+
+            const approvedRows = approvedRowsMap[currentCustomer] || [];
+
+            approvedRows.forEach(s => {
+                const total = (parseFloat(s.rate_value) || 0) * ((parseFloat(s.prebilling.fte) || 0) + (parseFloat(s.prebilling.sv) || 0));
+                const rowContent = [
+                    currentCustomer, getWorking(currentCustomer).region, getWorking(currentCustomer).country, getWorking(currentCustomer).supplier, getWorking(currentCustomer).currency,
+                    getWorking(currentCustomer).entity, getWorking(currentCustomer).payment, getWorking(currentCustomer).status,
+                    s.category, s.region, s.rate_type, s.rate_value, s.after_hours_multiplier ?? '-', s.weekend_multiplier ?? '-', s.travel_charge ?? '-',
+                    s.includes_travel ? '✅' : '❌', s.remarks ?? '-', s.prebilling.fte, s.prebilling.sv, total.toFixed(2)
+                ];
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = rowContent.map(c => `<td>${escapeHtml(String(c))}</td>`).join('');
+                beforeTbody.appendChild(tr);
+
+                const afterTr = document.createElement('tr');
+                afterTr.innerHTML = rowContent.map((c, i) => {
+                    // Make some fields editable
+                    if (i >= 8 && i <= 18) return `<td contenteditable="true">${escapeHtml(String(c))}</td>`;
+                    if (i === 19) return `<td class="after-total">${escapeHtml(String(c))}</td>`;
+                    return `<td>${escapeHtml(String(c))}</td>`;
+                }).join('');
+                afterTbody.appendChild(afterTr);
+            });
+        };
+
+        document.getElementById("mergeUploadBtn").onclick = () => {
+            const approvedRows = approvedRowsMap[currentCustomer] || [];
+            if (approvedRows.length === 0) { alert("No approved rows."); return; }
+
+            const now = new Date().toLocaleString();
+            const ref = Math.floor(Math.random() * 1000000);
+            const fileName = `Consolidated_${currentCustomer}_${Math.floor(Date.now() / 1000)}.xlsx`;
+            uploadLog.push({ fileName, date: now, uploader: "Admin", ref, status: "Uploaded" });
+
+            const logTbody = document.querySelector("#uploadLogTable tbody");
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${escapeHtml(fileName)}</td><td>${escapeHtml(now)}</td><td>Admin</td><td>${ref}</td><td>Uploaded</td>`;
+            logTbody.appendChild(tr);
+
+            const created = approvedRows.map(r => {
+                const total = (parseFloat(r.rate_value) || 0) * ((parseFloat(r.prebilling.fte) || 0) + (parseFloat(r.prebilling.sv) || 0));
+                return {
+                    customer: currentCustomer, status: "Pending", comments: "", updatedBy: "-", date: "-",
+                    original: JSON.parse(JSON.stringify(r)), total: total.toFixed(2)
+                };
+            });
+            reviewData = reviewData.concat(created);
+            approvedRowsMap[currentCustomer] = []; // clear
+            persistState();
+            alert("Consolidated & Uploaded. Moving to Review.");
+
+            // Auto-advance
+            setStep(5);
+        };
+
+        // --- Step 5 (Review) ---
+        window.renderStep5 = function () {
+            const tbody = document.querySelector('#reviewTracker tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (reviewData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="muted">No records pending review.</td></tr>`;
+                drawReviewChart();
+                return;
+            }
+            reviewData.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+          <td>${escapeHtml(r.customer)}</td>
+          <td class="status-cell">${escapeHtml(r.status)}</td>
+          <td contenteditable="true" class="comment-cell">${escapeHtml(r.comments)}</td>
+          <td class="updatedBy-cell">${escapeHtml(r.updatedBy)}</td>
+          <td class="date-cell">${escapeHtml(r.date)}</td>
+          <td>
+            <button class="btn small approve" style="background:#28a745;color:white;border:none;">Approve</button>
+            <button class="btn small reject" style="background:#dc3545;color:white;border:none;">Reject</button>
+          </td>
+        `;
+                tbody.appendChild(tr);
+
+                tr.querySelector('.approve').onclick = () => {
+                    r.status = "Approved"; r.comments = tr.querySelector('.comment-cell').textContent.trim();
+                    r.updatedBy = "Admin"; r.date = new Date().toLocaleString();
+                    persistState(); renderStep5();
+                };
+                tr.querySelector('.reject').onclick = () => {
+                    r.status = "Rejected"; r.comments = tr.querySelector('.comment-cell').textContent.trim();
+                    r.updatedBy = "Admin"; r.date = new Date().toLocaleString();
+                    persistState(); renderStep5();
+                };
+            });
+            drawReviewChart();
+        };
+
+        function drawReviewChart() {
+            const canvas = document.getElementById('reviewSummaryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const approved = reviewData.filter(r => r.status === "Approved").length;
+            const rejected = reviewData.filter(r => r.status === "Rejected").length;
+            const pending = reviewData.filter(r => r.status === "Pending").length;
+            const total = approved + rejected + pending;
+            if (total === 0) { ctx.fillText("No data", 100, 100); return; }
+
+            const values = [approved, rejected, pending];
+            const colors = ["#28a745", "#dc3545", "#6c757d"];
+            let start = -0.5 * Math.PI;
+            for (let i = 0; i < values.length; i++) {
+                const slice = (values[i] / total) * 2 * Math.PI;
+                ctx.beginPath(); ctx.moveTo(150, 100); ctx.arc(150, 100, 80, start, start + slice); ctx.closePath();
+                ctx.fillStyle = colors[i]; ctx.fill(); start += slice;
+            }
+            ctx.fillStyle = "#000";
+            ctx.fillText(`App: ${approved} Rej: ${rejected} Pen: ${pending}`, 10, 190);
+        }
+
+        document.getElementById('notifySDM').onclick = () => alert("Notification sent (simulated).");
+
+        // --- Step 6 (Query Resolution) ---
+        window.renderStep6 = function () {
+            const tbody = document.querySelector('#rejectedQueue tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const rejectedRows = reviewData.filter(r => r.status === "Rejected");
+            if (rejectedRows.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="muted">No rejected records</td></tr>`; }
+
+            rejectedRows.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.customer}</td><td>${r.original.category}</td><td>${r.original.region}</td><td>${r.comments || '-'}</td><td>Admin</td><td>${r.date}</td><td><button class="btn primary small">Correct</button></td>`;
+                tbody.appendChild(tr);
+                tr.querySelector('button').onclick = () => {
+                    const modal = document.getElementById('correctionModal');
+                    const notes = document.getElementById('correctionNotes');
+                    notes.value = r.correction || '';
+                    modal.classList.remove('hide');
+                    document.getElementById('submitCorrection').onclick = () => {
+                        r.correction = notes.value.trim(); r.status = "Resubmitted"; r.date = new Date().toLocaleString();
+                        modal.classList.add('hide'); renderStep6(); persistState();
+                    };
+                    document.getElementById('closeCorrectionModal').onclick = () => modal.classList.add('hide');
+                };
+            });
+            drawResubChart();
+        };
+
+        function drawResubChart() {
+            const canvas = document.getElementById('resubmissionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const rejectedRows = reviewData.filter(r => r.status === "Rejected" || r.status === "Resubmitted");
+            const total = rejectedRows.length;
+            if (total === 0) return;
+            let start = -0.5 * Math.PI;
+            const colors = ["#dc3545", "#ffc107"];
+            rejectedRows.forEach((r, i) => {
+                const slice = (1 / total) * 2 * Math.PI;
+                ctx.beginPath(); ctx.moveTo(canvas.width / 2, canvas.height / 2); ctx.arc(canvas.width / 2, canvas.height / 2, 80, start, start + slice); ctx.closePath();
+                ctx.fillStyle = colors[i % colors.length]; ctx.fill(); start += slice;
+            });
+            ctx.fillStyle = "#000"; ctx.fillText(`Total: ${total}`, 10, 10);
+        }
+
+        // --- Step 7 (Final Approval) ---
+        window.renderStep7 = function () {
+            const tbody = document.querySelector('#invoiceSummaryTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const approvedRows = reviewData.filter(r => r.status === "Approved" || r.status === "Resubmitted");
+            if (approvedRows.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="muted">No approved records.</td></tr>`; }
+            let totalInvoice = 0;
+            approvedRows.forEach(r => {
+                const rowTotal = (r.original.rate_value || 0) * ((r.original.prebilling?.fte || 0) + (r.original.prebilling?.sv || 0));
+                totalInvoice += rowTotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.customer}</td><td>${r.original.category}</td><td>${r.original.region}</td><td>${rowTotal.toFixed(2)}</td>`;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('cycleStatus').textContent = `Total invoice: ${totalInvoice.toFixed(2)}`;
+        };
+
+        document.getElementById('closeCycleBtn').onclick = () => {
+            if (confirm("Close billing cycle?")) {
+                document.getElementById('cycleStatus').textContent += " — Cycle Closed";
+                alert("Cycle Closed.");
+            }
+        };
+
+        // --- Hook into setStep ---
+        const originalSetStep = window.setStep; // Assuming setStep is global from previous block
+        // We can't easily hook if it's not exposed or if we are in a separate block.
+        // The previous block put setStep in global scope (implicitly or explicitly).
+        // Let's assume it is global.
+
+        // Override setStep to trigger renders
+        window.setStep = function (step) {
+            // Call original
+            if (typeof originalSetStep === 'function') originalSetStep(step);
+            else {
+                // Fallback if original not found (should be there though)
+                currentStep = step;
+                document.querySelectorAll('.step').forEach(s => s.classList.toggle('active', parseInt(s.dataset.step) === step));
+                document.querySelectorAll('.step-content').forEach(c => {
+                    if (parseInt(c.dataset.step) === step) c.classList.remove('hide');
+                    else c.classList.add('hide');
+                });
+            }
+
+            // Trigger renders
+            if (step === 3) renderStep3();
+            if (step === 4) renderStep4();
+            if (step === 5) renderStep5();
+            if (step === 6) renderStep6();
+            if (step === 7) renderStep7();
+        };
+
+        // Initial render if starting on a specific step
+        const urlParams = new URLSearchParams(window.location.search);
+        const stepParam = urlParams.get('step');
+        if (stepParam) {
+            const s = parseInt(stepParam);
+            if (s >= 3) window.setStep(s);
+        }
+
+    })();
 </script>
 {% endblock %}
