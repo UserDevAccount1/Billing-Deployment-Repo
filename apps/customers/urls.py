@@ -18,6 +18,8 @@ urlpatterns = [
     # Account management
     path('accounts/create/', views.create_account, name='create_account'),
     path('accounts/<int:pk>/', views.account_detail, name='account_detail'),
+    path('accounts/<int:pk>/edit/', views.edit_account, name='edit_account'),
+    path('accounts/<int:pk>/delete/', views.delete_account, name='delete_account'),
     
     # AJAX endpoints
     path('ajax/load-accounts/', views.load_accounts, name='ajax_load_accounts'),

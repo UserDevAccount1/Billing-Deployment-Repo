@@ -367,6 +367,37 @@
     #chartWrap {
         margin-top: 20px;
     }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    .pagination button {
+        background: #fff;
+        border: 1px solid #ddd;
+        color: #333;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+    .pagination button:hover:not(:disabled) {
+        background: #f2f2f2;
+    }
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .pagination .current {
+        background: #5335ff;
+        border-color: #5335ff;
+        color: white;
+    }
 </style>
 {% endblock %}
 
@@ -533,6 +564,10 @@
             </div>
 
             <div id="rateCardContainer">Loading Rate Cards...</div>
+            <div class="footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                <div id="footerText" class="muted" style="font-size:13px;">Showing 0-0 of 0 items</div>
+                <div id="rcPagination" class="pagination"></div>
+            </div>
         </div>
     </section>
 
@@ -852,6 +887,9 @@
             customers: [],
             entities: []
         };
+        
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
         // CSRF helper
         function getCookie(name) {
@@ -943,8 +981,30 @@
 
         const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
+        function flattenData(ratecards) {
+            const rows = [];
+            ratecards.forEach(r => {
+                const services = (ns.services[r.id] && ns.services[r.id].service_rates) ? ns.services[r.id].service_rates : [];
+                if (services.length === 0) {
+                    rows.push({ r, s: null, sIdx: -1 });
+                } else {
+                    services.forEach((s, sIdx) => {
+                        rows.push({ r, s, sIdx });
+                    });
+                }
+            });
+            return rows;
+        }
+
         function renderServiceRateCard() {
             const rowsData = filterData();
+            const allRows = flattenData(rowsData);
+            
+            const totalPages = Math.ceil(allRows.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = 1;
+            
+            const start = (currentPage - 1) * itemsPerPage;
+            const pagedRows = allRows.slice(start, start + itemsPerPage);
 
             const allColumns = [
                 { key: "customer", label: "Customer" },
@@ -975,12 +1035,12 @@
             else allColumns.forEach(c => hiddenColumns[c.key] = false);
 
             let combinedRowsHtml = '';
-            let rowIndex = 0;
+            let rowIndex = start;
 
-            rowsData.forEach(r => {
-                const services = (ns.services[r.id] && ns.services[r.id].service_rates) ? ns.services[r.id].service_rates : [];
-
-                if (services.length === 0) {
+            pagedRows.forEach(item => {
+                const { r, s, sIdx } = item;
+                
+                if (!s) {
                     combinedRowsHtml += `
             <tr class="combined-row" data-rcid="${r.id}" data-sidx="-1">
               <td>${++rowIndex}</td>
@@ -998,37 +1058,37 @@
               <td><button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="-1">Edit</button></td>
             </tr>`;
                 } else {
-                    services.forEach((s, sIdx) => {
-                        combinedRowsHtml += `
-                <tr class="combined-row" data-rcid="${r.id}" data-sidx="${sIdx}">
-                  <td>${++rowIndex}</td>
-                  <td class="col-customer">${esc(r.customer)}</td>
-                  <td class="col-region">${esc(r.region)}</td>
-                  <td class="col-country">${esc(r.country)}</td>
-                  <td class="col-supplier">${esc(r.supplier)}</td>
-                  <td class="col-currency">${esc(r.currency)}</td>
-                  <td class="col-entity">${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td>
-                  <td class="col-payment">${esc(r.payment)}</td>
-                  <td class="col-status">${esc(r.status)}</td>
+                    combinedRowsHtml += `
+            <tr class="combined-row" data-rcid="${r.id}" data-sidx="${sIdx}">
+              <td>${++rowIndex}</td>
+              <td class="col-customer">${esc(r.customer)}</td>
+              <td class="col-region">${esc(r.region)}</td>
+              <td class="col-country">${esc(r.country)}</td>
+              <td class="col-supplier">${esc(r.supplier)}</td>
+              <td class="col-currency">${esc(r.currency)}</td>
+              <td class="col-entity">${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td>
+              <td class="col-payment">${esc(r.payment)}</td>
+              <td class="col-status">${esc(r.status)}</td>
 
-                  <td class="col-category">${esc(s.category)}</td>
-                  <td class="col-sr_region">${esc(s.region)}</td>
-                  <td class="col-rate_type">${esc(s.rate_type)}</td>
-                  <td class="col-rate_value">${esc(s.rate_value)}</td>
-                  <td class="col-after_hours">${esc(s.after_hours_multiplier ?? '-')}</td>
-                  <td class="col-weekend">${esc(s.weekend_multiplier ?? '-')}</td>
-                  <td class="col-travel">${esc(s.travel_charge ?? '-')}</td>
-                  <td class="col-includes_travel">${s.includes_travel ? '✅' : '❌'}</td>
-                  <td class="col-remarks">${esc(s.remarks ?? '-')}</td>
+              <td class="col-category">${esc(s.category)}</td>
+              <td class="col-sr_region">${esc(s.region)}</td>
+              <td class="col-rate_type">${esc(s.rate_type)}</td>
+              <td class="col-rate_value">${esc(s.rate_value)}</td>
+              <td class="col-after_hours">${esc(s.after_hours_multiplier ?? '-')}</td>
+              <td class="col-weekend">${esc(s.weekend_multiplier ?? '-')}</td>
+              <td class="col-travel">${esc(s.travel_charge ?? '-')}</td>
+              <td class="col-includes_travel">${s.includes_travel ? '✅' : '❌'}</td>
+              <td class="col-remarks">${esc(s.remarks ?? '-')}</td>
 
-                  <td class="col-fte">${esc(s.prebilling?.fte ?? '-')}</td>
-                  <td class="col-sv">${esc(s.prebilling?.sv ?? '-')}</td>
+              <td class="col-fte">${esc(s.prebilling?.fte ?? '-')}</td>
+              <td class="col-sv">${esc(s.prebilling?.sv ?? '-')}</td>
 
-                  <td><button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="${sIdx}">Edit</button></td>
-                </tr>`;
-                    });
+              <td><button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="${sIdx}">Edit</button></td>
+            </tr>`;
                 }
             });
+            
+            renderPagination(allRows.length);
 
             container.innerHTML = `
         <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px">
@@ -1101,6 +1161,61 @@
                     const s = (sidx >= 0 && ns.services[rcid] && ns.services[rcid].service_rates) ? ns.services[rcid].service_rates[sidx] : null;
                     openServiceRateModal(r, s, sidx);
                 };
+            });
+        }
+
+        function renderPagination(totalItems) {
+            const container = document.getElementById('rcPagination');
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            
+            // Update footer text
+            const start = (currentPage - 1) * itemsPerPage + 1;
+            const end = Math.min(currentPage * itemsPerPage, totalItems);
+            const footerText = document.getElementById('footerText');
+            if (footerText) {
+                footerText.textContent = totalItems > 0 ? `Showing ${start}–${end} of ${totalItems} items` : 'No items found';
+            }
+
+            if (totalItems === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = `
+                <button ${currentPage === 1 ? 'disabled' : ''} class="prev-btn">Previous</button>
+            `;
+
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <button class="${i === currentPage ? 'current' : ''} page-btn" data-page="${i}">${i}</button>
+                `;
+            }
+
+            paginationHTML += `
+                <button ${currentPage === totalPages ? 'disabled' : ''} class="next-btn">Next</button>
+            `;
+
+            container.innerHTML = paginationHTML;
+
+            // Event listeners
+            const changePage = (page) => {
+                if (page < 1 || page > totalPages) return;
+                currentPage = page;
+                renderServiceRateCard();
+            };
+
+            container.querySelector('.prev-btn').onclick = () => changePage(currentPage - 1);
+            container.querySelector('.next-btn').onclick = () => changePage(currentPage + 1);
+            container.querySelectorAll('.page-btn').forEach(btn => {
+                btn.onclick = () => changePage(parseInt(btn.dataset.page));
             });
         }
 
@@ -1189,7 +1304,7 @@
         cancelBtn.onclick = () => modalBackdrop.style.display = "none";
 
         // Filters
-        [searchEl, regionEl, currencyEl].forEach(el => el.oninput = renderServiceRateCard);
+        [searchEl, regionEl, currencyEl].forEach(el => el.oninput = () => { currentPage = 1; renderServiceRateCard(); });
 
         // Initial Load
         loadRateCards();

@@ -83,6 +83,50 @@
     background: #ebebf9;
     border-color: #3e3691;
   }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .pagination button {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+  }
+
+  .pagination button:hover:not(:disabled) {
+    background: #f2f2f2;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .pagination .current {
+    background: #5335ff;
+    border-color: #5335ff;
+    color: white;
+  }
+  
+  .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 13px;
+      color: var(--muted);
+  }
 </style>
 {% endblock %}
 
@@ -484,7 +528,13 @@
     </div>
 
     <!-- table container -->
+    <!-- table container -->
     <div class="list" id="rcTableContainer"></div>
+    
+    <div class="footer">
+        <div id="footerText">Select a filter to view rate cards</div>
+        <div class="pagination" id="rcPagination"></div>
+    </div>
 
 
   </div>
@@ -696,7 +746,70 @@
       const newBtn = document.getElementById('rcNewBtn');
 
       ns.currentType = 'default';
+      let currentPage = 1;
+      const itemsPerPage = 10;
       const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+      // Add event listeners for filters
+      [searchEl, regionEl, currencyEl, supplierEl].forEach(el => {
+          el.addEventListener('input', () => {
+              currentPage = 1;
+              render();
+          });
+      });
+
+      function renderPagination(totalItems) {
+          const container = document.getElementById('rcPagination');
+          const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+          
+          // Update footer text
+          const start = (currentPage - 1) * itemsPerPage + 1;
+          const end = Math.min(currentPage * itemsPerPage, totalItems);
+          document.getElementById('footerText').textContent = 
+              totalItems > 0 ? `Showing ${start}–${end} of ${totalItems} items` : 'No items found';
+
+          if (totalItems === 0) {
+              container.innerHTML = '';
+              return;
+          }
+
+          let paginationHTML = `
+              <button ${currentPage === 1 ? 'disabled' : ''} class="prev-btn">Previous</button>
+          `;
+
+          const maxVisiblePages = 5;
+          let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+          let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+          if (endPage - startPage + 1 < maxVisiblePages) {
+              startPage = Math.max(1, endPage - maxVisiblePages + 1);
+          }
+
+          for (let i = startPage; i <= endPage; i++) {
+              paginationHTML += `
+                  <button class="${i === currentPage ? 'current' : ''} page-btn" data-page="${i}">${i}</button>
+              `;
+          }
+
+          paginationHTML += `
+              <button ${currentPage === totalPages ? 'disabled' : ''} class="next-btn">Next</button>
+          `;
+
+          container.innerHTML = paginationHTML;
+
+          // Event listeners
+          const changePage = (page) => {
+              if (page < 1 || page > totalPages) return;
+              currentPage = page;
+              render();
+          };
+
+          container.querySelector('.prev-btn').onclick = () => changePage(currentPage - 1);
+          container.querySelector('.next-btn').onclick = () => changePage(currentPage + 1);
+          container.querySelectorAll('.page-btn').forEach(btn => {
+              btn.onclick = () => changePage(parseInt(btn.dataset.page));
+          });
+      }
 
       function uniqueSuppliers() { return [...new Set((ns.data || []).map(d => d.supplier))]; }
       function refreshSupplierFilter() {
@@ -714,9 +827,15 @@
       const baseCells = (r, i) => `<td>${i + 1}</td><td>${esc(r.customer)}</td><td>${esc(r.region)}</td><td>${esc(r.country)}</td><td>${esc(r.supplier)}</td><td>${esc(r.currency)}</td><td>${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td><td>${esc(r.payment)}</td>`;
 
       function renderDefault() {
-        const rows = filterData().map((r, i) => `
+        const allData = filterData();
+        const totalItems = allData.length;
+        
+        const start = (currentPage - 1) * itemsPerPage;
+        const pagedData = allData.slice(start, start + itemsPerPage);
+        
+        const rows = pagedData.map((r, i) => `
       <tr data-id="${r.id}">
-        ${baseCells(r, i)}
+        ${baseCells(r, start + i)}
         <td>${r.status}</td>
         <td class="actions">
           <button class="iconbtn rc-view" data-id="${r.id}" data-viewtype="details">👁️</button>
@@ -725,6 +844,8 @@
         </td>
       </tr>`).join('');
         container.innerHTML = `<table><thead><tr>${baseCols()}<th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+        
+        renderPagination(totalItems);
       }
 
       function render() {
@@ -743,7 +864,12 @@
           return Array.isArray(slot) ? slot : [];
         };
 
-        const rowsData = filterData();
+        const allData = filterData();
+        const totalItems = allData.length;
+        
+        const start = (currentPage - 1) * itemsPerPage;
+        const rowsData = allData.slice(start, start + itemsPerPage);
+
         const categoryOrder = [];
         const categoryTypes = {}; // { category: Set(types) }
 
@@ -835,11 +961,31 @@
         }
 
         container.innerHTML = `<table><thead>${headerHtml}</thead><tbody>${rowsHtml || '<tr><td colspan="100%">No rows</td></tr>'}</tbody></table>`;
+        renderPagination(totalItems);
       }
 
 
       function renderServiceRateCard() {
         const rowsData = filterData();
+        
+        // Flatten data first to paginate properly across flattened rows
+        let allRows = [];
+        let rowIndex = 0;
+        
+        rowsData.forEach(r => {
+            const services = (ns.services[r.id] && ns.services[r.id].service_rates) ? ns.services[r.id].service_rates : [];
+            if (services.length === 0) {
+                allRows.push({ r, s: null, sIdx: -1 });
+            } else {
+                services.forEach((s, sIdx) => {
+                    allRows.push({ r, s, sIdx });
+                });
+            }
+        });
+        
+        const totalItems = allRows.length;
+        const start = (currentPage - 1) * itemsPerPage;
+        const pagedRows = allRows.slice(start, start + itemsPerPage);
 
         // ------------------------------
         // COLUMN VISIBILITY SETTINGS
@@ -877,19 +1023,20 @@
 
         // Flatten data: RateCard -> ServiceRates
         let combinedRowsHtml = '';
-        let rowIndex = 0;
+        let displayIndex = start;
 
         // We need to store a reference to the specific service rate for editing
         // We'll attach data attributes to the row: data-rcid (RateCard ID) and data-sidx (Service Index)
 
-        rowsData.forEach(r => {
-          const services = (ns.services[r.id] && ns.services[r.id].service_rates) ? ns.services[r.id].service_rates : [];
-          if (services.length === 0) {
+        pagedRows.forEach(item => {
+          const { r, s, sIdx } = item;
+          
+          if (!s) {
             // Show a row with empty service columns if no services exist? 
             // Or just skip? Let's show one row with empty service data so the Rate Card is visible
             combinedRowsHtml += `
             <tr class="combined-row" data-rcid="${r.id}" data-sidx="-1">
-              <td>${++rowIndex}</td>
+              <td>${++displayIndex}</td>
               <td class="col-customer">${esc(r.customer)}</td>
               <td class="col-region">${esc(r.region)}</td>
               <td class="col-country">${esc(r.country)}</td>
@@ -917,10 +1064,9 @@
               </td>
             </tr>`;
           } else {
-            services.forEach((s, sIdx) => {
               combinedRowsHtml += `
                 <tr class="combined-row" data-rcid="${r.id}" data-sidx="${sIdx}">
-                  <td>${++rowIndex}</td>
+                  <td>${++displayIndex}</td>
                   <td class="col-customer">${esc(r.customer)}</td>
                   <td class="col-region">${esc(r.region)}</td>
                   <td class="col-country">${esc(r.country)}</td>
@@ -948,7 +1094,6 @@
                     <button class="btn small rc-del-svc" data-rcid="${r.id}" data-sidx="${sIdx}">Delete</button>
                   </td>
                 </tr>`;
-            });
           }
         });
 
@@ -988,6 +1133,7 @@
         <a href="/billing/create?step=3" class="btn primary"
         style="margin-right:10px; text-decoration:none;">Standardize Rate Card</a>
     `;
+        renderPagination(totalItems);
 
         // ------------------------------
         // EVENT HANDLERS

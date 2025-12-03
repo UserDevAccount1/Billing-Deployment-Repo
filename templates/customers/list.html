@@ -332,6 +332,7 @@ tbody tr:hover{background:#f9f9f9}
 
 {% block extra_js %}
 <script>
+const csrfToken = "{{ csrf_token }}";
 // Build accounts array directly from Django template loops
 const accountsData = [
 {% for customer in customers %}
@@ -527,6 +528,8 @@ function renderTable() {
     
     tbody.innerHTML = pageAccounts.map(account => {
         const accountDetailUrl = "{% url 'customers:account_detail' pk=999999 %}".replace('999999', account.id);
+        const editUrl = "{% url 'customers:edit_account' pk=999999 %}".replace('999999', account.id);
+        const deleteUrl = "{% url 'customers:delete_account' pk=999999 %}".replace('999999', account.id);
         
         return `
             <tr>
@@ -544,7 +547,11 @@ function renderTable() {
                 <td>${getStatusBadge(account.status)}</td>
                 <td class="actions">
                     <a href="${accountDetailUrl}" title="View Account">👁</a>
-                    <button title="More Options">⋯</button>
+                    <a href="${editUrl}" title="Edit Account">✏️</a>
+                    <form method="POST" action="${deleteUrl}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this account?');">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <button type="submit" title="Delete Account" style="border:none; background:none; cursor:pointer; padding: 8px 10px;">🗑️</button>
+                    </form>
                 </td>
             </tr>
         `;

@@ -354,6 +354,47 @@ def account_detail(request, pk):
 
 
 @login_required
+def edit_account(request, pk):
+    """Edit an existing account"""
+    account = get_object_or_404(Account, pk=pk)
+    
+    if request.method == 'POST':
+        form = AccountForm(request.POST, instance=account)
+        if form.is_valid():
+            account = form.save()
+            messages.success(request, f'Account "{account.name}" updated successfully!')
+            return redirect('customers:account_detail', pk=account.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = AccountForm(instance=account)
+    
+    context = {
+        'form': form,
+        'account': account,
+        'currencies': Currency.objects.filter(is_active=True),
+        'countries': Country.objects.filter(is_active=True)
+    }
+    return render(request, 'customers/edit_account.html', context)
+
+
+@login_required
+def delete_account(request, pk):
+    """Delete an account"""
+    account = get_object_or_404(Account, pk=pk)
+    
+    if request.method == 'POST':
+        account_name = account.name
+        customer_id = account.customer.id
+        account.delete()
+        messages.success(request, f'Account "{account_name}" deleted successfully!')
+        # Redirect to the customer's account list if possible, otherwise main list
+        return redirect('customers:list')
+        
+    return redirect('customers:account_detail', pk=pk)
+
+
+@login_required
 def edit_customer(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     if request.method == 'POST':
