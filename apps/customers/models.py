@@ -125,6 +125,10 @@ class Account(models.Model):
     contact_email = models.EmailField(blank=True, null=True)
     contact_phone = models.CharField(max_length=20, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    
+    # File Uploads
+    ticket_report = models.FileField(upload_to='accounts/reports/', blank=True, null=True, help_text="Upload Ticket Report")
+    contact_file = models.FileField(upload_to='accounts/contacts/', blank=True, null=True, help_text="Upload Contact File")
 
     class Meta:
         ordering = ['-created_at']

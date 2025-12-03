@@ -142,7 +142,8 @@ class AccountForm(forms.ModelForm):
         model = Account
         fields = [
             'customer', 'name', 'account_id', 'region', 'country',
-            'billing_cycle', 'currency', 'contact_email', 'contact_phone', 'notes'
+            'billing_cycle', 'currency', 'contact_email', 'contact_phone', 'notes',
+            'ticket_report', 'contact_file'
         ]
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select'}),
@@ -158,6 +159,8 @@ class AccountForm(forms.ModelForm):
             'contact_email': forms.EmailInput(attrs={'class': 'form-control'}),
             'contact_phone': forms.TextInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ticket_report': forms.FileInput(attrs={'class': 'form-control'}),
+            'contact_file': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

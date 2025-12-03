@@ -186,6 +186,9 @@ def customer_accounts_list(request):
             'customers_json': customers_json,
             'accounts_json': accounts_json,
             'debug_accounts_count': len(accounts_data),
+            'form': AccountForm(),
+            'currencies': Currency.objects.filter(is_active=True),
+            'countries': Country.objects.filter(is_active=True),
         }
         
         logger.info(f"View completed successfully - {len(customers_data)} customers, {len(accounts_data)} accounts")
@@ -528,3 +531,68 @@ def manage_countries(request):
         'countries': countries
     }
     return render(request, 'customers/manage_countries.html', context)
+
+
+@login_required
+def get_account_details_api(request, pk):
+    """Get full details for a specific account"""
+    try:
+        account = Account.objects.select_related(
+            'customer', 'billing_cycle', 'currency', 'country'
+        ).get(pk=pk)
+        
+        data = {
+            'id': account.id,
+            'customer': account.customer.id,
+            'name': account.name,
+            'account_id': account.account_id,
+            'region': account.region if account.region else '',
+            'country': account.country.id if account.country else None,
+            'billing_cycle': account.billing_cycle.id if account.billing_cycle else None,
+            'currency': account.currency.id if account.currency else None,
+            'contact_email': account.contact_email,
+            'contact_phone': account.contact_phone,
+            'notes': account.notes,
+            'ticket_report_url': account.ticket_report.url if account.ticket_report else None,
+            'contact_file_url': account.contact_file.url if account.contact_file else None,
+            'ticket_report_name': account.ticket_report.name.split('/')[-1] if account.ticket_report else None,
+            'contact_file_name': account.contact_file.name.split('/')[-1] if account.contact_file else None,
+        }
+        return JsonResponse({'success': True, 'account': data})
+    except Account.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Account not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error fetching account details: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+def update_account_api(request, pk):
+    """Update account via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+        
+    try:
+        account = Account.objects.get(pk=pk)
+        form = AccountForm(request.POST, request.FILES, instance=account)
+        
+        if form.is_valid():
+            account = form.save()
+            return JsonResponse({
+                'success': True, 
+                'message': 'Account updated successfully',
+                'account': {
+                    'id': account.id,
+                    'name': account.name
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False, 
+                'errors': form.errors
+            }, status=400)
+            
+    except Account.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Account not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error updating account: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
