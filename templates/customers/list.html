@@ -60,11 +60,29 @@
   padding:12px; border-radius:10px; cursor:pointer;
   border:1px solid transparent;
   transition: all 0.2s ease;
+  position: relative;
 }
 .brand:hover{background:#f2f2f2}
 .brand.active{background:#e6e6ff; border-color:#c3b8fe}
 .dot{width:8px; height:8px; background:var(--brand); border-radius:50%;}
-.brand-name{font-weight: 500; color: var(--text);}
+.brand-name{font-weight: 500; color: var(--text); flex: 1;}
+.brand-edit, .brand-delete{
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.brand:hover .brand-edit, .brand:hover .brand-delete{
+  opacity: 1;
+}
+.brand-edit:hover{
+  background: rgba(83, 53, 255, 0.1);
+}
+.brand-delete:hover{
+  background: rgba(239, 68, 68, 0.1);
+}
 .count{
   margin-left:auto; color:var(--muted); background:#fff; 
   border:1px solid var(--line); padding:4px 10px; 
@@ -255,6 +273,8 @@ tbody tr:hover{background:#f9f9f9}
            data-customer-name="{{ customer.name }}">
         <span class="dot"></span>
         <span class="brand-name">{{ customer.name }}</span>
+        <span class="brand-edit" onclick="editCustomer({{ customer.id }}, event); return false;" title="Edit Customer">✏️</span>
+        <span class="brand-delete" onclick="deleteCustomer({{ customer.id }}, '{{ customer.name|escapejs }}', event); return false;" title="Delete Customer">🗑️</span>
         <span class="count">{{ customer.accounts.all.count }}</span>
       </div>
       {% empty %}
@@ -627,6 +647,79 @@ tbody tr:hover{background:#f9f9f9}
         <div class="modal-footer" style="background:#f9fafb; border-top:1px solid #e5e7eb; padding: 20px 32px;">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" class="btn btn-primary" id="saveAccountBtn">Update Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius: 16px; border: none;">
+      <div class="form-header">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div style="flex:1">
+                <h2 style="margin:0; font-size:24px">Edit Customer</h2>
+                <p style="margin:4px 0 0 0; opacity:0.9" id="editCustomerModalSubtitle">Update customer details</p>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <form id="editCustomerForm" method="post">
+        {% csrf_token %}
+        <input type="hidden" id="editCustomerId" name="customer_id">
+        
+        <div class="modal-body form-body">
+            <div id="customerModalLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading customer details...</p>
+            </div>
+
+            <div id="customerModalContent" style="display:none">
+                <!-- Customer Information -->
+                <div class="form-section">
+                  <h3 class="section-title">Customer Information</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Customer Name <span class="required">*</span></label>
+                      <input type="text" id="edit_customer_name" name="name" class="form-input" required>
+                      <div class="help-text">Full legal name of the customer organization</div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Customer Code <span class="required">*</span></label>
+                      <input type="text" id="edit_customer_code" name="code" class="form-input" required style="text-transform: uppercase;">
+                      <div class="help-text">Unique identifier (3-10 characters)</div>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Email Address <span class="required">*</span></label>
+                      <input type="email" id="edit_customer_email" name="email" class="form-input" required>
+                      <div class="help-text">Primary contact email</div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Phone Number</label>
+                      <input type="text" id="edit_customer_phone" name="phone" class="form-input">
+                      <div class="help-text">Optional contact phone</div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <textarea id="edit_customer_address" name="address" class="form-input form-textarea" rows="3"></textarea>
+                    <div class="help-text">Company address</div>
+                  </div>
+                </div>
+
+                <div id="customerFormErrors" class="alert alert-danger d-none"></div>
+            </div>
+        </div>
+        <div class="modal-footer" style="background:#f9fafb; border-top:1px solid #e5e7eb; padding: 20px 32px;">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveCustomerBtn">Update Customer</button>
         </div>
       </form>
     </div>
@@ -1183,5 +1276,173 @@ function toggleNewCurrency(e) {
     const content = document.getElementById('newCurrencySection');
     content.classList.toggle('active');
 }
+
+// Customer Edit Modal Functions
+let editCustomerModal;
+
+async function editCustomer(customerId, event) {
+    // Prevent the customer from being selected when clicking edit
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    console.log('Starting editCustomer for ID:', customerId);
+    try {
+        // Show loading state
+        const loadingEl = document.getElementById('customerModalLoading');
+        const contentEl = document.getElementById('customerModalContent');
+        const errorEl = document.getElementById('customerFormErrors');
+        
+        if (!loadingEl || !contentEl || !errorEl) {
+            console.error('Critical Error: Customer modal elements missing from DOM');
+            alert('Critical Error: Customer modal elements missing from DOM');
+            return;
+        }
+
+        loadingEl.style.display = 'block';
+        contentEl.style.display = 'none';
+        errorEl.classList.add('d-none');
+        
+        // Initialize modal if not already done
+        if (!editCustomerModal) {
+            editCustomerModal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
+        }
+        editCustomerModal.show();
+        
+        console.log('Fetching customer details...');
+        const response = await fetch(`/customers/api/customer/${customerId}/`);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Data received:', data);
+        
+        if (data.success) {
+            const customer = data.customer;
+            
+            // Populate form fields
+            const idInput = document.getElementById('editCustomerId');
+            const subtitle = document.getElementById('editCustomerModalSubtitle');
+            
+            if (idInput) idInput.value = customer.id;
+            if (subtitle) subtitle.textContent = `Editing ${customer.name}`;
+            
+            // Helper to set field values
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.warn(`Field ${id} not found in DOM`);
+                } else {
+                    el.value = (val === null || val === undefined) ? '' : val;
+                }
+            };
+
+            setField('edit_customer_name', customer.name);
+            setField('edit_customer_code', customer.code);
+            setField('edit_customer_email', customer.email);
+            setField('edit_customer_phone', customer.phone);
+            setField('edit_customer_address', customer.address);
+            
+            console.log('Showing content...');
+            loadingEl.style.display = 'none';
+            contentEl.style.display = 'block';
+        } else {
+            console.error('API Error:', data.error);
+            alert('Error loading customer: ' + data.error);
+            editCustomerModal.hide();
+        }
+    } catch (error) {
+        console.error('Error in editCustomer:', error);
+        alert('Error loading customer details: ' + error.message);
+        if (editCustomerModal) {
+            editCustomerModal.hide();
+        }
+    }
+}
+
+async function handleCustomerFormSubmit(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const customerId = document.getElementById('editCustomerId').value;
+    const formData = new FormData(form);
+    
+    // Ensure CSRF token is in FormData
+    if (!formData.has('csrfmiddlewaretoken')) {
+        formData.append('csrfmiddlewaretoken', csrfToken);
+    }
+    
+    try {
+        const response = await fetch(`/customers/api/customer/${customerId}/update/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            editCustomerModal.hide();
+            // Reload to show changes
+            window.location.reload();
+        } else {
+            const errorDiv = document.getElementById('customerFormErrors');
+            errorDiv.innerHTML = formatErrors(data.errors);
+            errorDiv.classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating customer');
+    }
+}
+
+// Initialize customer edit form handler
+document.addEventListener('DOMContentLoaded', function() {
+    const customerForm = document.getElementById('editCustomerForm');
+    if (customerForm) {
+        customerForm.addEventListener('submit', handleCustomerFormSubmit);
+    }
+});
+
+// Delete Customer Function
+async function deleteCustomer(customerId, customerName, event) {
+    // Prevent the customer from being selected when clicking delete
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete "${customerName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        // Create a form and submit it (since the existing delete endpoint expects POST)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/customers/${customerId}/delete/`;
+        
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Append to body and submit
+        document.body.appendChild(form);
+        form.submit();
+        
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        alert('Error deleting customer: ' + error.message);
+    }
+}
+
 </script>
 {% endblock %}

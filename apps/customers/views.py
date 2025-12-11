@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from decimal import Decimal
 from django.db.models.functions import Lower
+from django.db import models
 
 from apps.billing.models import BillingRun
 from .models import Customer, Account, BillingCycle, Currency, Country
@@ -425,9 +426,30 @@ def delete_customer(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     if request.method == 'POST':
         customer_name = customer.name
-        customer.delete()
-        messages.success(request, f'Customer {customer_name} deleted successfully!')
-        return redirect('customers:list')
+        try:
+            customer.delete()
+            messages.success(request, f'Customer {customer_name} deleted successfully!')
+            return redirect('customers:list')
+        except models.ProtectedError as e:
+            # Extract information about what's preventing deletion
+            protected_objects = e.protected_objects
+            
+            # Count different types of related objects
+            related_info = {}
+            for obj in protected_objects:
+                obj_type = type(obj).__name__
+                if obj_type not in related_info:
+                    related_info[obj_type] = 0
+                related_info[obj_type] += 1
+            
+            # Build a user-friendly error message
+            related_items = ', '.join([f"{count} {name}(s)" for name, count in related_info.items()])
+            error_message = (
+                f'Cannot delete customer "{customer_name}" because it has related records: {related_items}. '
+                f'Please delete or reassign these records first.'
+            )
+            messages.error(request, error_message)
+            return redirect('customers:list')
     return redirect('customers:detail', pk=pk)
 
 
@@ -595,4 +617,57 @@ def update_account_api(request, pk):
         return JsonResponse({'success': False, 'error': 'Account not found'}, status=404)
     except Exception as e:
         logger.error(f"Error updating account: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+def get_customer_details_api(request, pk):
+    """Get full details for a specific customer"""
+    try:
+        customer = Customer.objects.get(pk=pk)
+        
+        data = {
+            'id': customer.id,
+            'name': customer.name,
+            'code': customer.code,
+            'email': customer.email,
+            'phone': customer.phone if customer.phone else '',
+            'address': customer.address if customer.address else '',
+        }
+        return JsonResponse({'success': True, 'customer': data})
+    except Customer.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error fetching customer details: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+def update_customer_api(request, pk):
+    """Update customer via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+        
+    try:
+        customer = Customer.objects.get(pk=pk)
+        form = CustomerForm(request.POST, instance=customer)
+        
+        if form.is_valid():
+            customer = form.save()
+            return JsonResponse({
+                'success': True, 
+                'message': 'Customer updated successfully',
+                'customer': {
+                    'id': customer.id,
+                    'name': customer.name
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False, 
+                'errors': form.errors
+            }, status=400)
+            
+    except Customer.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error updating customer: {e}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

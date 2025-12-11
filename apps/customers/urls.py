@@ -25,6 +25,8 @@ urlpatterns = [
     path('ajax/load-accounts/', views.load_accounts, name='ajax_load_accounts'),
     path('api/accounts/<int:pk>/', views.get_account_details_api, name='api_account_details'),
     path('api/accounts/<int:pk>/update/', views.update_account_api, name='api_account_update'),
+    path('api/customer/<int:pk>/', views.get_customer_details_api, name='api_customer_details'),
+    path('api/customer/<int:pk>/update/', views.update_customer_api, name='api_customer_update'),
     
     # Billing cycle management
     path('billing-cycles/', views.billing_cycles_list, name='billing_cycles_list'),
