@@ -687,6 +687,14 @@
                     </li>
 
                     <li>
+                        <a class="has-arrow {% if 'monitor' in request.resolver_match.app_name %}mm-active{% endif %}"
+                            href="{% url 'monitor:dashboard' %}" aria-expanded="false">
+                            <i class="material-symbols-outlined">analytics</i>
+                            <span class="nav-text">Monitor Billing</span>
+                        </a>
+                    </li>
+
+                    <li>
                         <a class="has-arrow" href="javascript:void(0);" aria-expanded="false">
                             <i class="material-symbols-outlined">error_outline</i>
                             <span class="nav-text">Exceptions</span>

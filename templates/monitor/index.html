@@ -1,0 +1,2562 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block title %}Billing Automation Monitoring Dashboard{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --info-color: #3b82f6;
+            --bg-color: #f8fafc;
+            --card-color: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --step-width: 100px;
+            --manual-color: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+           display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--bam-border-color);
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 i {
+            color: var(--primary-color);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* Global Controls */
+        .global-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--card-color);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .control-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .control-btn.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .control-btn.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .control-btn.warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .control-btn.danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .control-btn.info {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .control-btn.manual {
+            background-color: var(--manual-color);
+            color: white;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        select, input[type="search"] {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 180px;
+        }
+
+        /* Step Tracker */
+        .step-tracker-container {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow-x: auto;
+        }
+
+        .step-tracker {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            min-width: 1100px;
+        }
+
+        .step-tracker::before {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 50px;
+            right: 50px;
+            height: 3px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: var(--step-width);
+        }
+
+        .step:hover {
+            transform: translateY(-5px);
+        }
+
+        .step.active {
+            transform: scale(1.05);
+        }
+
+        .step.requires-manual .step-icon {
+            border-style: dashed;
+            border-color: var(--manual-color);
+        }
+
+        .step-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+            background: white;
+            border: 3px solid var(--border-color);
+            color: var(--text-secondary);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .step.active .step-icon {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .step.completed .step-icon {
+            border-color: var(--success-color);
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .step.failed .step-icon {
+            border-color: var(--error-color);
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .step-manual-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background-color: var(--manual-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            border: 2px solid white;
+            z-index: 3;
+        }
+
+        .step-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+
+        .step.active .step-label {
+            color: var(--primary-color);
+        }
+
+        .step-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .step-status.pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .step-status.in-progress {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .step-status.completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .step-status.failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .step-status.manual-pending {
+            background-color: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .step-status.manual-in-progress {
+            background-color: #ede9fe;
+            color: #5b21b6;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+
+        /* Management Table */
+        .management-table-container {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th.sortable:hover {
+            background-color: #f1f5f9;
+        }
+
+        th.sortable::after {
+            content: '↕';
+            margin-left: 8px;
+            opacity: 0.5;
+            font-size: 12px;
+        }
+
+        th.sortable.asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+
+        th.sortable.desc::after {
+            content: '↓';
+            opacity: 1;
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        tr.requires-manual {
+            background-color: #faf5ff;
+            border-left: 3px solid var(--manual-color);
+        }
+
+        tr.requires-manual:hover {
+            background-color: #f3e8ff;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-manual {
+            background-color: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-view {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-retry {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .btn-pause {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .btn-ai {
+            background-color: #f0f9ff;
+            color: #0369a1;
+        }
+
+        .btn-override {
+            background-color: #fce7f3;
+            color: #be185d;
+        }
+
+        .btn-manual {
+            background-color: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        /* Step Detail Panel */
+        .step-detail-panel {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-info {
+            margin-bottom: 24px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .manual-workflow-section {
+            background-color: #faf5ff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--manual-color);
+        }
+
+        .manual-workflow-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--manual-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .manual-workflow-details {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .manual-workflow-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .manual-action-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: white;
+            border: 1px solid var(--manual-color);
+            color: var(--manual-color);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .manual-action-btn:hover {
+            background-color: var(--manual-color);
+            color: white;
+        }
+
+        .log-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            padding: 12px;
+            border-left: 3px solid var(--border-color);
+            margin-bottom: 8px;
+            background-color: #f8fafc;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .log-item.error {
+            border-left-color: var(--error-color);
+            background-color: #fef2f2;
+        }
+
+        .log-item.warning {
+            border-left-color: var(--warning-color);
+            background-color: #fffbeb;
+        }
+
+        .log-item.success {
+            border-left-color: var(--success-color);
+            background-color: #f0fdf4;
+        }
+
+        .log-item.manual {
+            border-left-color: var(--manual-color);
+            background-color: #faf5ff;
+        }
+
+        .log-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .log-message {
+            font-size: 13px;
+        }
+
+        .step-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        /* Table Controls */
+        .columns-dropdown {
+            position: relative;
+        }
+
+        .columns-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            min-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: none;
+        }
+
+        .columns-menu.active {
+            display: block;
+        }
+
+        .columns-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+        }
+
+        .columns-menu-item input {
+            cursor: pointer;
+        }
+
+        .columns-menu-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .page-btn:hover {
+            background-color: #f1f5f9;
+        }
+
+        .page-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-size-selector {
+            margin-left: 16px;
+        }
+
+        .page-size-selector select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        /* Advanced Search Modal */
+        .search-condition {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .search-condition select,
+        .search-condition input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .remove-condition {
+            background: none;
+            border: none;
+            color: var(--error-color);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        /* AI Fix Modal */
+        .ai-suggestion {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .confidence-score {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .suggestion-diff {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .diff-added {
+            color: #10b981;
+            background-color: #d1fae5;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .diff-removed {
+            color: #ef4444;
+            background-color: #fee2e2;
+            padding: 2px 4px;
+            border-radius: 4px;
+            text-decoration: line-through;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .step-detail-panel {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+            
+            .header-controls {
+                width: 100%;
+            }
+            
+            .global-controls {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                margin-left: 0;
+                flex-wrap: wrap;
+            }
+            
+            .step-tracker-container {
+                padding: 16px;
+            }
+            
+            .step {
+                width: 80px;
+            }
+            
+            .step-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .table-controls {
+                flex-wrap: wrap;
+            }
+            
+            .pagination-controls {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="container">
+        
+        
+       
+
+        <!-- Global Controls -->
+        <div class="global-controls" style="flex-direction: column; align-items: flex-start;">
+            <div class="pipeline-buttons" style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+                <button class="control-btn primary" id="playPipeline">
+                    <i class="fas fa-play"></i> Play Pipeline
+                </button>
+                <button class="control-btn warning" id="pausePipeline">
+                    <i class="fas fa-pause"></i> Pause Pipeline
+                </button>
+                <button class="control-btn info" id="runSelectedStage">
+                    <i class="fas fa-play-circle"></i> Run Selected Stage
+                </button>
+                <button class="control-btn danger" id="cancelCycle">
+                    <i class="fas fa-stop-circle"></i> Cancel Cycle
+                </button>
+                <button class="control-btn warning" id="createIncident">
+                    <i class="fas fa-exclamation-triangle"></i> Create Incident
+                </button>
+                <button class="control-btn success" id="exportData">
+                    <i class="fas fa-file-export"></i> Export
+                </button>
+            </div>
+            <div class="header-controls" style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <div class="filter-group" style="margin-left: 0;">
+                    <select id="regionFilter">
+                        <option value="">All Regions</option>
+                        <option value="APAC">APAC</option>
+                        <option value="EMEA">EMEA</option>
+                        <option value="NA">North America</option>
+                        <option value="LATAM">LATAM</option>
+                    </select>
+                    <select id="customerFilter">
+                        <option value="">All Customers</option>
+                        <option value="Acme Corp">Acme Corp</option>
+                        <option value="Globex Corporation">Globex Corporation</option>
+                        <option value="Wayne Enterprises">Wayne Enterprises</option>
+                        <option value="Stark Industries">Stark Industries</option>
+                        <option value="Umbrella Corp">Umbrella Corp</option>
+                    </select>
+                    <input type="search" id="searchInput" placeholder="Search invoice/ticket ID...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Step Tracker -->
+        <div class="step-tracker-container">
+            <div class="step-tracker" id="stepTracker">
+                <!-- Steps will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Management Table -->
+            <div class="management-table-container">
+                <div class="table-header">
+                    <div class="table-title">
+                        <i class="fas fa-table"></i> Cycle Management Table
+                    </div>
+                    <div class="table-controls">
+                        <div class="columns-dropdown">
+                            <button class="control-btn" id="toggleColumns">
+                                <i class="fas fa-columns"></i> Columns
+                            </button>
+                            <div class="columns-menu" id="columnsMenu">
+                                <!-- Column checkboxes will be dynamically inserted here -->
+                            </div>
+                        </div>
+                        <button class="control-btn" id="advancedSearchBtn">
+                            <i class="fas fa-search-plus"></i> Advanced
+                        </button>
+                        <button class="control-btn info" id="refreshTable">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="control-btn" id="groupByRegion">
+                            <i class="fas fa-layer-group"></i> Group by Region
+                        </button>
+                    </div>
+                </div>
+                <table id="managementTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="cycleId">Cycle ID</th>
+                            <th class="sortable" data-column="customer">Customer</th>
+                            <th class="sortable" data-column="region">Region</th>
+                            <th class="sortable" data-column="status">Status</th>
+                            <th class="sortable" data-column="currentStep">Current Step</th>
+                            <th class="sortable" data-column="processed">Processed</th>
+                            <th class="sortable" data-column="errors">Errors</th>
+                            <th class="sortable" data-column="lastAction">Last Action</th>
+                            <th class="sortable" data-column="uploadRef">Upload Ref</th>
+                            <th class="sortable" data-column="slaTimer">SLA Timer</th>
+                            <th>Manual Intervention</th>
+                            <th>Manual Step</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be dynamically inserted here -->
+                    </tbody>
+                </table>
+                
+                <!-- Pagination Controls -->
+                <div class="pagination-controls" id="paginationControls">
+                    <!-- Pagination will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Step Detail Panel -->
+            <div class="step-detail-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="panelStepName">Step Details</span>
+                    </div>
+                    <div class="status-badge status-info" id="panelStepStatus">Pending</div>
+                </div>
+                
+                <div class="step-info">
+                    <div class="info-row">
+                        <span class="info-label">Started:</span>
+                        <span class="info-value" id="panelStartedAt">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Duration:</span>
+                        <span class="info-value" id="panelDuration">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Records:</span>
+                        <span class="info-value" id="panelRecords">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Success Rate:</span>
+                        <span class="info-value" id="panelSuccessRate">-</span>
+                    </div>
+                </div>
+
+                <!-- Manual Workflow Section -->
+                <div class="panel-section" id="manualWorkflowSection" style="display: none;">
+                    <div class="section-title">
+                        <i class="fas fa-hands-helping"></i> Manual Workflow Connection
+                    </div>
+                    <div class="manual-workflow-section">
+                        <div class="manual-workflow-title">
+                            <i class="fas fa-user-cog"></i>
+                            <span id="manualStepName">Manual Step Name</span>
+                        </div>
+                        <div class="manual-workflow-details" id="manualStepDescription">
+                            Manual workflow description will appear here...
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Required Actions:</span>
+                            <span class="info-value" id="manualRequiredActions">-</span>
+                        </div>
+                        <div class="manual-workflow-actions" id="manualWorkflowActions">
+                            <!-- Manual action buttons will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title">
+                        <i class="fas fa-history"></i> Recent Logs
+                    </div>
+                    <div class="log-list" id="stepLogs">
+                        <!-- Logs will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title">
+                        <i class="fas fa-cogs"></i> Step Controls
+                    </div>
+                    <div class="step-controls">
+                        <button class="control-btn warning" id="pauseStep">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button class="control-btn info" id="retryStep">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                        <button class="control-btn" id="openExceptions">
+                            <i class="fas fa-exclamation-circle"></i> Exceptions
+                        </button>
+                        <button class="control-btn primary" id="runAIFix">
+                            <i class="fas fa-robot"></i> AI-Fix
+                        </button>
+                        <button class="control-btn manual" id="manualOverride" style="grid-column: span 2;">
+                            <i class="fas fa-user-edit"></i> Manual Override
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Fix Modal -->
+    <div class="modal" id="aiFixModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-robot"></i> AI-Assisted Fix</h2>
+                <button class="close-modal" id="closeAIFixModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="ai-suggestion">
+                    <div class="confidence-score">Confidence: 92%</div>
+                    <h3>AI Suggested Correction</h3>
+                    <p>The AI has identified a rate mismatch for <strong>Acme Corp - Consulting</strong> in the <strong>EMEA</strong> region.</p>
+                    
+                    <div class="suggestion-diff">
+                        <p><strong>Current Rate:</strong> <span class="diff-removed">120 USD/hour</span></p>
+                        <p><strong>Suggested Rate:</strong> <span class="diff-added">135 USD/hour</span></p>
+                        <p><strong>Reason:</strong> Rate card update from 2024-Q3 applies 12.5% increase for consulting services in EMEA.</p>
+                    </div>
+                    
+                    <h4>Impact Analysis:</h4>
+                    <ul>
+                        <li>Total billing impact: +$2,400 for this cycle</li>
+                        <li>Matches contract clause 4.2b</li>
+                        <li>Validated against 3 similar customer cases</li>
+                    </ul>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Affected Records:</span>
+                    <span class="info-value">3 records (Ticket IDs: TKT-001, TKT-003, TKT-007)</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">AI Model:</span>
+                    <span class="info-value">GPT-4 with rate card fine-tuning</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Processing Time:</span>
+                    <span class="info-value">2.4 seconds</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="control-btn" id="rejectAIFix">
+                    <i class="fas fa-times"></i> Reject Suggestion
+                </button>
+                <button class="control-btn success" id="applyAIFix">
+                    <i class="fas fa-check"></i> Apply & Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Search Modal -->
+    <div class="modal" id="advancedSearchModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-search-plus"></i> Advanced Search</h2>
+                <button class="close-modal" id="closeAdvancedSearchModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="searchConditions">
+                    <!-- Search conditions will be dynamically inserted here -->
+                </div>
+                <button class="control-btn info" id="addCondition">
+                    <i class="fas fa-plus"></i> Add Condition
+                </button>
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Filter Logic:</label>
+                    <select id="filterLogic" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <option value="AND">ALL conditions must be true (AND)</option>
+                        <option value="OR">ANY condition can be true (OR)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="control-btn" id="clearAllConditions">
+                    <i class="fas fa-broom"></i> Clear All
+                </button>
+                <button class="control-btn success" id="applyAdvancedSearch">
+                    <i class="fas fa-check"></i> Apply Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exception Editor Modal -->
+    <div class="modal" id="exceptionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Exception Editor</h2>
+                <button class="close-modal" id="closeExceptionModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Exception editor content will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+        // Enhanced sample data with manual workflow integration
+        const steps = [
+            { 
+                id: 1, 
+                name: 'Trigger', 
+                icon: 'fas fa-play-circle', 
+                status: 'completed', 
+                timestamp: '2024-01-15 09:00:00',
+                manualCounterpart: {
+                    name: 'Ticket Data Distribution',
+                    description: 'Ticket Data Upload (Regional Stage) - Upload ticket file per region (Excel/CSV), Validate columns & ticket details, Mark upload as Validated',
+                    requiredControls: ['Data Upload Tracker Table', 'Notification Toggle'],
+                    workflowDetails: `Ticket Data Upload (Regional Stage) (SDM Users, Admin Oversight)
+                    1. Upload ticket file per region (Excel/CSV)
+                    2. Validate columns & ticket details
+                    3. Mark upload as Validated
+                    4. Mandatory: Data Upload Tracker Table, Notification Toggle`
+                }
+            },
+            { 
+                id: 2, 
+                name: 'Ingest', 
+                icon: 'fas fa-download', 
+                status: 'completed', 
+                timestamp: '2024-01-15 09:02:00',
+                manualCounterpart: {
+                    name: 'Ticket Data Validation',
+                    description: 'Validate uploaded ticket data for completeness and accuracy',
+                    requiredControls: ['Data Validation Tool', 'Error Reporting'],
+                    workflowDetails: `Manual validation of ingested data for:
+                    • Missing required fields
+                    • Data format compliance
+                    • Cross-reference with master data`
+                }
+            },
+            { 
+                id: 3, 
+                name: 'Validate', 
+                icon: 'fas fa-check-circle', 
+                status: 'completed', 
+                timestamp: '2024-01-15 09:05:00',
+                manualCounterpart: {
+                    name: 'Query Resolution',
+                    description: 'Resolve validation queries and discrepancies',
+                    requiredControls: ['Query Dashboard', 'Correction Tools'],
+                    workflowDetails: `Query Resolution & Resubmission (SDM/FSO, Verified by Admin)
+                    1. Correct ticket/rate mismatch
+                    2. Reupload corrected file
+                    3. Mark as "Resubmitted" and update timeline
+                    4. Mandatory: Rejected Files Queue, Correction History Modal, Resubmission Tracker Chart`
+                }
+            },
+            { 
+                id: 4, 
+                name: 'Rate Match', 
+                icon: 'fas fa-exchange-alt', 
+                status: 'in-progress', 
+                timestamp: '2024-01-15 09:10:00',
+                manualCounterpart: {
+                    name: 'Rate Card Assignment',
+                    description: 'Select appropriate rate card. Admin reviews and approves.',
+                    requiredControls: ['Rate Card Management Table', 'Approval Button', 'Change Log Panel'],
+                    workflowDetails: `Rate Card Assignment (FSO, Verified by Admin)
+                    1. Select appropriate rate card
+                    2. Admin reviews and approves
+                    3. Mandatory: Rate Card Management Table, Approval Button, Change Log Panel`
+                }
+            },
+            { 
+                id: 5, 
+                name: 'Compute', 
+                icon: 'fas fa-calculator', 
+                status: 'pending', 
+                timestamp: null,
+                manualCounterpart: {
+                    name: 'Manual Computation & Verification',
+                    description: 'FSO calculates totals manually. Admin reviews anomalies and validates subtotals.',
+                    requiredControls: ['Billing Table (editable)', 'Computation Review Tool', 'Approve/Reject Buttons'],
+                    workflowDetails: `Manual Computation & Verification (FSO, Monitored by Admin)
+                    1. FSO calculates totals manually
+                    2. Admin reviews anomalies and validates subtotals
+                    3. Mandatory: Billing Table (editable), Computation Review Tool, Approve/Reject Buttons`
+                }
+            },
+            { 
+                id: 6, 
+                name: 'File Gen', 
+                icon: 'fas fa-file-export', 
+                status: 'pending', 
+                timestamp: null
+            },
+            { 
+                id: 7, 
+                name: 'Consolidate', 
+                icon: 'fas fa-compress-arrows-alt', 
+                status: 'pending', 
+                timestamp: null,
+                manualCounterpart: {
+                    name: 'Consolidation & Upload to HCL',
+                    description: 'Merge regional files. Validate currency and totals. Upload to HCL FSO Portal and log reference.',
+                    requiredControls: ['File Merge Tool', 'Currency Validator', 'Upload Button', 'Upload Log Table'],
+                    workflowDetails: `Consolidation & Upload to HCL (Admin)
+                    1. Merge regional files
+                    2. Validate currency and totals
+                    3. Upload to HCL FSO Portal and log reference
+                    4. Mandatory: File Merge Tool, Currency Validator, Upload Button, Upload Log Table`
+                }
+            },
+            { 
+                id: 8, 
+                name: 'Upload', 
+                icon: 'fas fa-cloud-upload-alt', 
+                status: 'pending', 
+                timestamp: null
+            },
+            { 
+                id: 9, 
+                name: 'Approval', 
+                icon: 'fas fa-thumbs-up', 
+                status: 'pending', 
+                timestamp: null,
+                manualCounterpart: {
+                    name: 'Review & Monitoring',
+                    description: 'Monitor HCL feedback. Update record status manually. Notify SDM via Teams.',
+                    requiredControls: ['Review Tracker Table', 'Notify SDM Button', 'Summary Graph'],
+                    workflowDetails: `Review & Monitoring (Admin & FSO)
+                    1. Monitor HCL feedback
+                    2. Update record status manually
+                    3. Notify SDM via Teams
+                    4. Mandatory: Review Tracker Table, Notify SDM Button, Summary Graph`
+                }
+            },
+            { 
+                id: 10, 
+                name: 'Invoice', 
+                icon: 'fas fa-file-invoice-dollar', 
+                status: 'pending', 
+                timestamp: null,
+                manualCounterpart: {
+                    name: 'Final Approval & Invoice Preparation',
+                    description: 'Review all regions marked "Approved". Click "Generate Invoice Summary". Export report for Finance Team.',
+                    requiredControls: ['Invoice Summary Table', 'Export Controls', 'Cycle Close Control'],
+                    workflowDetails: `Final Approval & Invoice Preparation (Admin)
+                    1. Review all regions marked "Approved"
+                    2. Click "Generate Invoice Summary"
+                    3. Export report for Finance Team
+                    4. Mandatory: Invoice Summary Table, Export Controls, Cycle Close Control`
+                }
+            }
+        ];
+
+        const cycles = [
+            {
+                cycleId: '2024-01',
+                customer: 'Acme Corp',
+                region: 'EMEA',
+                status: 'In Progress',
+                currentStep: 'Rate Match',
+                processed: 125,
+                errors: 3,
+                lastAction: '2024-01-15 09:10:00 (System)',
+                uploadRef: 'UPL-00123',
+                slaTimer: '02:30:15',
+                slaFlag: 'warning',
+                manualIntervention: {
+                    required: true,
+                    step: 'Rate Card Assignment',
+                    startedAt: '2024-01-15 09:10:00',
+                    assignedTo: 'FSO User',
+                    dueBy: '2024-01-15 17:00:00',
+                    status: 'manual-pending',
+                    details: {
+                        ticketCount: 3,
+                        issueType: 'Rate mismatch',
+                        affectedTickets: ['TKT-001', 'TKT-003', 'TKT-007']
+                    }
+                },
+                details: {
+                    startedAt: '2024-01-15 09:00:00',
+                    recordsTotal: 125,
+                    recordsProcessed: 122,
+                    successRate: '97.6%'
+                }
+            },
+            {
+                cycleId: '2024-01',
+                customer: 'Globex Corporation',
+                region: 'APAC',
+                status: 'Completed',
+                currentStep: 'Invoice',
+                processed: 89,
+                errors: 0,
+                lastAction: '2024-01-15 08:45:00 (Admin)',
+                uploadRef: 'UPL-00122',
+                slaTimer: '04:15:30',
+                slaFlag: 'success',
+                manualIntervention: {
+                    required: false,
+                    step: null,
+                    startedAt: null,
+                    assignedTo: null,
+                    dueBy: null,
+                    status: null,
+                    details: null
+                },
+                details: {
+                    startedAt: '2024-01-15 08:00:00',
+                    recordsTotal: 89,
+                    recordsProcessed: 89,
+                    successRate: '100%'
+                }
+            },
+            {
+                cycleId: '2024-01',
+                customer: 'Wayne Enterprises',
+                region: 'NA',
+                status: 'Validation Failed',
+                currentStep: 'Validate',
+                processed: 67,
+                errors: 12,
+                lastAction: '2024-01-15 09:05:00 (System)',
+                uploadRef: null,
+                slaTimer: '01:45:20',
+                slaFlag: 'error',
+                manualIntervention: {
+                    required: true,
+                    step: 'Query Resolution',
+                    startedAt: '2024-01-15 09:05:00',
+                    assignedTo: 'SDM User',
+                    dueBy: '2024-01-15 14:00:00',
+                    status: 'manual-in-progress',
+                    details: {
+                        ticketCount: 12,
+                        issueType: 'Validation errors',
+                        affectedTickets: ['TKT-101', 'TKT-102', 'TKT-103']
+                    }
+                },
+                details: {
+                    startedAt: '2024-01-15 08:30:00',
+                    recordsTotal: 67,
+                    recordsProcessed: 55,
+                    successRate: '82.1%'
+                }
+            },
+            {
+                cycleId: '2024-01',
+                customer: 'Stark Industries',
+                region: 'EU',
+                status: 'Paused',
+                currentStep: 'Compute',
+                processed: 42,
+                errors: 1,
+                lastAction: '2024-01-15 09:15:00 (Admin)',
+                uploadRef: null,
+                slaTimer: '03:20:45',
+                slaFlag: 'warning',
+                manualIntervention: {
+                    required: true,
+                    step: 'Manual Computation & Verification',
+                    startedAt: '2024-01-15 09:15:00',
+                    assignedTo: 'FSO User',
+                    dueBy: '2024-01-15 18:00:00',
+                    status: 'manual-in-progress',
+                    details: {
+                        ticketCount: 1,
+                        issueType: 'Complex calculation required',
+                        affectedTickets: ['TKT-201']
+                    }
+                },
+                details: {
+                    startedAt: '2024-01-15 08:45:00',
+                    recordsTotal: 42,
+                    recordsProcessed: 41,
+                    successRate: '97.6%'
+                }
+            },
+            {
+                cycleId: '2024-01',
+                customer: 'Umbrella Corp',
+                region: 'LATAM',
+                status: 'In Progress',
+                currentStep: 'Ingest',
+                processed: 31,
+                errors: 0,
+                lastAction: '2024-01-15 09:18:00 (System)',
+                uploadRef: null,
+                slaTimer: '00:45:10',
+                slaFlag: 'success',
+                manualIntervention: {
+                    required: false,
+                    step: null,
+                    startedAt: null,
+                    assignedTo: null,
+                    dueBy: null,
+                    status: null,
+                    details: null
+                },
+                details: {
+                    startedAt: '2024-01-15 09:00:00',
+                    recordsTotal: 31,
+                    recordsProcessed: 31,
+                    successRate: '100%'
+                }
+            }
+        ];
+
+        const stepLogs = {
+            4: [
+                { time: '09:10:00', message: 'Rate matching started for 125 records', type: 'info' },
+                { time: '09:10:15', message: 'Found 122 matching rate entries', type: 'success' },
+                { time: '09:10:30', message: '3 records missing rate matches', type: 'warning' },
+                { time: '09:11:00', message: 'Applied fallback rates for 2 records', type: 'info' },
+                { time: '09:11:30', message: '1 record requires manual intervention - Rate Card Assignment needed', type: 'manual' }
+            ]
+        };
+
+        // Table configuration
+        const tableConfig = {
+            columns: [
+                { id: 'cycleId', label: 'Cycle ID', visible: true, sortable: true },
+                { id: 'customer', label: 'Customer', visible: true, sortable: true },
+                { id: 'region', label: 'Region', visible: true, sortable: true },
+                { id: 'status', label: 'Status', visible: true, sortable: true },
+                { id: 'currentStep', label: 'Current Step', visible: true, sortable: true },
+                { id: 'processed', label: 'Processed', visible: true, sortable: true },
+                { id: 'errors', label: 'Errors', visible: true, sortable: true },
+                { id: 'lastAction', label: 'Last Action', visible: true, sortable: true },
+                { id: 'uploadRef', label: 'Upload Ref', visible: true, sortable: true },
+                { id: 'slaTimer', label: 'SLA Timer', visible: true, sortable: true },
+                { id: 'manualIntervention', label: 'Manual Intervention', visible: true, sortable: false },
+                { id: 'manualStep', label: 'Manual Step', visible: true, sortable: false },
+                { id: 'actions', label: 'Actions', visible: true, sortable: false }
+            ],
+            pageSize: 10,
+            currentPage: 1,
+            sortColumn: 'lastAction',
+            sortDirection: 'desc'
+        };
+
+        let currentStep = 4; // Rate Match is active
+        let advancedFilters = [];
+        let filteredCycles = [...cycles];
+
+        // Initialize step tracker with manual workflow indicators
+        function initStepTracker() {
+            const tracker = document.getElementById('stepTracker');
+            tracker.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const stepEl = document.createElement('div');
+                const hasManual = step.manualCounterpart ? 'requires-manual' : '';
+                stepEl.className = `step ${step.status} ${hasManual} ${step.id === currentStep ? 'active' : ''}`;
+                stepEl.dataset.stepId = step.id;
+                
+                let manualIndicator = '';
+                if (step.manualCounterpart) {
+                    manualIndicator = '<div class="step-manual-indicator"><i class="fas fa-user"></i></div>';
+                }
+                
+                stepEl.innerHTML = `
+                    <div class="step-icon">
+                        <i class="${step.icon}"></i>
+                        ${manualIndicator}
+                    </div>
+                    <div class="step-label">${step.name}</div>
+                    <div class="step-status ${step.status}">${step.status}</div>
+                `;
+                
+                // Add tooltip for manual workflow
+                if (step.manualCounterpart) {
+                    stepEl.title = `Manual workflow: ${step.manualCounterpart.name}`;
+                }
+                
+                stepEl.addEventListener('click', () => selectStep(step.id));
+                tracker.appendChild(stepEl);
+            });
+        }
+
+        // Initialize column visibility controls
+        function initColumnVisibility() {
+            const columnsMenu = document.getElementById('columnsMenu');
+            columnsMenu.innerHTML = '';
+            
+            tableConfig.columns.forEach(column => {
+                const item = document.createElement('div');
+                item.className = 'columns-menu-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="col-${column.id}" ${column.visible ? 'checked' : ''}>
+                    <label for="col-${column.id}">${column.label}</label>
+                `;
+                
+                item.querySelector('input').addEventListener('change', (e) => {
+                    column.visible = e.target.checked;
+                    saveTablePreferences();
+                    updateTable();
+                });
+                
+                columnsMenu.appendChild(item);
+            });
+            
+            // Add actions
+            const actions = document.createElement('div');
+            actions.className = 'columns-menu-actions';
+            actions.innerHTML = `
+                <button class="control-btn" id="selectAllColumns" style="padding: 4px 8px; font-size: 12px;">Select All</button>
+                <button class="control-btn" id="deselectAllColumns" style="padding: 4px 8px; font-size: 12px;">Deselect All</button>
+                <button class="control-btn" id="resetColumns" style="padding: 4px 8px; font-size: 12px;">Reset</button>
+            `;
+            columnsMenu.appendChild(actions);
+            
+            // Add event listeners for actions
+            document.getElementById('selectAllColumns').addEventListener('click', () => {
+                tableConfig.columns.forEach(col => col.visible = true);
+                updateColumnCheckboxes();
+                saveTablePreferences();
+                updateTable();
+            });
+            
+            document.getElementById('deselectAllColumns').addEventListener('click', () => {
+                tableConfig.columns.forEach(col => col.visible = false);
+                updateColumnCheckboxes();
+                saveTablePreferences();
+                updateTable();
+            });
+            
+            document.getElementById('resetColumns').addEventListener('click', () => {
+                resetTablePreferences();
+                updateColumnCheckboxes();
+                updateTable();
+            });
+        }
+
+        function updateColumnCheckboxes() {
+            tableConfig.columns.forEach(column => {
+                const checkbox = document.getElementById(`col-${column.id}`);
+                if (checkbox) {
+                    checkbox.checked = column.visible;
+                }
+            });
+        }
+
+        // Initialize management table with pagination
+        function initManagementTable() {
+            updateTable();
+            initColumnVisibility();
+            initPagination();
+        }
+
+        function updateTable() {
+            const tableBody = document.getElementById('tableBody');
+            const thead = document.querySelector('#managementTable thead tr');
+            
+            // Update table header based on column visibility
+            thead.innerHTML = '';
+            tableConfig.columns.forEach(column => {
+                if (!column.visible) return;
+                
+                const th = document.createElement('th');
+                th.textContent = column.label;
+                th.dataset.column = column.id;
+                
+                if (column.sortable) {
+                    th.className = 'sortable';
+                    if (tableConfig.sortColumn === column.id) {
+                        th.classList.add(tableConfig.sortDirection);
+                    }
+                    th.addEventListener('click', () => sortTable(column.id));
+                }
+                
+                thead.appendChild(th);
+            });
+            
+            // Calculate pagination
+            const startIndex = (tableConfig.currentPage - 1) * tableConfig.pageSize;
+            const endIndex = startIndex + tableConfig.pageSize;
+            const pageData = filteredCycles.slice(startIndex, endIndex);
+            
+            // Update table body
+            tableBody.innerHTML = '';
+            
+            pageData.forEach(cycle => {
+                const row = document.createElement('tr');
+                if (cycle.manualIntervention.required) {
+                    row.classList.add('requires-manual');
+                }
+                
+                // Determine status badge class
+                let statusClass = 'status-info';
+                if (cycle.status.includes('Completed')) statusClass = 'status-success';
+                if (cycle.status.includes('Failed')) statusClass = 'status-error';
+                if (cycle.status === 'Paused') statusClass = 'status-warning';
+                if (cycle.manualIntervention.status === 'manual-pending') statusClass = 'status-manual';
+                if (cycle.manualIntervention.status === 'manual-in-progress') statusClass = 'status-manual';
+                
+                // Determine SLA timer class
+                let slaClass = 'status-success';
+                if (cycle.slaFlag === 'warning') slaClass = 'status-warning';
+                if (cycle.slaFlag === 'error') slaClass = 'status-error';
+                
+                // Manual intervention badge
+                let manualBadge = '<span class="status-badge status-success">No</span>';
+                let manualStep = '-';
+                
+                if (cycle.manualIntervention.required) {
+                    manualBadge = `<span class="status-badge status-manual">Yes</span>`;
+                    manualStep = cycle.manualIntervention.step;
+                }
+                
+                // Build row based on visible columns
+                tableConfig.columns.forEach(column => {
+                    if (!column.visible) return;
+                    
+                    const td = document.createElement('td');
+                    
+                    switch(column.id) {
+                        case 'cycleId':
+                            td.innerHTML = `<strong>${cycle.cycleId}</strong>`;
+                            break;
+                        case 'customer':
+                            td.textContent = cycle.customer;
+                            break;
+                        case 'region':
+                            td.textContent = cycle.region;
+                            break;
+                        case 'status':
+                            td.innerHTML = `<span class="status-badge ${statusClass}">${cycle.status}</span>`;
+                            break;
+                        case 'currentStep':
+                            td.textContent = cycle.currentStep;
+                            break;
+                        case 'processed':
+                            td.textContent = cycle.processed;
+                            break;
+                        case 'errors':
+                            td.innerHTML = `<span class="${cycle.errors > 0 ? 'status-error' : 'status-success'}" style="font-weight:bold;">${cycle.errors}</span>`;
+                            break;
+                        case 'lastAction':
+                            td.innerHTML = `<small>${cycle.lastAction}</small>`;
+                            break;
+                        case 'uploadRef':
+                            td.textContent = cycle.uploadRef || '-';
+                            break;
+                        case 'slaTimer':
+                            td.innerHTML = `<span class="status-badge ${slaClass}">${cycle.slaTimer}</span>`;
+                            break;
+                        case 'manualIntervention':
+                            td.innerHTML = manualBadge;
+                            break;
+                        case 'manualStep':
+                            td.textContent = manualStep;
+                            break;
+                        case 'actions':
+                            td.innerHTML = `
+                                <div class="action-buttons">
+                                    <button class="action-btn btn-view" title="View Details" onclick="viewCycleDetails('${cycle.cycleId}', '${cycle.customer}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="action-btn btn-retry" title="Retry Step" onclick="retryCycleStep('${cycle.cycleId}', '${cycle.customer}')">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    <button class="action-btn btn-pause" title="Pause Cycle" onclick="pauseCycle('${cycle.cycleId}', '${cycle.customer}')">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                    ${cycle.manualIntervention.required ? 
+                                        `<button class="action-btn btn-manual" title="Manual Workflow" onclick="openManualWorkflow('${cycle.cycleId}', '${cycle.customer}')">
+                                            <i class="fas fa-hands-helping"></i>
+                                        </button>` : ''
+                                    }
+                                    <button class="action-btn btn-ai" title="AI-Fix" onclick="openAIFix('${cycle.cycleId}', '${cycle.customer}')">
+                                        <i class="fas fa-robot"></i>
+                                    </button>
+                                    <button class="action-btn btn-override" title="Manual Override" onclick="openExceptionEditor('${cycle.cycleId}', '${cycle.customer}')">
+                                        <i class="fas fa-user-edit"></i>
+                                    </button>
+                                </div>
+                            `;
+                            break;
+                    }
+                    
+                    row.appendChild(td);
+                });
+                
+                tableBody.appendChild(row);
+            });
+            
+            updatePagination();
+        }
+
+        // Initialize pagination
+        function initPagination() {
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredCycles.length / tableConfig.pageSize);
+            const paginationControls = document.getElementById('paginationControls');
+            
+            if (filteredCycles.length <= tableConfig.pageSize) {
+                paginationControls.innerHTML = `
+                    <div class="pagination-info">
+                        Showing ${filteredCycles.length} of ${filteredCycles.length} records
+                    </div>
+                `;
+                return;
+            }
+            
+            const startRecord = (tableConfig.currentPage - 1) * tableConfig.pageSize + 1;
+            const endRecord = Math.min(tableConfig.currentPage * tableConfig.pageSize, filteredCycles.length);
+            
+            let pageButtons = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, tableConfig.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // Previous button
+            pageButtons += `
+                <button class="page-btn ${tableConfig.currentPage === 1 ? 'disabled' : ''}" 
+                        onclick="changePage(${tableConfig.currentPage - 1})" 
+                        ${tableConfig.currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            `;
+            
+            // First page
+            if (startPage > 1) {
+                pageButtons += `<button class="page-btn" onclick="changePage(1)">1</button>`;
+                if (startPage > 2) {
+                    pageButtons += `<span style="padding: 0 8px;">...</span>`;
+                }
+            }
+            
+            // Page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                pageButtons += `
+                    <button class="page-btn ${i === tableConfig.currentPage ? 'active' : ''}" 
+                            onclick="changePage(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            // Last page
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    pageButtons += `<span style="padding: 0 8px;">...</span>`;
+                }
+                pageButtons += `<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            // Next button
+            pageButtons += `
+                <button class="page-btn ${tableConfig.currentPage === totalPages ? 'disabled' : ''}" 
+                        onclick="changePage(${tableConfig.currentPage + 1})" 
+                        ${tableConfig.currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+            
+            paginationControls.innerHTML = `
+                <div class="pagination-info">
+                    Showing ${startRecord}-${endRecord} of ${filteredCycles.length} records
+                </div>
+                <div class="pagination-buttons">
+                    ${pageButtons}
+                    <div class="page-size-selector">
+                        <select id="pageSizeSelect" onchange="changePageSize(this.value)">
+                            <option value="10" ${tableConfig.pageSize === 10 ? 'selected' : ''}>10</option>
+                            <option value="25" ${tableConfig.pageSize === 25 ? 'selected' : ''}>25</option>
+                            <option value="50" ${tableConfig.pageSize === 50 ? 'selected' : ''}>50</option>
+                            <option value="100" ${tableConfig.pageSize === 100 ? 'selected' : ''}>100</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+        }
+
+        function changePage(page) {
+            if (page < 1 || page > Math.ceil(filteredCycles.length / tableConfig.pageSize)) return;
+            tableConfig.currentPage = page;
+            updateTable();
+        }
+
+        function changePageSize(size) {
+            tableConfig.pageSize = parseInt(size);
+            tableConfig.currentPage = 1;
+            saveTablePreferences();
+            updateTable();
+        }
+
+        function sortTable(columnId) {
+            if (tableConfig.sortColumn === columnId) {
+                tableConfig.sortDirection = tableConfig.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                tableConfig.sortColumn = columnId;
+                tableConfig.sortDirection = 'asc';
+            }
+            
+            filteredCycles.sort((a, b) => {
+                let aValue = a[columnId];
+                let bValue = b[columnId];
+                
+                // Handle special cases
+                if (columnId === 'slaTimer') {
+                    aValue = convertTimeToSeconds(aValue);
+                    bValue = convertTimeToSeconds(bValue);
+                }
+                
+                if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    return tableConfig.sortDirection === 'asc' 
+                        ? aValue.localeCompare(bValue)
+                        : bValue.localeCompare(aValue);
+                }
+                
+                return tableConfig.sortDirection === 'asc' 
+                    ? (aValue < bValue ? -1 : 1)
+                    : (bValue < aValue ? -1 : 1);
+            });
+            
+            saveTablePreferences();
+            updateTable();
+        }
+
+        function convertTimeToSeconds(timeString) {
+            const parts = timeString.split(':');
+            if (parts.length === 3) {
+                return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+            }
+            return 0;
+        }
+
+        // Save table preferences to localStorage
+        function saveTablePreferences() {
+            const preferences = {
+                columns: tableConfig.columns.map(col => ({ id: col.id, visible: col.visible })),
+                pageSize: tableConfig.pageSize,
+                sortColumn: tableConfig.sortColumn,
+                sortDirection: tableConfig.sortDirection
+            };
+            localStorage.setItem('dashboardTablePrefs', JSON.stringify(preferences));
+        }
+
+        // Load table preferences from localStorage
+        function loadTablePreferences() {
+            const saved = localStorage.getItem('dashboardTablePrefs');
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                
+                // Update column visibility
+                preferences.columns.forEach(savedCol => {
+                    const column = tableConfig.columns.find(col => col.id === savedCol.id);
+                    if (column) {
+                        column.visible = savedCol.visible;
+                    }
+                });
+                
+                tableConfig.pageSize = preferences.pageSize || tableConfig.pageSize;
+                tableConfig.sortColumn = preferences.sortColumn || tableConfig.sortColumn;
+                tableConfig.sortDirection = preferences.sortDirection || tableConfig.sortDirection;
+            }
+        }
+
+        function resetTablePreferences() {
+            localStorage.removeItem('dashboardTablePrefs');
+            tableConfig.columns.forEach(col => col.visible = true);
+            tableConfig.pageSize = 10;
+            tableConfig.sortColumn = 'lastAction';
+            tableConfig.sortDirection = 'desc';
+        }
+
+        // Update step detail panel with manual workflow info
+        function updateStepPanel(stepId) {
+            const step = steps.find(s => s.id === stepId);
+            const panel = document.querySelector('.step-detail-panel');
+            
+            document.getElementById('panelStepName').textContent = step.name;
+            document.getElementById('panelStepStatus').textContent = step.status;
+            document.getElementById('panelStepStatus').className = `status-badge status-${step.status === 'in-progress' ? 'info' : step.status}`;
+            
+            // Update step info
+            if (stepId === currentStep) {
+                const cycle = cycles.find(c => c.currentStep === step.name);
+                if (cycle) {
+                    document.getElementById('panelStartedAt').textContent = cycle.details.startedAt;
+                    document.getElementById('panelDuration').textContent = cycle.slaTimer;
+                    document.getElementById('panelRecords').textContent = `${cycle.details.recordsProcessed}/${cycle.details.recordsTotal}`;
+                    document.getElementById('panelSuccessRate').textContent = cycle.details.successRate;
+                }
+            }
+            
+            // Update manual workflow section
+            const manualSection = document.getElementById('manualWorkflowSection');
+            const manualActionsContainer = document.getElementById('manualWorkflowActions');
+            
+            if (step.manualCounterpart) {
+                manualSection.style.display = 'block';
+                document.getElementById('manualStepName').textContent = step.manualCounterpart.name;
+                document.getElementById('manualStepDescription').textContent = step.manualCounterpart.description;
+                document.getElementById('manualRequiredActions').textContent = step.manualCounterpart.requiredControls.join(', ');
+                
+                // Add manual action buttons
+                manualActionsContainer.innerHTML = '';
+                
+                const actionButtons = [
+                    { icon: 'fa-table', label: 'Open Tracker', action: 'tracker' },
+                    { icon: 'fa-tasks', label: 'Review Data', action: 'review' },
+                    { icon: 'fa-check-circle', label: 'Approve', action: 'approve' },
+                    { icon: 'fa-upload', label: 'Upload Files', action: 'upload' }
+                ];
+                
+                actionButtons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.className = 'manual-action-btn';
+                    button.innerHTML = `<i class="fas ${btn.icon}"></i> ${btn.label}`;
+                    button.onclick = () => handleManualAction(btn.action, step.manualCounterpart.name);
+                    manualActionsContainer.appendChild(button);
+                });
+            } else {
+                manualSection.style.display = 'none';
+            }
+            
+            // Update logs
+            const logsContainer = document.getElementById('stepLogs');
+            logsContainer.innerHTML = '';
+            
+            if (stepLogs[stepId]) {
+                stepLogs[stepId].forEach(log => {
+                    const logEl = document.createElement('div');
+                    logEl.className = `log-item ${log.type}`;
+                    logEl.innerHTML = `
+                        <div class="log-time">${log.time}</div>
+                        <div class="log-message">${log.message}</div>
+                    `;
+                    logsContainer.appendChild(logEl);
+                });
+            } else {
+                logsContainer.innerHTML = '<div class="log-item">No logs available for this step.</div>';
+            }
+        }
+
+        // Select a step
+        function selectStep(stepId) {
+            // Update current step
+            steps.forEach(step => {
+                if (step.id === currentStep) {
+                    document.querySelector(`.step[data-step-id="${step.id}"]`).classList.remove('active');
+                }
+                if (step.id === stepId) {
+                    document.querySelector(`.step[data-step-id="${step.id}"]`).classList.add('active');
+                }
+            });
+            
+            currentStep = stepId;
+            updateStepPanel(stepId);
+        }
+
+        // Handle manual actions
+        function handleManualAction(action, manualStep) {
+            switch(action) {
+                case 'tracker':
+                    alert(`Opening ${manualStep} Tracker...`);
+                    break;
+                case 'review':
+                    alert(`Reviewing data for ${manualStep}...`);
+                    break;
+                case 'approve':
+                    alert(`Approving ${manualStep}...`);
+                    break;
+                case 'upload':
+                    alert(`Uploading files for ${manualStep}...`);
+                    break;
+            }
+        }
+
+        // Open manual workflow for specific cycle
+        function openManualWorkflow(cycleId, customer) {
+            const cycle = cycles.find(c => c.cycleId === cycleId && c.customer === customer);
+            if (cycle && cycle.manualIntervention.required) {
+                const step = steps.find(s => s.name === cycle.currentStep);
+                if (step && step.manualCounterpart) {
+                    selectStep(step.id);
+                    alert(`Opening manual workflow for ${customer}: ${step.manualCounterpart.name}`);
+                }
+            }
+        }
+
+        // Advanced search functionality
+        function initAdvancedSearch() {
+            const modal = document.getElementById('advancedSearchModal');
+            const conditionsContainer = document.getElementById('searchConditions');
+            
+            // Initial condition
+            addSearchCondition();
+            
+            document.getElementById('addCondition').addEventListener('click', addSearchCondition);
+            document.getElementById('clearAllConditions').addEventListener('click', clearAllConditions);
+            document.getElementById('applyAdvancedSearch').addEventListener('click', applyAdvancedSearch);
+            
+            function addSearchCondition() {
+                const condition = document.createElement('div');
+                condition.className = 'search-condition';
+                condition.innerHTML = `
+                    <select class="condition-column">
+                        <option value="customer">Customer</option>
+                        <option value="region">Region</option>
+                        <option value="status">Status</option>
+                        <option value="currentStep">Current Step</option>
+                        <option value="errors">Errors</option>
+                        <option value="slaTimer">SLA Timer</option>
+                    </select>
+                    <select class="condition-operator">
+                        <option value="contains">contains</option>
+                        <option value="equals">equals</option>
+                        <option value="greater">greater than</option>
+                        <option value="less">less than</option>
+                    </select>
+                    <input type="text" class="condition-value" placeholder="Value...">
+                    <button class="remove-condition" type="button">&times;</button>
+                `;
+                
+                condition.querySelector('.remove-condition').addEventListener('click', () => {
+                    condition.remove();
+                });
+                
+                conditionsContainer.appendChild(condition);
+            }
+            
+            function clearAllConditions() {
+                conditionsContainer.innerHTML = '';
+                addSearchCondition();
+            }
+            
+            function applyAdvancedSearch() {
+                const conditions = [];
+                const conditionElements = conditionsContainer.querySelectorAll('.search-condition');
+                
+                conditionElements.forEach(element => {
+                    const column = element.querySelector('.condition-column').value;
+                    const operator = element.querySelector('.condition-operator').value;
+                    const value = element.querySelector('.condition-value').value;
+                    
+                    if (value.trim()) {
+                        conditions.push({ column, operator, value });
+                    }
+                });
+                
+                const logic = document.getElementById('filterLogic').value;
+                advancedFilters = { conditions, logic };
+                
+                applyFilters();
+                modal.classList.remove('active');
+            }
+        }
+
+        function applyFilters() {
+            filteredCycles = [...cycles];
+            
+            // Apply basic filters
+            const regionFilter = document.getElementById('regionFilter').value;
+            const customerFilter = document.getElementById('customerFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (regionFilter) {
+                filteredCycles = filteredCycles.filter(cycle => cycle.region === regionFilter);
+            }
+            
+            if (customerFilter) {
+                filteredCycles = filteredCycles.filter(cycle => cycle.customer === customerFilter);
+            }
+            
+            if (searchTerm) {
+                filteredCycles = filteredCycles.filter(cycle => 
+                    cycle.cycleId.toLowerCase().includes(searchTerm) ||
+                    cycle.customer.toLowerCase().includes(searchTerm) ||
+                    (cycle.uploadRef && cycle.uploadRef.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply advanced filters
+            if (advancedFilters.conditions && advancedFilters.conditions.length > 0) {
+                filteredCycles = filteredCycles.filter(cycle => {
+                    const results = advancedFilters.conditions.map(condition => {
+                        const value = cycle[condition.column];
+                        const filterValue = condition.value.toLowerCase();
+                        
+                        switch(condition.operator) {
+                            case 'contains':
+                                return value.toString().toLowerCase().includes(filterValue);
+                            case 'equals':
+                                return value.toString().toLowerCase() === filterValue;
+                            case 'greater':
+                                return parseFloat(value) > parseFloat(filterValue);
+                            case 'less':
+                                return parseFloat(value) < parseFloat(filterValue);
+                            default:
+                                return true;
+                        }
+                    });
+                    
+                    return advancedFilters.logic === 'AND' 
+                        ? results.every(r => r)
+                        : results.some(r => r);
+                });
+            }
+            
+            // Reset to first page
+            tableConfig.currentPage = 1;
+            updateTable();
+        }
+
+        // Open AI Fix modal
+        function openAIFix(cycleId, customer) {
+            document.getElementById('aiFixModal').classList.add('active');
+        }
+
+        // Open exception editor
+        function openExceptionEditor(cycleId, customer) {
+            const modal = document.getElementById('exceptionModal');
+            const modalBody = modal.querySelector('.modal-body');
+            
+            modalBody.innerHTML = `
+                <h3>Manual Override for ${customer} - ${cycleId}</h3>
+                <div style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px;">
+                    <h4>⚠️ Records Requiring Attention (3)</h4>
+                    <ul style="margin: 10px 0 20px 20px;">
+                        <li>Ticket TKT-001: Rate mismatch (Consulting - EMEA)</li>
+                        <li>Ticket TKT-003: Missing travel charge</li>
+                        <li>Ticket TKT-007: Invalid currency conversion</li>
+                    </ul>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <h4>Edit Record</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Rate Type</label>
+                            <select style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <option>Hourly</option>
+                                <option>Fixed</option>
+                                <option>Daily</option>
+                                <option>Monthly</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Rate Value</label>
+                            <input type="number" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;" value="120">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Currency</label>
+                            <select style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <option>USD</option>
+                                <option>EUR</option>
+                                <option>GBP</option>
+                                <option>JPY</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Travel Charge</label>
+                            <input type="number" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;" value="50">
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Override Reason</label>
+                        <textarea style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; min-height: 100px;" placeholder="Describe why this override is necessary..."></textarea>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // View cycle details
+        function viewCycleDetails(cycleId, customer) {
+            alert(`Viewing details for ${customer} - ${cycleId}\n\nThis would open a detailed view with timeline, files, and audit log.`);
+        }
+
+        // Retry cycle step
+        function retryCycleStep(cycleId, customer) {
+            if (confirm(`Retry current step for ${customer}?`)) {
+                alert(`Retrying step for ${customer}...`);
+                // In a real implementation, this would call an API to retry the step
+            }
+        }
+
+        // Pause cycle
+        function pauseCycle(cycleId, customer) {
+            if (confirm(`Pause processing for ${customer}?`)) {
+                alert(`Paused ${customer} cycle.`);
+                // In a real implementation, this would call an API to pause the cycle
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load saved preferences
+            loadTablePreferences();
+            
+            // Initialize components
+            initStepTracker();
+            initManagementTable();
+            updateStepPanel(currentStep);
+            initAdvancedSearch();
+            
+            // Close modals when clicking outside
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Close columns menu when clicking outside
+            document.addEventListener('click', (e) => {
+                const columnsMenu = document.getElementById('columnsMenu');
+                const toggleBtn = document.getElementById('toggleColumns');
+                
+                if (!columnsMenu.contains(e.target) && !toggleBtn.contains(e.target)) {
+                    columnsMenu.classList.remove('active');
+                }
+            });
+            
+            // Toggle columns menu
+            document.getElementById('toggleColumns').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('columnsMenu').classList.toggle('active');
+            });
+            
+            // Advanced search
+            document.getElementById('advancedSearchBtn').addEventListener('click', () => {
+                document.getElementById('advancedSearchModal').classList.add('active');
+            });
+            
+            // Basic filter functionality
+            document.getElementById('regionFilter').addEventListener('change', applyFilters);
+            document.getElementById('customerFilter').addEventListener('change', applyFilters);
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            
+            // Modal close buttons
+            document.getElementById('closeAIFixModal').addEventListener('click', () => {
+                document.getElementById('aiFixModal').classList.remove('active');
+            });
+
+            document.getElementById('closeExceptionModal').addEventListener('click', () => {
+                document.getElementById('exceptionModal').classList.remove('active');
+            });
+
+            document.getElementById('closeAdvancedSearchModal').addEventListener('click', () => {
+                document.getElementById('advancedSearchModal').classList.remove('active');
+            });
+
+            // Other event listeners (existing functionality)
+            document.getElementById('applyAIFix').addEventListener('click', () => {
+                alert('AI suggestion applied. Workflow will continue automatically.');
+                document.getElementById('aiFixModal').classList.remove('active');
+            });
+
+            document.getElementById('rejectAIFix').addEventListener('click', () => {
+                alert('AI suggestion rejected. Please use manual override if needed.');
+                document.getElementById('aiFixModal').classList.remove('active');
+            });
+
+            document.getElementById('playPipeline').addEventListener('click', () => {
+                alert('Pipeline resumed. All active cycles will continue processing.');
+            });
+
+            document.getElementById('pausePipeline').addEventListener('click', () => {
+                alert('Pipeline paused. No new processing will start.');
+            });
+
+            document.getElementById('runSelectedStage').addEventListener('click', () => {
+                const step = steps.find(s => s.id === currentStep);
+                alert(`Running ${step.name} stage for all eligible cycles.`);
+            });
+
+            document.getElementById('cancelCycle').addEventListener('click', () => {
+                if (confirm('Cancel current billing cycle? This will stop all processing.')) {
+                    alert('Billing cycle cancelled. All workflows stopped.');
+                }
+            });
+
+            document.getElementById('createIncident').addEventListener('click', () => {
+                alert('Incident ticket created in ops queue. Team has been notified.');
+            });
+
+            document.getElementById('exportData').addEventListener('click', () => {
+                // Export only visible columns
+                const visibleColumns = tableConfig.columns.filter(col => col.visible);
+                alert(`Exporting ${visibleColumns.length} visible columns to CSV...`);
+            });
+
+            document.getElementById('refreshTable').addEventListener('click', () => {
+                initManagementTable();
+                alert('Table data refreshed.');
+            });
+
+            document.getElementById('groupByRegion').addEventListener('click', () => {
+                alert('Grouping table by region...');
+                // Implementation would group cycles by region
+            });
+
+            document.getElementById('pauseStep').addEventListener('click', () => {
+                const step = steps.find(s => s.id === currentStep);
+                alert(`Pausing ${step.name} step.`);
+            });
+
+            document.getElementById('retryStep').addEventListener('click', () => {
+                const step = steps.find(s => s.id === currentStep);
+                alert(`Retrying ${step.name} step.`);
+            });
+
+            document.getElementById('openExceptions').addEventListener('click', () => {
+                openExceptionEditor('2024-01', 'Acme Corp');
+            });
+
+            document.getElementById('runAIFix').addEventListener('click', () => {
+                openAIFix();
+            });
+
+            document.getElementById('manualOverride').addEventListener('click', () => {
+                openExceptionEditor('2024-01', 'Acme Corp');
+            });
+            
+            // Real-time updates are started automatically at the end of the script
+        });
+
+        // Real-time updates from API
+        function startRealTimeUpdates() {
+            fetchPipelineStatus();
+            fetchPipelineLogs();
+            
+            // Poll every 5 seconds
+            setInterval(() => {
+                fetchPipelineStatus();
+                fetchPipelineLogs();
+            }, 5000);
+        }
+
+        function fetchPipelineStatus() {
+            fetch('{% url "monitor:api_status" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'no_data') return;
+                    
+                    updatePipelineUI(data);
+                })
+                .catch(error => console.error('Error fetching status:', error));
+        }
+
+        function updatePipelineUI(data) {
+            // Update steps
+            if (data.steps) {
+                // Update local steps array if needed, or just update UI directly
+                data.steps.forEach(stepData => {
+                    const stepEl = document.querySelector(`.step[data-step-id="${stepData.id}"]`);
+                    if (stepEl) {
+                        const currentStatus = stepEl.getAttribute('data-status');
+                        if (currentStatus !== stepData.status) {
+                            // Update status class
+                            stepEl.className = `step ${stepData.status} ${stepData.id === currentStep ? 'active' : ''}`;
+                            stepEl.setAttribute('data-status', stepData.status);
+                            
+                            // Update status text
+                            const statusEl = stepEl.querySelector('.step-status');
+                            if (statusEl) {
+                                statusEl.className = `step-status ${stepData.status}`;
+                                statusEl.textContent = stepData.status;
+                            }
+                            
+                            // Update icon styles
+                            const icon = stepEl.querySelector('.step-icon');
+                            if (icon) {
+                                updateStepIconStyle(icon, stepData.status);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateStepIconStyle(icon, status) {
+            icon.style.borderColor = status === 'completed' ? 'var(--success-color)' : 
+                                    status === 'failed' ? 'var(--error-color)' :
+                                    status === 'in_progress' ? 'var(--primary-color)' : 'var(--border-color)';
+            
+            icon.style.backgroundColor = status === 'completed' ? 'var(--success-color)' : 
+                                        status === 'failed' ? 'var(--error-color)' : 'white';
+            
+            icon.style.color = (status === 'completed' || status === 'failed') ? 'white' : 
+                              status === 'in_progress' ? 'var(--primary-color)' : 'var(--text-secondary)';
+        }
+
+        function fetchPipelineLogs() {
+            fetch('{% url "monitor:api_logs" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.logs) {
+                        updateConsoleLogs(data.logs);
+                    }
+                })
+                .catch(error => console.error('Error fetching logs:', error));
+        }
+
+        function updateConsoleLogs(logs) {
+            const consoleOutput = document.getElementById('consoleOutput');
+            if (!consoleOutput) return;
+            
+            // Clear current logs or append new ones? For simplicity, we'll rebuild
+            // In a real app, you'd want to append only new logs
+            consoleOutput.innerHTML = '';
+            
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${log.level}`;
+                logEntry.innerHTML = `
+                    <span class="log-time">[${log.timestamp}]</span>
+                    <span class="log-level ${log.level}">${log.level.toUpperCase()}</span>
+                    <span class="log-message">${log.message}</span>
+                `;
+                consoleOutput.appendChild(logEntry);
+            });
+            
+            // Auto-scroll to bottom
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        // Start updates
+        startRealTimeUpdates();
+    </script>
+{% endblock %}

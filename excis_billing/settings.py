@@ -58,7 +58,8 @@ INSTALLED_APPS = [
     'apps.purchase_orders',
     'apps.billing',
     'apps.rate_cards',
-    'apps.exchange_rates'
+    'apps.exchange_rates',
+    'apps.monitor'
 ]
 
 MIDDLEWARE = [
