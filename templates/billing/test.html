@@ -1,0 +1,1676 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Billing Runs - Excis Billing System{% endblock %}
+
+{% block content %}
+
+<!--  CSS -->
+<link rel="stylesheet" href="{% static 'css/Quick_Data_Input.css' %}">
+<link rel="stylesheet" href="{% static 'css/Step_Badges.css' %}">
+<link rel="stylesheet" href="{% static 'css/Ticket_upload&Validation.css' %}">
+
+<div class="wrap">
+    <!-- STEPPER HEADER -->
+    <div class="stepper" id="stepper">
+        <div class="step active" data-step="1">
+            <div class="badge">1</div>
+            <div class="step-label">Ticket Data Distribution</div>
+        </div>
+
+        <div class="step" data-step="2">
+            <div class="badge">2</div>
+            <div class="step-label">Rate Card Assignment</div>
+        </div>
+
+        <div class="step" data-step="3">
+            <div class="badge">3</div>
+            <div class="step-label">Manual Computation and Verification</div>
+        </div>
+
+        <div class="step" data-step="4">
+            <div class="badge">4</div>
+            <div class="step-label">Consolidation</div>
+        </div>
+
+        <div class="step" data-step="5">
+            <div class="badge">5</div>
+            <div class="step-label">Review and Monitoring</div>
+        </div>
+
+        <div class="step" data-step="6">
+            <div class="badge">6</div>
+            <div class="step-label">Query Resolution &amp; Resubmission</div>
+        </div>
+
+        <div class="step" data-step="7">
+            <div class="badge">7</div>
+            <div class="step-label">Final Approval &amp; Invoice Preparation</div>
+        </div>
+    </div>
+
+    <!-- STEP CONTENT AREA -->
+    <div id="steps">
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 1 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content active" id="step-content-1">
+
+
+            <!-- STEP 1 - Ticket Upload & Validation Dashboard -->
+            <section id="ticket-upload-section" class="ticket-upload-validation" data-step="1">
+
+                <div class="section-header">
+                    <div class="header-main">
+                        <h2><i class="fas fa-file-upload"></i> Ticket Upload &amp; Validation</h2>
+                        <div class="header-subtitle">
+
+                            <p>SDM uploads regional ticket files for system validation and distribution</p>
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <button class="btn-icon-outline" type="button" title="Help">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                        <button class="btn-icon-outline" type="button" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Data Sources Info -->
+                <div class="data-sources-card">
+                    <h3><i class="fas fa-database"></i> Data Sources for Validation</h3>
+
+                    <div class="sources-grid">
+                        <div class="source-item">
+                            <div class="source-icon"><i class="fas fa-file-excel"></i></div>
+                            <div class="source-content">
+                                <h4>Regional Ticket Files</h4>
+                                <p><strong>Source:</strong> SDM Teams</p>
+                                <p><strong>Format:</strong> Excel (.xlsx, .xls)</p>
+                                <p><strong>Purpose:</strong> Ticket-level service data</p>
+                            </div>
+                        </div>
+
+                        <div class="source-item">
+                            <div class="source-icon"><i class="fas fa-file-pdf"></i></div>
+                            <div class="source-content">
+                                <h4>Ticket Evidence</h4>
+                                <p><strong>Source:</strong> SDM / SharePoint</p>
+                                <p><strong>Format:</strong> PDF / ZIP</p>
+                                <p><strong>Purpose:</strong> Proof/documentation</p>
+                            </div>
+                        </div>
+
+                        <div class="source-item">
+                            <div class="source-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="source-content">
+                                <h4>Validation Rules</h4>
+                                <p><strong>Source:</strong> Internal</p>
+                                <p><strong>Format:</strong> Excel Template</p>
+                                <p><strong>Purpose:</strong> Check ticket formatting</p>
+                            </div>
+                        </div>
+
+                        <div class="source-item">
+                            <div class="source-icon"><i class="fas fa-history"></i></div>
+                            <div class="source-content">
+                                <h4>Prior Cycle Data</h4>
+                                <p><strong>Source:</strong> Dashboard</p>
+                                <p><strong>Format:</strong> Stored / CSV</p>
+                                <p><strong>Purpose:</strong> Reconciliation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Dashboard -->
+                <div class="dashboard-grid">
+
+                    <!-- Left Panel: Upload & Controls -->
+                    <div class="left-panel">
+                        <div class="upload-card">
+                            <div class="upload-header">
+                                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Ticket Files</h3>
+                                <span class="upload-info">Max file size: 50MB</span>
+                            </div>
+
+                            <!-- Ticket Matching Matrix: Upload -->
+                            <div id="tmm_uploadArea" class="upload-area" data-scope="ticket-matching-matrix">
+                                <div class="upload-icon">
+                                    <i class="fas fa-file-excel"></i>
+                                </div>
+
+                                <h4>Drop CSV files here</h4>
+                                <p>or click to browse</p>
+
+                                <!-- Target table selector -->
+                                <div class="tmm-upload-controls">
+                                    <div class="tmm-upload-control">
+                                        <label for="tmm_targetTable" class="tmm-upload-label">Target table to
+                                            populate</label>
+                                        <select id="tmm_targetTable" class="tmm-upload-select">
+                                            <option value="AllTable">All Table</option>
+                                            <option value="ticket">Ticket Data</option>
+                                            <option value="rate">Rate Card</option>
+                                            <option value="dispatch">Dispatch</option>
+                                            <option value="standby">Standby</option>
+                                            <option value="dedicated">Dedicated</option>
+                                            <option value="sv">SV Visit</option>
+                                            <option value="project">Project</option>
+                                            <option value="final">Final Table</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="tmm-upload-control">
+                                        <label for="tmm_importMode" class="tmm-upload-label">Import mode</label>
+                                        <select id="tmm_importMode" class="tmm-upload-select">
+                                            <option value="smart">Smart map by column headers</option>
+                                            <option value="append">Append new columns if unknown</option>
+
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <input type="file" id="tmm_fileInput" accept=".csv,.xlsx,.xls,.pdf" multiple
+                                    style="display:none;">
+
+
+
+                                <div class="file-types">
+                                    <span>.csv</span>
+                                    <span>.xlsx</span>
+                                    <span>.xls</span>
+                                </div>
+                            </div>
+
+                            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                <div class="progress-header">
+                                    <span>Uploading files...</span>
+                                    <span class="progress-percent">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div class="uploaded-files" id="uploadedFiles">
+                                <!-- Files will be listed here -->
+                            </div>
+                        </div>
+
+                        <div class="validation-card">
+                            <h3><i class="fas fa-check-circle"></i> Validation Controls</h3>
+
+                            <div class="validation-options">
+                                <div class="option-item">
+                                    <input type="checkbox" id="checkFormat" checked>
+                                    <label for="checkFormat">Validate file format</label>
+                                </div>
+                                <div class="option-item">
+                                    <input type="checkbox" id="checkRequired" checked>
+                                    <label for="checkRequired">Check required fields</label>
+                                </div>
+                                <div class="option-item">
+                                    <input type="checkbox" id="checkDuplicates" checked>
+                                    <label for="checkDuplicates">Detect duplicates</label>
+                                </div>
+                                <div class="option-item">
+                                    <input type="checkbox" id="checkReferences" checked>
+                                    <label for="checkReferences">Validate references</label>
+                                </div>
+                            </div>
+
+                            <div class="validation-actions">
+                                <button class="btn-secondary full-width" type="button" id="validateFilesBtn" disabled>
+                                    <i class="fas fa-play-circle"></i> Run Validation
+                                </button>
+                                <button class="btn-tertiary full-width" type="button" id="loadSampleDataBtn">
+                                    <i class="fas fa-database"></i> Load Sample Data
+                                </button>
+                            </div>
+
+                            <div class="validation-stats" id="validationStats">
+                                <div class="stat-row">
+                                    <span>Files to validate:</span>
+                                    <span class="stat-value" id="fileCount">0</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>Estimated time:</span>
+                                    <span class="stat-value" id="estTime">0s</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tmm-additional-content">
+                            <div class="tmm-card qdi-card" id="tmm_additionalContent">
+                                <h4 class="tmm-section-title">
+                                    <i class="fas fa-edit"></i> Quick Data Input
+                                </h4>
+
+
+
+                                <!-- Block 1: Quick input -->
+                                <div class="qdi-block qdi-block--input">
+                                    <div class="qdi-block-title">Quick Input</div>
+
+                                    <div class="qdi-input-grid">
+
+
+                                        <!-- Row 2: Target table (full width) -->
+                                        <div class="qdi-item qdi-span-2">
+                                            <label class="qdi-label" for="quickTable">Target table</label>
+                                            <select id="quickTable" class="input-field qdi-control">
+                                                <option value="all">All Tables</option>
+                                                <option value="ticket">Ticket Data</option>
+                                                <option value="rate">Rate Card</option>
+                                                <option value="dispatch">Dispatch</option>
+                                                <option value="standby">Standby</option>
+                                                <option value="dedicated">Dedicated</option>
+                                                <option value="sv">SV Visit</option>
+                                                <option value="project">Project</option>
+                                                <option value="final">Final</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Row 3: NEW input below target table -->
+                                        <div class="qdi-item qdi-span-2">
+                                            <label class="qdi-label" for="quickNameField">Name field (optional)</label>
+                                            <input type="text" id="quickNameField" class="input-field qdi-control"
+                                                placeholder="e.g., Notes / Key / Label">
+                                        </div>
+
+                                        <!-- Row 4: centered button below the new input -->
+                                        <div class="qdi-actions qdi-span-2">
+                                            <button class="btn-add" type="button" onclick="addQuickData()">
+                                                <i class="fas fa-plus"></i> Add Data
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <p class="tmm-helper-text">
+                                        <i class="fas fa-info-circle"></i> Enter field name and value to test
+                                        auto-population across
+                                        tables
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <!-- Right Panel: Results & Analytics -->
+                    <div class="right-panel">
+
+
+
+                        <!-------------------------------------------- Tab Control ------------------------------------------>
+                        <!-- TABS HEADER -->
+                        <div class="results-tabs">
+                            <button class="tab-btn active" type="button" data-tab="validation">Validation
+                                Results</button>
+                            <button class="tab-btn" type="button" data-tab="distributionTab">Ticket Matching
+                                Matrix</button>
+                            <button class="tab-btn" type="button" data-tab="analytics">Analytics</button>
+                        </div>
+
+
+                        <script>
+                            document.addEventListener("DOMContentLoaded", () => {
+                                const buttons = document.querySelectorAll(".results-tabs .tab-btn");
+                                const panes = document.querySelectorAll(".tab-content");
+
+                                function activate(tabId) {
+                                    // buttons
+                                    buttons.forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+                                    // panes
+                                    panes.forEach(p => p.classList.toggle("active", p.id === tabId));
+                                }
+
+                                buttons.forEach(btn => {
+                                    btn.addEventListener("click", () => activate(btn.dataset.tab));
+                                });
+                            });
+                        </script>
+
+                        <!-------------------------------------------- Tab Control ------------------------------------------>
+
+
+
+                        <!-- VALIDATION RESULTS TAB -->
+                        <div class="tab-content active" id="validation">
+
+                            <div class="validation-container">
+                                <link rel="stylesheet" href="{% static 'css/Validation_Results.css' %}">
+                                <div class="validation-header">
+                                    <h1>
+                                        <i class="fas fa-clipboard-check"></i> Ticket Validation Results
+                                    </h1>
+
+                                    <div class="header-controls">
+                                        <button class="btn btn-primary" id="configureColumnsBtn">
+                                            <i class="fas fa-cog"></i> Configure Columns
+                                        </button>
+                                        <button class="btn btn-success" id="exportResultsBtn">
+                                            <i class="fas fa-download"></i> Export Results
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Summary Cards -->
+                                <div class="summary-cards">
+                                    <div class="summary-card card-success">
+                                        <i class="fas fa-check-circle fa-2x"></i>
+                                        <div class="card-value" id="validCount">0</div>
+                                        <div class="card-label">Valid Tickets</div>
+                                    </div>
+
+                                    <div class="summary-card card-warning">
+                                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                        <div class="card-value" id="warningCount">0</div>
+                                        <div class="card-label">Warnings</div>
+                                    </div>
+
+                                    <div class="summary-card card-danger">
+                                        <i class="fas fa-times-circle fa-2x"></i>
+                                        <div class="card-value" id="errorCount">0</div>
+                                        <div class="card-label">Errors</div>
+                                    </div>
+
+                                    <div class="summary-card card-info">
+                                        <i class="fas fa-clipboard-list fa-2x"></i>
+                                        <div class="card-value" id="totalCount">0</div>
+                                        <div class="card-label">Total Tickets</div>
+                                    </div>
+                                </div>
+
+                                <!-- Table Tools -->
+                                <div class="table-tools">
+
+                                    <div class="search-box">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" id="searchInput"
+                                            placeholder="Search across all columns..." />
+                                    </div>
+
+                                    <div class="tool-buttons">
+
+                                        <div class="view-toggle">
+                                            <button class="view-toggle-btn active" id="tableViewBtn">
+                                                <i class="fas fa-table"></i>
+                                                <span class="btn-text">Table</span>
+                                            </button>
+
+                                            <button class="view-toggle-btn" id="formViewBtn">
+                                                <i class="fas fa-th-large"></i>
+                                                <span class="btn-text">Cards</span>
+                                            </button>
+                                        </div>
+
+                                        <div id="activeFilters" class="active-filters"></div>
+
+                                        <button class="btn btn-outline" id="filterBtn">
+                                            <i class="fas fa-filter"></i>
+                                            <span class="btn-text">Filter</span>
+                                        </button>
+
+                                        <div class="rows-per-page">
+                                            <label for="rowsPerPage">Show:</label>
+                                            <select id="rowsPerPage">
+                                                <option value="10">10</option>
+                                                <option value="25" selected>25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                                <option value="all">All</option>
+                                            </select>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <!-- Table View -->
+                                <div id="tableDisplay" class="table-display">
+                                    <div class="table-wrapper">
+                                        <table class="data-table" id="ticketTable">
+                                            <thead id="tableHeader"></thead>
+                                            <tbody id="tableBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Card View -->
+                                <div class="form-view-container" id="formViewContainer">
+                                    <div class="ticket-cards" id="ticketCards"></div>
+                                </div>
+
+                                <!-- Pagination -->
+                                <div class="pagination">
+                                    <div class="pagination-info" id="paginationInfo"></div>
+                                    <div class="pagination-controls" id="paginationControls"></div>
+                                </div>
+
+                            </div>
+
+                            <!-- Column Configuration Modal -->
+                            <div class="modal-overlay" id="configOverlay"></div>
+                            <div class="modal-window" id="configWindow">
+                                <div class="modal-header">
+                                    <h3><i class="fas fa-sliders-h"></i> Column Configuration</h3>
+                                    <button class="btn-close" id="closeConfigWindow">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="column-groups" id="columnGroups"></div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button class="btn btn-primary" id="applyConfig">
+                                        <i class="fas fa-check"></i> Apply Configuration
+                                    </button>
+                                    <button class="btn btn-outline" id="selectAllCols">
+                                        <i class="fas fa-check-square"></i> Select All
+                                    </button>
+                                    <button class="btn btn-outline" id="deselectAllCols">
+                                        <i class="fas fa-square"></i> Deselect All
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- View Details Modal -->
+                            <div class="modal-overlay" id="viewOverlay"></div>
+                            <div class="modal-window modal-details" id="viewWindow">
+                                <div class="modal-header">
+                                    <h3><i class="fas fa-eye"></i> Ticket Details</h3>
+                                    <button class="btn-close" id="closeViewWindow">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="view-details-container" id="viewDetailsContainer"></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <script src="{% static 'js/Validation_Results.js' %}"></script>
+
+
+
+                        <!-- TICKET MATCHING MATRIX TAB -->
+                        <div class="tab-content" id="distributionTab">
+                            <!-- Use ONLY these (your paths) -->
+                            <link rel="stylesheet" href="{% static 'css/Ticket_Matching_Matrix.css' %}">
+                            <script defer src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
+                            <!-- Single scoped wrapper -->
+                            <div id="tmm" class="tmm-container">
+
+                                <!-- Header -->
+                                <div class="tmm-header tmm-card">
+                                    <h1 style="color: #ffffff;"><i class="fas fa-table"></i> Enhanced Matching Matrix -
+                                        Ticket
+                                        Distribution System</h1>
+                                    <p class="tmm-subtitle">7-Table Real-Time Auto-Population with Advanced Filtering &
+                                        Input
+                                        Modes</p>
+                                    <p style="color: var(--gray); font-size: 0.95rem; margin: 0;">
+                                        ALL cells are editable - Even fields not in the table can have data added
+                                    </p>
+                                </div>
+
+                                <!-- Search Bar -->
+                                <div class="search-container">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" class="search-input" id="matrixSearchInput"
+                                        placeholder="Search columns, tables, or values... (Press Enter to search)"
+                                        onkeypress="handleMatrixSearchKeypress(event)">
+                                </div>
+                                <!-- Data Input Context (moved inside filters) -->
+                                <div class="tmm-card" style="padding: 16px; margin-top: 14px;">
+
+                                    <!-- Header -->
+                                    <div
+                                        style="display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-bottom: 12px;">
+                                        <h3 style="margin:0;">
+                                            <i class="fas fa-database"></i> Data Input Context
+                                        </h3>
+                                        <small style="color: var(--gray);">
+                                            Select category, customer, and account (affects matrix + preview)
+                                        </small>
+                                    </div>
+
+                                    <!-- Controls -->
+                                    <div class="sample-data-controls">
+
+                                        <!-- CATEGORY -->
+                                        <div class="control-group">
+                                            <label class="control-label">
+                                                <i class="fas fa-layer-group"></i> Category
+                                            </label>
+                                            <select class="control-input" id="tmm_categorySelect"
+                                                onchange="updateMatrixData()">
+                                                <option value="ticket" selected>Ticket Built up</option>
+                                                <option value="rate">Rate Card</option>
+                                                <option value="dispatch">Dispatch</option>
+                                                <option value="standby">Standby</option>
+                                                <option value="dedicated">Dedicated</option>
+                                                <option value="sv">SV Visit</option>
+                                                <option value="project">Project</option>
+                                                <option value="final">Final Ticket </option>
+                                            </select>
+                                        </div>
+
+                                        <!-- CUSTOMER -->
+                                        <div class="control-group">
+                                            <label class="control-label">
+                                                <i class="fas fa-users"></i> Customer
+                                            </label>
+                                            <select class="control-input" id="tmm_customerSelect"
+                                                onchange="updateMatrixData()">
+                                                <option value="All customers" selected>Customers</option>
+                                                <option value="HCL">HCL</option>
+                                                <option value="acme">Acme Corp</option>
+                                                <option value="coforge">COFORGE</option>
+                                                <option value="cognizant">Cognizant</option>
+                                                <option value="ericsson">ERICSSON</option>
+                                                <option value="leg">LEG</option>
+                                                <option value="lenovo_th">Lenovo Thailand</option>
+                                                <option value="skf">SKF</option>
+                                                <option value="tcs_full">Tata Consultancy Services</option>
+                                                <option value="aico">AICO PHARMA</option>
+                                                <option value="atos">ATOS</option>
+                                                <option value="beckman">Beckman Coulter</option>
+                                                <option value="capgemini">CAPGEMINI</option>
+                                                <option value="dxc">DXC</option>
+                                                <option value="genpact">GENPACT</option>
+                                                <option value="hpe">HPE</option>
+                                                <option value="hughes">HUGHES</option>
+                                                <option value="lenovo_fifa">LENOVO_FIFA</option>
+                                                <option value="sifi">SIFI SBI</option>
+                                                <option value="solcentrix">Solcentrix</option>
+                                                <option value="sprout">SPROUT</option>
+                                                <option value="tcs">TCS</option>
+                                                <option value="techem">TECHEM</option>
+                                                <option value="wwt">WWT</option>
+                                                <option value="zones">ZONES</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- ACCOUNT -->
+                                        <div class="control-group">
+                                            <label class="control-label">
+                                                <i class="fas fa-building"></i> Account
+                                            </label>
+                                            <select class="control-input" id="tmm_accountSelect"
+                                                onchange="updateMatrixData()">
+                                                <option value="hcl_abbvie" selected>HCL_ABBVIE</option>
+                                                <option value="hcl_abbvie_dss">HCL_ABBVIE DSS</option>
+                                                <option value="hcl_abbvie_he">HCL_ABBVIE H&amp;E</option>
+                                                <option value="hcl_adidas">HCL_ADIDAS</option>
+                                                <option value="hcl_akzo_nobel">HCL_AKZO NOBEL</option>
+                                                <option value="hcl_allianz">HCL_ALLIANZ</option>
+                                                <option value="hcl_altera">HCL_ALTERA</option>
+                                                <option value="hcl_amd">HCL_AMD</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- BAND (NEW) -->
+                                        <div class="control-group">
+                                            <label class="control-label">
+                                                <i class="fas fa-layer-group"></i> Band
+                                            </label>
+                                            <select class="control-input" id="tmm_bandSelect"
+                                                onchange="updateMatrixData()">
+                                                <option value="" selected>All Bands</option>
+                                                <option value="band1">Band 1</option>
+                                                <option value="band2">Band 2</option>
+                                                <option value="band3">Band 3</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- BAND TABLE FILTER (NEW) -->
+                                        <div class="control-group">
+                                            <label class="control-label">
+                                                <i class="fas fa-filter"></i> Band Tables
+                                            </label>
+
+                                            <!-- Band Filter Dropdown Wrapper -->
+                                            <div class="band-filter-wrapper" style="position: relative;">
+                                                <button class="control-input" id="tmmBandFilterBtn" type="button"
+                                                    onclick="tmmToggleBandFilterDropdown()"
+                                                    style="cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between;">
+                                                    <span><i class="fas fa-table"></i> Select Tables</span>
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </button>
+
+                                                <!-- Dropdown Menu -->
+                                                <div class="tmm-band-filter-dropdown" id="tmmBandFilterDropdown">
+                                                    <div class="tmm-band-filter-header">
+                                                        <h4><i class="fas fa-filter"></i> Select Band Tables</h4>
+                                                        <p>Choose which band tables to display</p>
+                                                    </div>
+
+                                                    <div class="tmm-band-filter-list">
+                                                        <label class="tmm-band-filter-item">
+                                                            <input type="checkbox" value="dispatch" checked
+                                                                onchange="tmmHandleBandTableFilter(this)">
+                                                            <span class="tmm-band-filter-icon dispatch">
+                                                                <i class="fas fa-truck-fast"></i>
+                                                            </span>
+                                                            <span class="tmm-band-filter-text">
+                                                                <strong>Dispatch Services</strong>
+                                                                <small>On-demand incident & IMAC pricing</small>
+                                                            </span>
+                                                        </label>
+
+                                                        <label class="tmm-band-filter-item">
+                                                            <input type="checkbox" value="dedicated" checked
+                                                                onchange="tmmHandleBandTableFilter(this)">
+                                                            <span class="tmm-band-filter-icon dedicated">
+                                                                <i class="fas fa-user-tie"></i>
+                                                            </span>
+                                                            <span class="tmm-band-filter-text">
+                                                                <strong>Dedicated Services</strong>
+                                                                <small>Monthly dedicated resource pricing</small>
+                                                            </span>
+                                                        </label>
+
+                                                        <label class="tmm-band-filter-item">
+                                                            <input type="checkbox" value="sv_visit" checked
+                                                                onchange="tmmHandleBandTableFilter(this)">
+                                                            <span class="tmm-band-filter-icon sv_visit">
+                                                                <i class="fas fa-calendar-check"></i>
+                                                            </span>
+                                                            <span class="tmm-band-filter-text">
+                                                                <strong>SV Visit (Full/Half Day)</strong>
+                                                                <small>Scheduled visit pricing</small>
+                                                            </span>
+                                                        </label>
+
+                                                        <label class="tmm-band-filter-item">
+                                                            <input type="checkbox" value="project" checked
+                                                                onchange="tmmHandleBandTableFilter(this)">
+                                                            <span class="tmm-band-filter-icon project">
+                                                                <i class="fas fa-project-diagram"></i>
+                                                            </span>
+                                                            <span class="tmm-band-filter-text">
+                                                                <strong>Project Work</strong>
+                                                                <small>Short & long term projects</small>
+                                                            </span>
+                                                        </label>
+
+                                                        <label class="tmm-band-filter-item">
+                                                            <input type="checkbox" value="standby"
+                                                                onchange="tmmHandleBandTableFilter(this)">
+                                                            <span class="tmm-band-filter-icon standby">
+                                                                <i class="fas fa-clock"></i>
+                                                            </span>
+                                                            <span class="tmm-band-filter-text">
+                                                                <strong>Standby Services</strong>
+                                                                <small>Standby resource pricing</small>
+                                                            </span>
+                                                        </label>
+                                                    </div>
+
+                                                    <div class="tmm-band-filter-actions">
+                                                        <button class="tmm-btn-filter-secondary" type="button"
+                                                            onclick="tmmClearBandFilters()">
+                                                            <i class="fas fa-eraser"></i> Clear All
+                                                        </button>
+                                                        <button class="tmm-btn-filter-secondary" type="button"
+                                                            onclick="tmmSelectAllBandFilters()">
+                                                            <i class="fas fa-check-double"></i> Select All
+                                                        </button>
+                                                        <button class="tmm-btn-filter-view" type="button"
+                                                            onclick="tmmOpenBandDetailsPanel()">
+                                                            <i class="fas fa-eye"></i> View Details
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+                                        <!-- SMART ADD -->
+                                        <div class="control-group">
+
+                                            <label class="control-label" for="smartAddToggle">
+                                                <i class="fas fa-bolt"></i> Smart Add Mode
+                                            </label>
+
+                                            <!-- HORIZONTAL ROW -->
+                                            <div id="smartAddInlineRow">
+
+                                                <label class="toggle-switch">
+                                                    <input type="checkbox" id="smartAddToggle" checked
+                                                        onchange="toggleSmartAdd()">
+                                                    <span class="toggle-slider"></span>
+                                                </label>
+
+                                                <button id="advancedFiltersToggleBtn" class="advanced-toggle"
+                                                    type="button" onclick="toggleAdvancedFilters()">
+                                                    <i class="fas fa-sliders-h"></i> Advanced Filters &amp; Settings
+                                                </button>
+
+                                            </div>
+
+
+                                        </div>
+
+
+
+
+
+
+
+
+                                    </div>
+                                </div>
+
+
+
+
+
+                                <!-- Advanced Filters Panel -->
+                                <div class="advanced-filters" id="advancedFilters">
+
+                                    <!-- Smart Search Section -->
+                                    <div class="filter-row" id="matrixSmartSearchSection">
+                                        <div class="section-title matrix-search-title">
+                                            <i class="fas fa-search-plus"></i>
+                                            <span>Smart Search & Highlight</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-row" id="matrixSearchControls">
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-sliders-h"></i> Search
+                                                Mode</label>
+                                            <select class="control-input" id="matrixSearchMode"
+                                                onchange="updateMatrixSearchMode(this.value)">
+                                                <option value="all">Search All</option>
+                                                <option value="field">Field Names Only</option>
+                                                <option value="value">Cell Values Only</option>
+                                                <option value="table">Specific Table</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="control-group" id="matrixTableSelectGroup" style="display:none;">
+                                            <label class="control-label"><i class="fas fa-table"></i> Select
+                                                Table</label>
+                                            <select class="control-input" id="matrixSearchTableSelect"
+                                                onchange="performMatrixSearch()">
+                                                <option value="">All Tables</option>
+                                                <!-- Tables will be populated dynamically -->
+                                            </select>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-cog"></i> Search
+                                                Options</label>
+                                            <div class="checkbox-group-inline matrix-search-options">
+                                                <label class="checkbox-inline">
+                                                    <input type="checkbox" id="matrixCaseSensitive"
+                                                        onchange="updateMatrixSearchOptions()">
+                                                    <span>Case Sensitive</span>
+                                                </label>
+                                                <label class="checkbox-inline">
+                                                    <input type="checkbox" id="matrixExactMatch"
+                                                        onchange="updateMatrixSearchOptions()">
+                                                    <span>Exact Match</span>
+                                                </label>
+                                                <label class="checkbox-inline">
+                                                    <input type="checkbox" id="matrixSearchHidden"
+                                                        onchange="updateMatrixSearchOptions()">
+                                                    <span>Include Hidden</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Search Results Panel -->
+                                    <div class="filter-row search-results-container" id="matrixSearchResults"
+                                        style="display:none;">
+                                        <div class="search-results-card matrix-search-results-card">
+                                            <div class="results-header matrix-results-header">
+                                                <div class="results-info-left">
+                                                    <span class="results-count-badge matrix-results-badge"
+                                                        id="matrixResultsCount">0
+                                                        matches</span>
+                                                    <span class="results-breakdown matrix-results-breakdown"
+                                                        id="matrixResultsBreakdown"></span>
+                                                </div>
+                                                <div class="results-info-right">
+                                                    <span class="current-match-indicator matrix-current-indicator"
+                                                        id="matrixCurrentPosition">0 / 0</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="results-controls matrix-results-controls">
+                                                <div class="navigation-controls matrix-nav-controls">
+                                                    <button class="nav-control-btn matrix-nav-btn"
+                                                        onclick="navigateMatrixSearch('first')" title="First Match">
+                                                        <i class="fas fa-step-backward"></i>
+                                                    </button>
+                                                    <button class="nav-control-btn matrix-nav-btn"
+                                                        onclick="navigateMatrixSearch('prev')"
+                                                        title="Previous (Shift+Enter)">
+                                                        <i class="fas fa-chevron-left"></i>
+                                                    </button>
+                                                    <button class="nav-control-btn matrix-nav-btn"
+                                                        onclick="navigateMatrixSearch('next')" title="Next (Enter)">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </button>
+                                                    <button class="nav-control-btn matrix-nav-btn"
+                                                        onclick="navigateMatrixSearch('last')" title="Last Match">
+                                                        <i class="fas fa-step-forward"></i>
+                                                    </button>
+                                                </div>
+
+                                                <div class="action-controls matrix-action-controls">
+                                                    <button class="action-control-btn matrix-action-btn"
+                                                        onclick="highlightAllMatrixMatches()"
+                                                        title="Highlight All Matches">
+                                                        <i class="fas fa-highlighter"></i>
+                                                        <span>Highlight All</span>
+                                                    </button>
+                                                    <button class="action-control-btn matrix-action-btn"
+                                                        onclick="exportMatrixSearchResults()" title="Export Results">
+                                                        <i class="fas fa-download"></i>
+                                                        <span>Export</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Match Details -->
+                                            <div class="match-details-card matrix-match-details" id="matrixMatchDetails"
+                                                style="display:none;">
+                                                <div class="match-details-header matrix-match-header">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    <span>Current Match Details</span>
+                                                </div>
+                                                <div class="match-details-body matrix-match-body"
+                                                    id="matrixMatchDetailsContent"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Divider -->
+                                    <div class="filter-row">
+                                        <div class="section-divider"></div>
+                                    </div>
+
+                                    <!-- Existing Display Controls -->
+                                    <div class="filter-row">
+                                        <div class="section-title">
+                                            <i class="fas fa-cog"></i>
+                                            <span>Display Controls</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-row">
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-palette"></i> Highlight
+                                                Mode</label>
+                                            <select class="control-input" id="highlightMode"
+                                                onchange="applyHighlighting()">
+                                                <option value="NONE">No Highlighting</option>
+                                                <option value="SOURCE_TABLE">Highlight by Source Table</option>
+                                                <option value="DATA_TYPE">Highlight by Data Type</option>
+                                                <option value="REQUIRED_STATUS">Required/Optional</option>
+                                                <option value="RAG_STATUS">RAG Status</option>
+                                                <option value="AUTO_POP">Auto-populated Fields</option>
+                                                <option value="VALIDATION">Validation Status</option>
+                                                <option value="EMPTY">Empty Fields</option>
+                                                <option value="NON_EXISTENT">Non-existent Fields</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-eye"></i> Display
+                                                Options</label>
+                                            <select class="control-input" id="displayOptions"
+                                                onchange="applyDisplayOptions()">
+                                                <option value="SHOW_DATA">Show Data Values</option>
+                                                <option value="SHOW_TYPE">Show Data Types</option>
+                                                <option value="SHOW_SOURCE">Show Source Table</option>
+                                                <option value="SHOW_TRANSFORMATION">Show Transformation Logic</option>
+                                                <option value="SHOW_VALIDATION">Show Validation Rules</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-layer-group"></i> Display
+                                                Mode</label>
+                                            <select class="control-input" id="displayMode"
+                                                onchange="applyDisplayMode()">
+                                                <option value="FLAT">Flat List</option>
+                                                <option value="GROUPED">Grouped by Category</option>
+                                                <option value="TABLE_WISE">Grouped by Table</option>
+                                                <option value="COMPACT">Compact View</option>
+                                                <option value="EXPANDED">Expanded View</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Highlight Customization -->
+                                    <div class="filter-row">
+                                        <div class="section-title">
+                                            <i class="fas fa-paint-brush"></i>
+                                            <span>Highlight Customization</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-row">
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-fill-drip"></i> Match
+                                                Highlight
+                                                Color</label>
+                                            <div class="color-picker-wrapper">
+                                                <input type="color" class="color-picker-input" id="matchHighlightColor"
+                                                    value="#ffeb3b" onchange="updateMatchHighlightColor(this.value)">
+                                                <span class="color-value" id="matchColorValue">#ffeb3b</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-fill"></i> Current Match
+                                                Color</label>
+                                            <div class="color-picker-wrapper">
+                                                <input type="color" class="color-picker-input" id="currentMatchColor"
+                                                    value="#4caf50" onchange="updateCurrentMatchColor(this.value)">
+                                                <span class="color-value" id="currentColorValue">#4caf50</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-clock"></i> Highlight
+                                                Duration</label>
+                                            <div class="range-slider-wrapper">
+                                                <input type="range" class="range-slider" id="highlightDuration"
+                                                    min="500" max="3000" value="1000" step="100"
+                                                    oninput="updateHighlightDuration(this.value)">
+                                                <span class="range-value" id="highlightDurationValue">1.0s</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-row">
+                                        <div class="control-group">
+                                            <label class="control-label"><i class="fas fa-toggle-on"></i> Additional
+                                                Options</label>
+                                            <div class="checkbox-group-inline matrix-search-options">
+                                                <label class="checkbox-inline">
+                                                    <input type="checkbox" id="autoScrollToMatch" checked>
+                                                    <span>Auto-scroll to Match</span>
+                                                </label>
+                                                <label class="checkbox-inline">
+                                                    <input type="checkbox" id="showMatchTooltips" checked>
+                                                    <span>Show Tooltips</span>
+                                                </label>
+                                                <label class="checkbox-inline">
+                                                    <input type="checkbox" id="persistHighlights" checked>
+                                                    <span>Persist Highlights</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Controls panel -->
+                                <div class="controls-panel tmm-card">
+
+                                    <!-- Column Visibility Dropdown -->
+                                    <div class="control-group column-visibility-group">
+                                        <label class="control-label"><i class="fas fa-columns"></i> Column
+                                            Visibility</label>
+                                        <div class="column-visibility-dropdown">
+                                            <button class="column-visibility-btn" type="button"
+                                                onclick="toggleColumnDropdown()">
+                                                <i class="fas fa-eye"></i> Show/Hide Columns <i
+                                                    class="fas fa-chevron-down"></i>
+                                            </button>
+                                            <div class="column-dropdown-content" id="columnDropdownContent">
+                                                <div class="dropdown-header">
+                                                    <button class="btn-show-all" type="button"
+                                                        onclick="showAllColumns()">Show
+                                                        All</button>
+                                                    <button class="btn-hide-all" type="button"
+                                                        onclick="hideAllColumns()">Hide
+                                                        All</button>
+                                                </div>
+                                                <div id="columnCheckboxList">
+                                                    <!-- Checkboxes populated by JS -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+
+
+
+                                    <!-- Advanced Filters Panel -->
+                                    <div class="advanced-filters" id="advancedFilters" style="display:none;">
+
+                                        <!-- Smart Search Section -->
+                                        <div class="filter-section" id="matrixSmartSearchSection">
+                                            <div class="section-title matrix-search-title">
+                                                <i class="fas fa-search-plus"></i>
+                                                <span>Smart Search & Highlight</span>
+                                            </div>
+
+                                            <div class="filter-row" id="matrixSearchControls">
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-sliders-h"></i> Search
+                                                        Mode</label>
+                                                    <select class="control-input" id="matrixSearchMode"
+                                                        onchange="updateMatrixSearchMode(this.value)">
+                                                        <option value="all">Search All</option>
+                                                        <option value="field">Field Names Only</option>
+                                                        <option value="value">Cell Values Only</option>
+                                                        <option value="table">Specific Table</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="control-group" id="matrixTableSelectGroup"
+                                                    style="display:none;">
+                                                    <label class="control-label"><i class="fas fa-table"></i> Select
+                                                        Table</label>
+                                                    <select class="control-input" id="matrixSearchTableSelect"
+                                                        onchange="performMatrixSearch()">
+                                                        <option value="">All Tables</option>
+                                                        <!-- Tables will be populated dynamically -->
+                                                    </select>
+                                                </div>
+
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-cog"></i> Search
+                                                        Options</label>
+                                                    <div class="checkbox-group-inline matrix-search-options">
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" id="matrixCaseSensitive"
+                                                                onchange="updateMatrixSearchOptions()">
+                                                            <span>Case Sensitive</span>
+                                                        </label>
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" id="matrixExactMatch"
+                                                                onchange="updateMatrixSearchOptions()">
+                                                            <span>Exact Match</span>
+                                                        </label>
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" id="matrixSearchHidden"
+                                                                onchange="updateMatrixSearchOptions()">
+                                                            <span>Include Hidden</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Search Results Panel -->
+                                            <div class="filter-row search-results-container" id="matrixSearchResults"
+                                                style="display:none;">
+                                                <div class="search-results-card matrix-search-results-card">
+                                                    <div class="results-header matrix-results-header">
+                                                        <div class="results-info-left">
+                                                            <span class="results-count-badge matrix-results-badge"
+                                                                id="matrixResultsCount">0
+                                                                matches</span>
+                                                            <span class="results-breakdown matrix-results-breakdown"
+                                                                id="matrixResultsBreakdown"></span>
+                                                        </div>
+                                                        <div class="results-info-right">
+                                                            <span
+                                                                class="current-match-indicator matrix-current-indicator"
+                                                                id="matrixCurrentPosition">0 / 0</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="results-controls matrix-results-controls">
+                                                        <div class="navigation-controls matrix-nav-controls">
+                                                            <button class="nav-control-btn matrix-nav-btn"
+                                                                onclick="navigateMatrixSearch('first')"
+                                                                title="First Match">
+                                                                <i class="fas fa-step-backward"></i>
+                                                            </button>
+                                                            <button class="nav-control-btn matrix-nav-btn"
+                                                                onclick="navigateMatrixSearch('prev')"
+                                                                title="Previous (Shift+Enter)">
+                                                                <i class="fas fa-chevron-left"></i>
+                                                            </button>
+                                                            <button class="nav-control-btn matrix-nav-btn"
+                                                                onclick="navigateMatrixSearch('next')"
+                                                                title="Next (Enter)">
+                                                                <i class="fas fa-chevron-right"></i>
+                                                            </button>
+                                                            <button class="nav-control-btn matrix-nav-btn"
+                                                                onclick="navigateMatrixSearch('last')"
+                                                                title="Last Match">
+                                                                <i class="fas fa-step-forward"></i>
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="action-controls matrix-action-controls">
+                                                            <button class="action-control-btn matrix-action-btn"
+                                                                onclick="highlightAllMatrixMatches()"
+                                                                title="Highlight All Matches">
+                                                                <i class="fas fa-highlighter"></i>
+                                                                <span>Highlight All</span>
+                                                            </button>
+                                                            <button class="action-control-btn matrix-action-btn"
+                                                                onclick="exportMatrixSearchResults()"
+                                                                title="Export Results">
+                                                                <i class="fas fa-download"></i>
+                                                                <span>Export</span>
+                                                            </button>
+                                                            <button
+                                                                class="action-control-btn matrix-action-btn btn-danger"
+                                                                onclick="clearMatrixSearch()" title="Clear Search">
+                                                                <i class="fas fa-times"></i>
+                                                                <span>Clear</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Match Details -->
+                                                    <div class="match-details-card matrix-match-details"
+                                                        id="matrixMatchDetails" style="display:none;">
+                                                        <div class="match-details-header matrix-match-header">
+                                                            <i class="fas fa-info-circle"></i>
+                                                            <span>Current Match Details</span>
+                                                        </div>
+                                                        <div class="match-details-body matrix-match-body"
+                                                            id="matrixMatchDetailsContent">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Divider -->
+                                        <div class="section-divider"></div>
+
+                                        <!-- Display Controls Section -->
+                                        <div class="filter-section">
+                                            <div class="section-title">
+                                                <i class="fas fa-cog"></i>
+                                                <span>Display Controls</span>
+                                            </div>
+
+                                            <div class="filter-row">
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-palette"></i>
+                                                        Highlight Mode</label>
+                                                    <select class="control-input" id="highlightMode"
+                                                        onchange="applyHighlighting()">
+                                                        <option value="NONE">No Highlighting</option>
+                                                        <option value="SOURCE_TABLE">Highlight by Source Table</option>
+                                                        <option value="DATA_TYPE">Highlight by Data Type</option>
+                                                        <option value="REQUIRED_STATUS">Required/Optional</option>
+                                                        <option value="RAG_STATUS">RAG Status</option>
+                                                        <option value="AUTO_POP">Auto-populated Fields</option>
+                                                        <option value="VALIDATION">Validation Status</option>
+                                                        <option value="EMPTY">Empty Fields</option>
+                                                        <option value="NON_EXISTENT">Non-existent Fields</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-eye"></i> Display
+                                                        Options</label>
+                                                    <select class="control-input" id="displayOptions"
+                                                        onchange="applyDisplayOptions()">
+                                                        <option value="SHOW_DATA">Show Data Values</option>
+                                                        <option value="SHOW_TYPE">Show Data Types</option>
+                                                        <option value="SHOW_SOURCE">Show Source Table</option>
+                                                        <option value="SHOW_TRANSFORMATION">Show Transformation Logic
+                                                        </option>
+                                                        <option value="SHOW_VALIDATION">Show Validation Rules</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-layer-group"></i>
+                                                        Display Mode</label>
+                                                    <select class="control-input" id="displayMode"
+                                                        onchange="applyDisplayMode()">
+                                                        <option value="FLAT">Flat List</option>
+                                                        <option value="GROUPED">Grouped by Category</option>
+                                                        <option value="TABLE_WISE">Grouped by Table</option>
+                                                        <option value="COMPACT">Compact View</option>
+                                                        <option value="EXPANDED">Expanded View</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Divider -->
+                                        <div class="section-divider"></div>
+
+                                        <!-- Highlight Customization Section -->
+                                        <div class="filter-section">
+                                            <div class="section-title">
+                                                <i class="fas fa-paint-brush"></i>
+                                                <span>Highlight Customization</span>
+                                            </div>
+
+                                            <div class="filter-row">
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-fill-drip"></i> Match
+                                                        Highlight
+                                                        Color</label>
+                                                    <div class="color-picker-wrapper">
+                                                        <input type="color" class="color-picker-input"
+                                                            id="matchHighlightColor" value="#ffeb3b"
+                                                            onchange="updateMatchHighlightColor(this.value)">
+                                                        <span class="color-value" id="matchColorValue">#ffeb3b</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-fill"></i> Current
+                                                        Match Color</label>
+                                                    <div class="color-picker-wrapper">
+                                                        <input type="color" class="color-picker-input"
+                                                            id="currentMatchColor" value="#4caf50"
+                                                            onchange="updateCurrentMatchColor(this.value)">
+                                                        <span class="color-value" id="currentColorValue">#4caf50</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-clock"></i> Highlight
+                                                        Duration</label>
+                                                    <div class="range-slider-wrapper">
+                                                        <input type="range" class="range-slider" id="highlightDuration"
+                                                            min="500" max="3000" value="1000" step="100"
+                                                            oninput="updateHighlightDuration(this.value)">
+                                                        <span class="range-value"
+                                                            id="highlightDurationValue">1.0s</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="filter-row">
+                                                <div class="control-group">
+                                                    <label class="control-label"><i class="fas fa-toggle-on"></i>
+                                                        Additional
+                                                        Options</label>
+                                                    <div class="checkbox-group-inline matrix-search-options">
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" id="autoScrollToMatch" checked>
+                                                            <span>Auto-scroll to Match</span>
+                                                        </label>
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" id="showMatchTooltips" checked>
+                                                            <span>Show Tooltips</span>
+                                                        </label>
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" id="persistHighlights" checked>
+                                                            <span>Persist Highlights</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Divider -->
+                                    <div class="control-divider"></div>
+
+                                    <!-- Standard Filters -->
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-table"></i> Table Filter</label>
+                                        <select class="control-input" id="tableFilter" onchange="applyFilters()">
+                                            <option value="SHOW_ALL">Show All Tables</option>
+                                            <option value="TICKET_DATA">Ticket Data Only</option>
+                                            <option value="RATE_CARD">Service Rate Card Only</option>
+                                            <option value="DISPATCH">Dispatch Only</option>
+                                            <option value="STANDBY">Standby Only</option>
+                                            <option value="DEDICATED">Dedicated Only</option>
+                                            <option value="SV_VISIT">SV Visit Only</option>
+                                            <option value="PROJECT">Project Only</option>
+                                            <option value="FINAL_TABLE">Final Table Only</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-tags"></i> Field Group</label>
+                                        <select class="control-input" id="fieldGroupFilter" onchange="applyFilters()">
+                                            <option value="ALL">All Groups</option>
+                                            <option value="BASIC_INFO">Basic Information</option>
+                                            <option value="GEOGRAPHIC">Geographic Details</option>
+                                            <option value="SERVICE">Service Details</option>
+                                            <option value="TECHNICIAN">Technician & Time</option>
+                                            <option value="FINANCIAL">Financial Summary</option>
+                                            <option value="QUALITY">Quality & SLA</option>
+                                            <option value="PROJECT">Project Specific</option>
+                                            <option value="SYSTEM">System</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-sort"></i> Sort Order</label>
+                                        <select class="control-input" id="sortOrder" onchange="applyFilters()">
+                                            <option value="ALPHABETICAL_ASC">A → Z</option>
+                                            <option value="ALPHABETICAL_DESC">Z → A</option>
+                                            <option value="TABLE_ORDER">Original Table Order</option>
+                                            <option value="REQUIRED_FIRST">Required Fields First</option>
+                                            <option value="MANDATORY_FIRST">Mandatory for Final First</option>
+                                            <option value="FREQUENCY">Most Common First</option>
+                                            <option value="DATA_TYPE">Group by Data Type</option>
+                                            <option value="FIELD_GROUP">Group by Field Category</option>
+                                            <option value="LAST_MODIFIED">Recently Modified First</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-keyboard"></i> Input Mode</label>
+                                        <select class="control-input" id="inputMode" onchange="handleInputMode()">
+                                            <option value="NORMAL">Normal Mode</option>
+                                            <option value="FINAL_TABLE">Final Table Centric</option>
+                                            <option value="TABLE_SPECIFIC">Table-Specific</option>
+                                            <option value="SITE_CATEGORY">Site Category Based</option>
+                                            <option value="BULK">Smart Bulk Input</option>
+                                            <option value="VALIDATION_FIRST">Validation-First Input</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-flag"></i> RAG Status</label>
+                                        <select class="control-input" id="ragFilter" onchange="applyFilters()">
+                                            <option value="ALL">All Fields</option>
+                                            <option value="REQUIRED">Mandatory Only</option>
+                                            <option value="OPTIONAL">Optional Only</option>
+                                            <option value="GREEN">Green (Standard)</option>
+                                            <option value="AMBER">Amber (Special)</option>
+                                            <option value="RED">Red (Critical)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-filter"></i> Data Type</label>
+                                        <select class="control-input" id="dataTypeFilter" onchange="applyFilters()">
+                                            <option value="ALL">All Types</option>
+                                            <option value="TEXT">Text</option>
+                                            <option value="NUMBER">Number</option>
+                                            <option value="CURRENCY">Currency</option>
+                                            <option value="DATE">Date</option>
+                                            <option value="TIME">Time</option>
+                                            <option value="BOOLEAN">Yes/No</option>
+                                            <option value="DROPDOWN">Dropdown</option>
+                                            <option value="PERCENTAGE">Percentage</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label class="control-label"><i class="fas fa-eye"></i> Options</label>
+                                        <div style="display:flex; flex-direction:column; gap:10px;">
+                                            <label><input type="checkbox" id="showRequiredOnly"
+                                                    onchange="applyFilters()"> Required
+                                                Only</label>
+                                            <label><input type="checkbox" id="showEmptyOnly" onchange="applyFilters()">
+                                                Empty
+                                                Fields</label>
+                                            <label><input type="checkbox" id="showTransformation"
+                                                    onchange="applyFilters()"> Show
+                                                Transformation</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <button class="btn-primary" type="button" onclick="resetFilters()">
+                                            <i class="fas fa-sync"></i> Reset All Filters
+                                        </button>
+                                        <button class="btn-add" type="button" style="margin-top:10px;"
+                                            onclick="CheckParsingFile()">
+                                            <i class="fas fa-paste"></i> Import File for Validation
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Site Category Filter (Hidden by default) -->
+                                <div class="control-group" id="siteCategoryGroup"
+                                    style="display: none; margin-bottom: 20px;">
+                                    <label class="control-label"><i class="fas fa-sitemap"></i> Site Category</label>
+                                    <select class="control-input" id="siteCategory" onchange="filterBySiteCategory()">
+                                        <option value="">All Categories</option>
+                                        <option value="dispatch">Dispatch</option>
+                                        <option value="dedicated">Dedicated</option>
+                                        <option value="project">Project</option>
+                                        <option value="sv">SV Visit</option>
+                                        <option value="standby">Standby</option>
+                                    </select>
+                                </div>
+
+                                <!-- Mode Toggle -->
+                                <div class="mode-toggle-container tmm-card"
+                                    style="padding: 12px 14px; margin-bottom: 16px;">
+                                    <span class="toggle-label">Structural View (Column Existence)</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="matrixModeToggle" onchange="toggleMatrixMode()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="toggle-label">Data Preview Mode</span>
+                                    <span style="margin-left: auto; font-size: 0.9rem; color: var(--gray);">
+                                        <i class="fas fa-info-circle"></i> Smart Add Mode: <span
+                                            id="smartAddStatus">ACTIVE</span>
+                                    </span>
+                                </div>
+
+                                <!-- Matrix Container -->
+                                <div class="matrix-container">
+                                    <table class="matrix-table" id="matrixTable">
+                                        <thead>
+                                            <tr id="matrixHeader">
+                                                <!-- Header will be populated by JavaScript -->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="matrixBody">
+                                            <!-- Matrix rows will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Matrix Legend -->
+                                <div class="matrix-legend tmm-card" style="padding: 12px 14px; margin-top: 14px;">
+                                    <div class="legend-item"><span class="rag-green">●</span><span>Green
+                                            (Standard)</span></div>
+                                    <div class="legend-item"><span class="rag-amber">●</span><span>Amber
+                                            (Special)</span></div>
+                                    <div class="legend-item"><span class="rag-red">●</span><span>Red (Pending
+                                            Data)</span></div>
+                                    <div class="legend-item"><span
+                                            style="color:#16a34a;font-weight:800;">✔</span><span>Field
+                                            exists in table</span></div>
+                                    <div class="legend-item"><span
+                                            style="color:#ef4444;font-weight:800;">✖</span><span>Field not
+                                            in table (still editable in Data View)</span></div>
+                                </div>
+
+                                <!-- Matrix Statistics -->
+                                <div class="matrix-stats tmm-card" style="padding: 12px 14px; margin-top: 12px;">
+                                    <div class="stat-item">
+                                        <div class="stat-value" id="totalColumns">0</div>
+                                        <div class="stat-label">Total Columns</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value" id="commonColumns">0</div>
+                                        <div class="stat-label">Common to All</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value" id="uniqueColumns">0</div>
+                                        <div class="stat-label">Unique Columns</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value" id="requiredCount">0</div>
+                                        <div class="stat-label">Required Fields</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value" id="smartAddCount">0</div>
+                                        <div class="stat-label">Smart Adds</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value" id="autoPopulated">0</div>
+                                        <div class="stat-label">Auto-Populated</div>
+                                    </div>
+                                </div>
+
+                                <!-- Smart Add Indicator -->
+                                <div class="smart-add-indicator" id="smartAddIndicator">
+                                    <i class="fas fa-bolt"></i>
+                                    <span id="smartAddText">Smart Add: Updating tables...</span>
+                                </div>
+
+                                <!-- Final Table Preview -->
+                                <div class="final-table-preview tmm-card" style="padding: 20px; margin-top: 20px;">
+                                    <div class="preview-header"
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:10px; border-bottom:2px solid var(--gray-light);">
+                                        <div class="preview-title"
+                                            style="font-size:1.2rem; font-weight:600; color:var(--dark);">
+                                            <i class="fas fa-ticket-alt"></i> Final Ticket Data Table Preview
+                                        </div>
+                                    </div>
+                                    <div class="preview-grid" id="finalTablePreview">
+                                        <!-- Final table data will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Bulk Input Modal -->
+                                <div class="bulk-input-modal" id="bulkInputModal">
+                                    <div class="bulk-input-content">
+                                        <h3><i class="fas fa-paste"></i> Bulk Input Mode</h3>
+                                        <textarea class="bulk-textarea" id="bulkTextarea"
+                                            placeholder="Field Name, Value, Table"></textarea>
+                                        <div style="display:flex; gap:10px; margin-top:15px;">
+                                            <button class="btn-primary" onclick="processBulkInput()"><i
+                                                    class="fas fa-play"></i>
+                                                Process</button>
+                                            <button class="btn-secondary" onclick="closeBulkInputModal()"><i
+                                                    class="fas fa-times"></i>
+                                                Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+
+
+                        <!-- ANALYTICS TAB -->
+                        <div class="tab-content" id="analytics">
+                            <!-- Charts, KPIs, trends -->
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+            </section>
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 1 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+
+
+
+
+
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content" id="step-content-2">
+
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 3 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content" id="step-content-3">
+
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 3 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 4 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content" id="step-content-4">
+
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 4 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 5 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content" id="step-content-5">
+
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 5 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 6 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content" id="step-content-6">
+
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 6 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 7 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+        <div class="step-content" id="step-content-7">
+
+        </div>
+        <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 7 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
+
+    </div>
+
+</div>
+
+
+<!-- Band Details Sliding Panel -->
+<link rel="stylesheet" href="{% static 'css/Band_Feature.css' %}">
+<script src="{% static 'js/Band_features.js' %}" defer></script>
+
+<!-- Overlay -->
+<div class="tmm-band-overlay" id="tmmBandOverlay" onclick="tmmCloseBandDetailsPanel()"></div>
+
+<!-- Band Details Panel -->
+<div class="tmm-band-details-panel" id="tmmBandDetailsPanel">
+
+    <!-- HEADER -->
+    <div class="tmm-band-panel-header">
+        <div class="tmm-band-panel-title">
+            <i class="fas fa-layer-group"></i>
+            <h2>Band Details Management</h2>
+        </div>
+        <button class="tmm-band-panel-close" type="button" onclick="tmmCloseBandDetailsPanel()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="tmm-band-panel-content" id="tmmBandPanelContent">
+        <div class="tmm-band-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading band details...</p>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="tmm-band-panel-footer">
+        <button class="tmm-btn-band-action tmm-btn-band-save" type="button" onclick="tmmSaveBandDetails()">
+            <i class="fas fa-save"></i> Save Changes
+        </button>
+        <button class="tmm-btn-band-action tmm-btn-band-export" type="button" onclick="tmmExportBandDetails()">
+            <i class="fas fa-download"></i> Export
+        </button>
+        <button class="tmm-btn-band-action tmm-btn-band-cancel" type="button" onclick="tmmCloseBandDetailsPanel()">
+            <i class="fas fa-times"></i> Cancel
+        </button>
+    </div>
+
+</div>
+
+{% endblock %}

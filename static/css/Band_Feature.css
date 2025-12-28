@@ -1,0 +1,643 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TMM BAND FEATURES - CSS STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BAND FILTER DROPDOWN STYLES
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.band-filter-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+#tmmBandFilterBtn {
+  width: 100%;
+  padding: 10px 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+#tmmBandFilterBtn:hover {
+  border-color: #3b82f6;
+  background: #f9fafb;
+}
+
+#tmmBandFilterBtn.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.tmm-band-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  min-width: 350px;
+  max-height: 0;
+  overflow: hidden;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tmm-band-filter-dropdown.show {
+  max-height: 600px;
+  opacity: 1;
+  transform: translateY(0);
+  overflow-y: auto;
+}
+
+.tmm-band-filter-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.tmm-band-filter-header h4 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tmm-band-filter-header p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.tmm-band-filter-list {
+  padding: 15px;
+}
+
+.tmm-band-filter-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.tmm-band-filter-item:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.tmm-band-filter-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 12px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.tmm-band-filter-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin-right: 12px;
+  font-size: 18px;
+  color: white;
+}
+
+.tmm-band-filter-icon.dispatch { background: linear-gradient(135deg, #10b981, #059669); }
+.tmm-band-filter-icon.dedicated { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.tmm-band-filter-icon.sv_visit { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.tmm-band-filter-icon.project { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.tmm-band-filter-icon.standby { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+.tmm-band-filter-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tmm-band-filter-text strong {
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.tmm-band-filter-text small {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.tmm-band-filter-actions {
+  display: flex;
+  gap: 8px;
+  padding: 15px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 12px 12px;
+}
+
+.tmm-btn-filter-secondary,
+.tmm-btn-filter-view {
+  flex: 1;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tmm-btn-filter-secondary {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.tmm-btn-filter-secondary:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.tmm-btn-filter-view {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.tmm-btn-filter-view:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BAND DETAILS PANEL - OVERLAY
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.tmm-band-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BAND DETAILS PANEL - MAIN CONTAINER (FIXED POSITIONING)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-details-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 90%;
+  max-width: 1200px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.tmm-band-details-panel.active {
+  transform: translateX(0);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PANEL HEADER
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.tmm-band-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tmm-band-panel-title i {
+  font-size: 24px;
+}
+
+.tmm-band-panel-title h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.tmm-band-panel-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tmm-band-panel-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PANEL CONTENT (SCROLLABLE)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  background: #f9fafb;
+}
+
+.tmm-band-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.tmm-band-loading i {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #3b82f6;
+}
+
+.tmm-band-loading p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PANEL FOOTER
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-panel-footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 30px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.tmm-btn-band-action {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tmm-btn-band-save {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.tmm-btn-band-save:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.tmm-btn-band-export {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.tmm-btn-band-export:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.tmm-btn-band-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.tmm-btn-band-cancel:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BAND CARDS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  overflow: hidden;
+  border-left: 4px solid #3b82f6;
+}
+
+.tmm-band-card.dispatch { border-left-color: #10b981; }
+.tmm-band-card.dedicated { border-left-color: #ef4444; }
+.tmm-band-card.sv_visit { border-left-color: #3b82f6; }
+.tmm-band-card.project { border-left-color: #8b5cf6; }
+.tmm-band-card.standby { border-left-color: #f59e0b; }
+
+.tmm-band-card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: linear-gradient(to right, #f9fafb, white);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tmm-band-card-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 22px;
+  color: white;
+}
+
+.tmm-band-card-icon.dispatch { background: linear-gradient(135deg, #10b981, #059669); }
+.tmm-band-card-icon.dedicated { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.tmm-band-card-icon.sv_visit { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.tmm-band-card-icon.project { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.tmm-band-card-icon.standby { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+.tmm-band-card-title h3 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.tmm-band-card-title p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.tmm-band-card-content {
+  padding: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BAND SECTIONS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-section {
+  padding: 20px;
+  border-left: 3px solid #e5e7eb;
+  margin-bottom: 15px;
+}
+
+.tmm-band-section:last-child {
+  margin-bottom: 0;
+}
+
+.tmm-band-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tmm-band-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.tmm-band-section-title i {
+  color: #3b82f6;
+}
+
+.tmm-band-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tmm-band-info-label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.tmm-band-info-value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BAND TABLES
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-table-wrapper {
+  overflow-x: auto;
+  margin: 15px 0;
+}
+
+.tmm-band-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tmm-band-table thead {
+  background: linear-gradient(to right, #f9fafb, #f3f4f6);
+}
+
+.tmm-band-table th {
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.tmm-band-table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.tmm-band-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.tmm-band-table-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.tmm-band-table-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.tmm-btn-band-danger {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.tmm-btn-band-danger:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+.tmm-band-text-muted {
+  color: #6b7280;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE DESIGN
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .tmm-band-details-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .tmm-band-panel-header {
+    padding: 15px 20px;
+  }
+  
+  .tmm-band-panel-title h2 {
+    font-size: 18px;
+  }
+  
+  .tmm-band-panel-content {
+    padding: 20px 15px;
+  }
+  
+  .tmm-band-panel-footer {
+    flex-direction: column;
+    padding: 15px;
+  }
+  
+  .tmm-band-filter-dropdown {
+    min-width: 300px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SCROLLBAR STYLING
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.tmm-band-panel-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tmm-band-panel-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.tmm-band-panel-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.tmm-band-panel-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ANIMATIONS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
