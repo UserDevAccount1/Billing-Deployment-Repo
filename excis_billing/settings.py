@@ -9,8 +9,10 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-import pymysql
-pymysql.install_as_MySQLdb()
+
+# Uncomment the following lines if using pymysql as MySQLdb
+# import pymysql
+# pymysql.install_as_MySQLdb()
 from pathlib import Path
 from decouple import config
 
@@ -101,8 +103,10 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": config("MYSQL_DATABASE", default="test_pickfres_billing"),
-        "USER": config("MYSQL_USER", default="test_fres"),
-        "PASSWORD": config("MYSQL_PASSWORD", default="pA?ssWord1234."),
+        "USER": config("MYSQL_USER", default="root"),
+        # "USER": config("MYSQL_USER", default="test_fres"),
+        "PASSWORD": config("MYSQL_PASSWORD", default="root"),
+        # "PASSWORD": config("MYSQL_PASSWORD", default="pA?ssWord1234."),
         "HOST": config("MYSQL_HOST", default="localhost"),
         "PORT": config("MYSQL_PORT", default="3306"),
         "OPTIONS": {
