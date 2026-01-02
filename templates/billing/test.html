@@ -148,22 +148,6 @@
                                 <!-- Target table selector -->
                                 <div class="tmm-upload-controls">
                                     <div class="tmm-upload-control">
-                                        <label for="tmm_targetTable" class="tmm-upload-label">Target table to
-                                            populate</label>
-                                        <select id="tmm_targetTable" class="tmm-upload-select">
-                                            <option value="AllTable">All Table</option>
-                                            <option value="ticket">Ticket Data</option>
-                                            <option value="rate">Rate Card</option>
-                                            <option value="dispatch">Dispatch</option>
-                                            <option value="standby">Standby</option>
-                                            <option value="dedicated">Dedicated</option>
-                                            <option value="sv">SV Visit</option>
-                                            <option value="project">Project</option>
-                                            <option value="final">Final Table</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="tmm-upload-control">
                                         <label for="tmm_importMode" class="tmm-upload-label">Import mode</label>
                                         <select id="tmm_importMode" class="tmm-upload-select">
                                             <option value="smart">Smart map by column headers</option>
@@ -499,14 +483,17 @@
                         </div>
 
                         <script src="{% static 'js/Validation_Results.js' %}"></script>
-
+                        <script src="{% static 'vendor/papaparse/papaparse.min.js' %}"></script>
+                        <script src="{% static 'vendor/xlsx/xlsx.full.min.js' %}"></script>
+                        <script src="{% static 'js/Ticket_matching_matrix_control.js'%}"></script>
+                        <script defer src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
+                        <script src="{% static 'js/Band_features.js' %}" defer></script>
 
 
                         <!-- TICKET MATCHING MATRIX TAB -->
                         <div class="tab-content" id="distributionTab">
                             <!-- Use ONLY these (your paths) -->
                             <link rel="stylesheet" href="{% static 'css/Ticket_Matching_Matrix.css' %}">
-                            <script defer src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
                             <!-- Single scoped wrapper -->
                             <div id="tmm" class="tmm-container">
 
@@ -552,8 +539,8 @@
                                             <label class="control-label">
                                                 <i class="fas fa-layer-group"></i> Category
                                             </label>
-                                            <select class="control-input" id="tmm_categorySelect"
-                                                onchange="updateMatrixData()">
+                                            <select class="control-input" id="tmm_categorySelect">
+                                                <option value="all">All Tables</option>
                                                 <option value="ticket" selected>Ticket Built up</option>
                                                 <option value="rate">Rate Card</option>
                                                 <option value="dispatch">Dispatch</option>
@@ -565,67 +552,31 @@
                                             </select>
                                         </div>
 
-                                        <!-- CUSTOMER -->
                                         <div class="control-group">
                                             <label class="control-label">
                                                 <i class="fas fa-users"></i> Customer
                                             </label>
-                                            <select class="control-input" id="tmm_customerSelect"
-                                                onchange="updateMatrixData()">
-                                                <option value="All customers" selected>Customers</option>
-                                                <option value="HCL">HCL</option>
-                                                <option value="acme">Acme Corp</option>
-                                                <option value="coforge">COFORGE</option>
-                                                <option value="cognizant">Cognizant</option>
-                                                <option value="ericsson">ERICSSON</option>
-                                                <option value="leg">LEG</option>
-                                                <option value="lenovo_th">Lenovo Thailand</option>
-                                                <option value="skf">SKF</option>
-                                                <option value="tcs_full">Tata Consultancy Services</option>
-                                                <option value="aico">AICO PHARMA</option>
-                                                <option value="atos">ATOS</option>
-                                                <option value="beckman">Beckman Coulter</option>
-                                                <option value="capgemini">CAPGEMINI</option>
-                                                <option value="dxc">DXC</option>
-                                                <option value="genpact">GENPACT</option>
-                                                <option value="hpe">HPE</option>
-                                                <option value="hughes">HUGHES</option>
-                                                <option value="lenovo_fifa">LENOVO_FIFA</option>
-                                                <option value="sifi">SIFI SBI</option>
-                                                <option value="solcentrix">Solcentrix</option>
-                                                <option value="sprout">SPROUT</option>
-                                                <option value="tcs">TCS</option>
-                                                <option value="techem">TECHEM</option>
-                                                <option value="wwt">WWT</option>
-                                                <option value="zones">ZONES</option>
+                                            <select class="control-input" id="tmm_customerSelect">
+                                                <option value="all" selected>All Customers</option>
                                             </select>
                                         </div>
 
-                                        <!-- ACCOUNT -->
                                         <div class="control-group">
                                             <label class="control-label">
                                                 <i class="fas fa-building"></i> Account
                                             </label>
-                                            <select class="control-input" id="tmm_accountSelect"
-                                                onchange="updateMatrixData()">
-                                                <option value="hcl_abbvie" selected>HCL_ABBVIE</option>
-                                                <option value="hcl_abbvie_dss">HCL_ABBVIE DSS</option>
-                                                <option value="hcl_abbvie_he">HCL_ABBVIE H&amp;E</option>
-                                                <option value="hcl_adidas">HCL_ADIDAS</option>
-                                                <option value="hcl_akzo_nobel">HCL_AKZO NOBEL</option>
-                                                <option value="hcl_allianz">HCL_ALLIANZ</option>
-                                                <option value="hcl_altera">HCL_ALTERA</option>
-                                                <option value="hcl_amd">HCL_AMD</option>
+                                            <select class="control-input" id="tmm_accountSelect">
+                                                <option value="all" selected>All Accounts</option>
                                             </select>
                                         </div>
+
 
                                         <!-- BAND (NEW) -->
                                         <div class="control-group">
                                             <label class="control-label">
                                                 <i class="fas fa-layer-group"></i> Band
                                             </label>
-                                            <select class="control-input" id="tmm_bandSelect"
-                                                onchange="updateMatrixData()">
+                                            <select class="control-input" id="tmm_bandSelect">
                                                 <option value="" selected>All Bands</option>
                                                 <option value="band1">Band 1</option>
                                                 <option value="band2">Band 2</option>
@@ -1481,6 +1432,30 @@
                                     </table>
                                 </div>
 
+                                <div id="recordNavigation" class="tmm-card record-nav-bar" style="display: none;">
+                                    <div class="nav-left">
+                                        <span class="nav-label">Processing Record:</span>
+                                        <span id="currentRecordDisplay" class="nav-counter">0 / 0</span>
+                                    </div>
+
+                                    <div class="nav-center">
+                                        <button class="btn-nav" onclick="prevRecord()"><i
+                                                class="fas fa-chevron-left"></i> Previous</button>
+                                        <button class="btn-nav" onclick="nextRecord()"><i
+                                                class="fas fa-chevron-right"></i> Next</button>
+                                    </div>
+
+                                    <div class="nav-right">
+                                        <button class="btn-nav-outline" onclick="clearCsvData()"><i
+                                                class="fas fa-trash"></i> Clear Data</button>
+                                    </div>
+                                </div>
+
+                                <div class="matrix-container">
+                                    <table class="matrix-table" id="matrixTable">
+                                    </table>
+                                </div>
+
                                 <!-- Matrix Legend -->
                                 <div class="matrix-legend tmm-card" style="padding: 12px 14px; margin-top: 14px;">
                                     <div class="legend-item"><span class="rag-green">●</span><span>Green
@@ -1583,11 +1558,6 @@
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 1 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
 
 
-
-
-
-
-
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
         <div class="step-content" id="step-content-2">
 
@@ -1631,8 +1601,6 @@
 
 <!-- Band Details Sliding Panel -->
 <link rel="stylesheet" href="{% static 'css/Band_Feature.css' %}">
-<script src="{% static 'js/Band_features.js' %}" defer></script>
-
 <!-- Overlay -->
 <div class="tmm-band-overlay" id="tmmBandOverlay" onclick="tmmCloseBandDetailsPanel()"></div>
 
@@ -1673,4 +1641,68 @@
 
 </div>
 
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. Safely parse the JSON data passed from the Django View
+        // We use |escapejs to ensure special characters don't break the JS syntax
+        const customersData = JSON.parse('{{ customers_json|escapejs }}');
+        const accountsData = JSON.parse('{{ accounts_json|escapejs }}');
+
+        const customerSelect = document.getElementById('tmm_customerSelect');
+        const accountSelect = document.getElementById('tmm_accountSelect');
+
+        // 2. Function to populate Customers
+        function initCustomers() {
+            customersData.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id; // Use ID for value
+                option.dataset.name = customer.name;
+                option.textContent = customer.name; // Display Name
+                customerSelect.appendChild(option);
+            });
+        }
+
+        // 3. Function to populate Accounts (with optional filtering)
+        function populateAccounts(customerId = 'all') {
+            // Clear current options except the first "All Accounts"
+            accountSelect.innerHTML = '<option value="all">All Accounts</option>';
+
+            let filteredAccounts = accountsData;
+
+            // If a specific customer is selected, filter the list
+            if (customerId !== 'all') {
+                // Ensure we compare strings/numbers correctly
+                filteredAccounts = accountsData.filter(acc => String(acc.customer_id) === String(customerId));
+            }
+
+            // Append filtered accounts
+            filteredAccounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id; // Use ID for value
+                option.dataset.name = account.name
+                option.textContent = account.name; // Display Name
+                accountSelect.appendChild(option);
+            });
+
+            // If no accounts found for this customer, show a placeholder
+            if (filteredAccounts.length === 0 && customerId !== 'all') {
+                const option = document.createElement('option');
+                option.text = "No accounts found";
+                option.disabled = true;
+                accountSelect.appendChild(option);
+            }
+        }
+
+        // 4. Event Listener for Customer Change
+        customerSelect.addEventListener('change', function () {
+            const selectedCustomerId = this.value;
+            populateAccounts(selectedCustomerId);
+        });
+
+        // 5. Initialize the dropdowns on page load
+        initCustomers();
+        populateAccounts('all'); // Load all accounts initially
+    });
+</script>
 {% endblock %}

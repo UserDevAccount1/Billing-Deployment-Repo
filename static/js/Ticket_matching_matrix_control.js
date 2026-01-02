@@ -54,29 +54,53 @@ function toggleColumnVisibility(tableKey, visible) {
  * Apply column visibility to matrix
  */
 function applyColumnVisibility() {
+  if (typeof STATE === 'undefined') return;
+
   const headerCells = document.querySelectorAll('#matrixHeader th[data-table]');
   const bodyCells = document.querySelectorAll('#matrixBody td[data-table]');
 
+  // Use empty string '' to remove the style attribute entirely when showing
+  // This allows the CSS table-cell property to take over
   headerCells.forEach(cell => {
-    const table = cell.dataset.table;
-    cell.style.display = STATE.hiddenColumns.has(table) ? 'none' : '';
+    cell.style.display = STATE.hiddenColumns.has(cell.dataset.table) ? 'none' : '';
   });
 
   bodyCells.forEach(cell => {
-    const table = cell.dataset.table;
-    cell.style.display = STATE.hiddenColumns.has(table) ? 'none' : '';
+    cell.style.display = STATE.hiddenColumns.has(cell.dataset.table) ? 'none' : '';
   });
 }
 
 /**
- * Show all columns
+ * Show all columns (Column Visibility Dropdown)
  */
 function showAllColumns() {
+  if (typeof STATE === 'undefined') return;
+
   STATE.hiddenColumns.clear();
-  const checkboxes = document.querySelectorAll('#columnCheckboxList input[type="checkbox"]');
-  checkboxes.forEach(cb => cb.checked = true);
+
+  // Also reset the category/table filters visually so UI matches reality
+  const siteCategoryEl = document.getElementById('siteCategory');
+  const tableFilterEl = document.getElementById('tableFilter');
+  if (siteCategoryEl) siteCategoryEl.value = '';
+  if (tableFilterEl) tableFilterEl.value = 'SHOW_ALL';
+
   applyColumnVisibility();
-  showToast('All columns visible', 'success');
+  updateCheckboxes();
+  // showToast('All columns visible', 'success');
+}
+
+/**
+ * Hide all columns (Column Visibility Dropdown)
+ */
+function hideAllColumns() {
+  if (typeof STATE === 'undefined' || typeof TABLE_SCHEMAS === 'undefined') return;
+
+  Object.keys(TABLE_SCHEMAS).forEach(key => {
+    STATE.hiddenColumns.add(key);
+  });
+
+  applyColumnVisibility();
+  updateCheckboxes();
 }
 
 /**
@@ -107,17 +131,25 @@ function toggleAdvancedFilters() {
 /**
  * Apply all filters to the matrix
  */
+/**
+ * Apply all filters to the matrix
+ */
 function applyFilters() {
-  const tableFilter = document.getElementById('tableFilter')?.value || 'SHOW_ALL';
+  if (typeof STATE === 'undefined' || typeof FIELD_DEFINITIONS === 'undefined') return;
+
+  const tableFilterEl = document.getElementById('tableFilter');
+  const tableFilter = tableFilterEl ? tableFilterEl.value : 'SHOW_ALL';
+
   const fieldGroupFilter = document.getElementById('fieldGroupFilter')?.value || 'ALL';
   const ragFilter = document.getElementById('ragFilter')?.value || 'ALL';
   const dataTypeFilter = document.getElementById('dataTypeFilter')?.value || 'ALL';
   const sortOrder = document.getElementById('sortOrder')?.value || 'ALPHABETICAL_ASC';
 
+  const siteCategoryEl = document.getElementById('siteCategory');
   const showRequiredOnly = document.getElementById('showRequiredOnly')?.checked || false;
   const showEmptyOnly = document.getElementById('showEmptyOnly')?.checked || false;
 
-  // 1) Apply table filter (column visibility)
+  // 1) COLUMN VISIBILITY LOGIC
   const tableMap = {
     'TICKET_DATA': 'ticket_data',
     'RATE_CARD': 'rate_card',
@@ -130,21 +162,36 @@ function applyFilters() {
   };
 
   if (tableFilter === 'SHOW_ALL') {
-    // show all
+    // FIX: If user explicitly wants SHOW ALL, we must clear hidden columns
+    // AND reset the site category dropdown so the UI doesn't look conflicting
+    if (siteCategoryEl && siteCategoryEl.value !== '') {
+      siteCategoryEl.value = ''; // Reset category to "All"
+      // Optional: Notify user
+      // showToast('Category filter cleared', 'info'); 
+    }
     STATE.hiddenColumns.clear();
   } else {
+    // Specific table selected
     const target = tableMap[tableFilter];
     if (target) {
+      // If we are filtering by a specific table, we also reset the category
+      // to avoid confusion
+      if (siteCategoryEl && siteCategoryEl.value !== '') {
+        siteCategoryEl.value = '';
+      }
+
       Object.keys(TABLE_SCHEMAS).forEach(k => {
         if (k === target) STATE.hiddenColumns.delete(k);
         else STATE.hiddenColumns.add(k);
       });
     }
   }
+
+  // Apply visual changes to columns
   applyColumnVisibility();
   updateCheckboxes();
 
-  // 2) Row filters
+  // 2) ROW FILTER LOGIC (Hide/Show Rows based on content)
   const rows = Array.from(document.querySelectorAll('#matrixBody .matrix-row'));
 
   rows.forEach(row => {
@@ -180,7 +227,7 @@ function applyFilters() {
     row.style.display = visible ? '' : 'none';
   });
 
-  // 3) Sort order (reorder visible rows in DOM)
+  // 3) SORT LOGIC
   applySortOrder(sortOrder);
 }
 
@@ -270,14 +317,24 @@ function resetFilters() {
 /**
  * Filter by specific site category
  */
+/**
+ * Filter by specific site category
+ */
 function filterBySiteCategory() {
   const category = document.getElementById('siteCategory')?.value || '';
-  
-  console.log('[filterBySiteCategory] Category:', category);
+  const tableFilterEl = document.getElementById('tableFilter');
+
+  if (typeof STATE === 'undefined') return;
 
   if (!category) {
+    // If category is cleared, show everything
     STATE.hiddenColumns.clear();
   } else {
+    // If a category is selected, ensure the "Table Filter" dropdown 
+    // says "Show All" (or similar) so it doesn't look like a conflict,
+    // but we technically hide the non-category columns below.
+    if (tableFilterEl) tableFilterEl.value = 'SHOW_ALL';
+
     const categoryMap = {
       'dispatch': 'dispatch',
       'dedicated': 'dedicated',
@@ -285,11 +342,11 @@ function filterBySiteCategory() {
       'sv': 'sv_visit',
       'standby': 'standby'
     };
-    
+
     const targetTable = categoryMap[category];
-    
+
     Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
-      // Always show ticket_data and final_ticket, plus the selected category
+      // Always show ticket_data and final_ticket, plus the selected category table
       if (tableKey === targetTable || tableKey === 'ticket_data' || tableKey === 'final_ticket') {
         STATE.hiddenColumns.delete(tableKey);
       } else {
@@ -297,10 +354,11 @@ function filterBySiteCategory() {
       }
     });
   }
-  
+
   applyColumnVisibility();
   updateCheckboxes();
-  showToast(`Filtered to: ${category || 'All categories'}`, 'success');
+
+  if (category) showToast(`Filtered to: ${category}`, 'success');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -354,7 +412,7 @@ function showBulkInputModal() {
   const modal = document.getElementById('bulkInputModal');
   if (modal) {
     modal.style.display = 'flex';
-    
+
     // Focus on textarea
     const textarea = document.getElementById('bulkTextarea');
     if (textarea) {
@@ -373,7 +431,7 @@ function showBulkInputModal() {
 function closeBulkInputModal() {
   const modal = document.getElementById('bulkInputModal');
   if (modal) modal.style.display = 'none';
-  
+
   // Reset input mode dropdown
   const inputMode = document.getElementById('inputMode');
   if (inputMode) inputMode.value = 'NORMAL';
@@ -396,7 +454,7 @@ function processBulkInput() {
     if (!line.trim()) return; // Skip empty lines
 
     const parts = line.split(',').map(p => p.trim());
-    
+
     if (parts.length < 2) {
       console.warn(`[processBulkInput] Line ${index + 1}: Invalid format (need at least field,value)`);
       errors++;
@@ -426,10 +484,10 @@ function processBulkInput() {
 
   // Clear textarea
   textarea.value = '';
-  
+
   // Close modal
   closeBulkInputModal();
-  
+
   // Refresh matrix
   renderMatrixBody();
   applyColumnVisibility();
@@ -487,23 +545,23 @@ function applyHighlighting() {
       case 'REQUIRED_STATUS':
         if (def.required) row.classList.add('highlight-required');
         break;
-        
+
       case 'RAG_STATUS':
         const ragColor = (def.rag || 'green').toLowerCase();
         row.classList.add(`highlight-rag-${ragColor}`);
         break;
-        
+
       case 'AUTO_POP':
         if (def.autoPopTo && def.autoPopTo.length > 1) {
           row.classList.add('highlight-auto');
         }
         break;
-        
+
       case 'EMPTY':
         const hasData = Object.values(DATA_STORE).some(store => store[field]);
         if (!hasData) row.classList.add('highlight-empty');
         break;
-        
+
       case 'DATA_TYPE':
         row.classList.add('highlight-type');
         break;
@@ -527,15 +585,15 @@ function applyDisplayOptions() {
 function applyDisplayMode() {
   const mode = document.getElementById('displayMode')?.value || 'COMPACT';
   const matrixTable = document.querySelector('.matrix-table');
-  
+
   if (!matrixTable) return;
 
   // Remove existing mode classes
   matrixTable.classList.remove('display-compact', 'display-comfortable', 'display-spacious');
-  
+
   // Add new mode class
   matrixTable.classList.add(`display-${mode.toLowerCase()}`);
-  
+
   console.log('[applyDisplayMode] Mode:', mode);
   showToast(`Display mode: ${mode}`, 'info');
 }
@@ -548,7 +606,7 @@ function applyDisplayMode() {
 document.addEventListener('click', (e) => {
   const dropdown = document.getElementById('columnDropdownContent');
   const btn = document.querySelector('.column-visibility-btn');
-  
+
   if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
     dropdown.classList.remove('show');
   }
@@ -558,7 +616,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   const panel = document.getElementById('advancedFilters');
   const btn = document.querySelector('[onclick="toggleAdvancedFilters()"]');
-  
+
   if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
     if (panel.classList.contains('show')) {
       // Don't close if clicking inside the panel
@@ -577,20 +635,20 @@ document.addEventListener('keydown', (e) => {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.focus();
   }
-  
+
   // Ctrl/Cmd + Shift + F: Toggle advanced filters
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
     e.preventDefault();
     toggleAdvancedFilters();
   }
-  
+
   // Escape: Close modals and dropdowns
   if (e.key === 'Escape') {
     closeBulkInputModal();
-    
+
     const dropdown = document.getElementById('columnDropdownContent');
     if (dropdown) dropdown.classList.remove('show');
-    
+
     const panel = document.getElementById('advancedFilters');
     if (panel) panel.classList.remove('show');
   }

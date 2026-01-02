@@ -1,21 +1,84 @@
+from datetime import date, timedelta
+import uuid
+import logging
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.db.models.functions import Lower
 from django.utils.dateformat import format
+
 from .models import BillingRun
-from apps.customers.models import Customer, Account
+from apps.customers.models import Customer, Account, BillingCycle, Currency, Country
+from apps.customers.forms import AccountForm
 from apps.purchase_orders.models import PurchaseOrder
 from apps.rate_cards.models import RateCard
-from datetime import date, timedelta
-import uuid
+
+logger = logging.getLogger('billing')
+
 
 @login_required
 def test_page(request):
-    """A simple test page for billing"""
-    return render(request, "billing/test.html", {})
+    """A simple test page for billing with customers and accounts"""
+    try:
+        # Fetch customers
+        customers = Customer.objects.filter(is_active=True).order_by(Lower('name'))
 
+        # Fetch accounts
+        accounts = Account.objects.select_related(
+            'customer', 'billing_cycle', 'currency', 'country'
+        ).filter(is_active=True).order_by('customer__name', 'name')
+
+        # Build customers JSON
+        customers_data = [
+            {
+                'id': customer.id,
+                'name': str(customer.name),
+                'code': str(customer.code or ''),
+                'account_count': customer.accounts.filter(is_active=True).count()
+            }
+            for customer in customers
+        ]
+        customers_json = json.dumps(customers_data, ensure_ascii=False)
+
+        # Build accounts JSON
+        accounts_data = [
+            {
+                'id': account.id,
+                'customer_id': account.customer.id if account.customer else None,
+                'name': str(account.name or ''),
+                'account_id': str(getattr(account, 'account_id', '') or '')
+            }
+            for account in accounts
+        ]
+        accounts_json = json.dumps(accounts_data, ensure_ascii=False)
+
+        context = {
+            'customers': customers,
+            'accounts': accounts,
+            'customers_json': customers_json,
+            'accounts_json': accounts_json,
+            'form': AccountForm(),
+            'currencies': Currency.objects.filter(is_active=True),
+            'countries': Country.objects.filter(is_active=True),
+        }
+
+    except Exception as e:
+        logger.error(f"Error loading billing test page data: {e}", exc_info=True)
+        context = {
+            'customers': [],
+            'accounts': [],
+            'customers_json': '[]',
+            'accounts_json': '[]',
+            'form': AccountForm(),
+            'currencies': Currency.objects.filter(is_active=True),
+            'countries': Country.objects.filter(is_active=True),
+        }
+
+    return render(request, "billing/test.html", context)
 
 @login_required
 def billing_run_list(request):
