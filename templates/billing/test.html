@@ -724,10 +724,6 @@
                                     </div>
                                 </div>
 
-
-
-
-
                                 <!-- Advanced Filters Panel -->
                                 <div class="advanced-filters" id="advancedFilters">
 
@@ -1698,6 +1694,8 @@
         customerSelect.addEventListener('change', function () {
             const selectedCustomerId = this.value;
             populateAccounts(selectedCustomerId);
+            $(accountSelect).selectpicker('refresh');
+            accountSelect.value = 'all';
         });
 
         // 5. Initialize the dropdowns on page load
