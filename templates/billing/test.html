@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="{% static 'css/Quick_Data_Input.css' %}">
 <link rel="stylesheet" href="{% static 'css/Step_Badges.css' %}">
 <link rel="stylesheet" href="{% static 'css/Ticket_upload&Validation.css' %}">
-
+<script src="{% static 'js/Step_Navigation.js' %}"></script>
 <div class="wrap">
     <!-- STEPPER HEADER -->
     <div class="stepper" id="stepper">
@@ -1556,8 +1556,339 @@
 
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
         <div class="step-content" id="step-content-2">
+            <div class="rate-card-assign-container">
+                <!-- Header -->
+                <div class="assign-header">
+                    <h1>Step 2: Rate Card Assignment & Validation Lock</h1>
+                    <p>Assign Service Rate Cards to validated tickets and lock them for pricing</p>
 
+                    <!-- View Toggle -->
+                    <div class="view-toggle" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="view-btn active" data-view="table">
+                            <i class="fas fa-table"></i> Table View
+                        </button>
+                        <button class="view-btn" data-view="form">
+                            <i class="fas fa-file-alt"></i> Form View
+                        </button>
+                        <button class="view-btn" data-view="comparison">
+                            <i class="fas fa-exchange-alt"></i> Comparison View
+                        </button>
+                    </div>
+
+                    <div class="status-indicators">
+                        <div class="status-indicator">
+                            <span class="indicator-dot assigned"></span>
+                            <span id="assignedCount">0</span> Assigned
+                        </div>
+                        <div class="status-indicator">
+                            <span class="indicator-dot pending"></span>
+                            <span id="pendingCount">0</span> Pending
+                        </div>
+                        <div class="status-indicator">
+                            <span class="indicator-dot missing"></span>
+                            <span id="missingCount">0</span> Missing
+                        </div>
+                        <div class="status-indicator">
+                            <span class="indicator-dot conflict"></span>
+                            <span id="conflictCount">0</span> Conflict
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="margin-top: 20px;">
+                        <div
+                            style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div id="progressFill"
+                                style="background: #2ecc71; height: 100%; width: 0%; transition: width 0.5s;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                            <span id="progressText">0% Complete</span>
+                            <span id="ticketCount">0</span> tickets
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="assign-content">
+                    <!-- Main Table Section -->
+                    <div class="assign-main-section">
+                        <!-- Table Controls -->
+                        <div class="table-controls step-2-controls">
+                            <div class="control-left">
+                                <div class="search-box">
+                                    <i class="search-icon fas fa-search"></i>
+                                    <input type="text" id="searchTickets" placeholder="Search tickets...">
+                                </div>
+
+                                <!-- Column Filter -->
+                                <div class="column-filter">
+                                    <button class="btn btn-outline" id="columnFilterBtn">
+                                        <i class="fas fa-columns"></i> Columns
+                                    </button>
+                                    <div class="column-filter-dropdown" id="columnFilterDropdown">
+                                        <div class="column-filter-header">
+                                            <h4>Show/Hide Columns</h4>
+                                        </div>
+                                        <div class="column-filter-options" id="columnFilterOptions">
+                                            <!-- Options will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Main Filters -->
+                                <select class="filter-dropdown" id="filterCustomer">
+                                    <option value="all" selected>All customers</option>
+                                </select>
+
+                                <select class="filter-dropdown" id="filterAccount">
+                                    <option value="all">All Accounts</option>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+
+                                <select class="filter-dropdown" id="filterStatus">
+                                    <option value="all">All Status</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="missing">Missing</option>
+                                    <option value="conflict">Conflict</option>
+                                </select>
+                            </div>
+
+                            <div class="control-right">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary" id="autoAssignAll">
+                                        <i class="fas fa-robot"></i> Auto-Assign All
+                                    </button>
+                                    <button class="btn btn-outline" id="bulkAssign">
+                                        <i class="fas fa-layer-group"></i> Bulk Assign
+                                    </button>
+                                    <button class="btn btn-outline" id="exportReport">
+                                        <i class="fas fa-download"></i> Export
+                                    </button>
+                                    <button class="btn btn-success" id="generateReport">
+                                        <i class="fas fa-file-alt"></i> Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABLE VIEW -->
+                        <div class="view-container active" id="tableView">
+                            <!-- Final Ticket Data Table -->
+                            <div class="rate-card-table-container">
+                                <table class="rate-card-table" id="finalTicketTable">
+                                    <thead>
+                                        <tr id="tableHeaders">
+                                            <!-- Headers will be populated by JavaScript -->
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBody">
+                                        <!-- Tickets will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- FORM VIEW -->
+                        <div class="view-container" id="formView">
+                            <div class="form-view-container">
+                                <div class="form-navigation">
+                                    <button class="btn btn-outline" id="prevTicket">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </button>
+                                    <span id="currentFormPosition">Ticket 1 of 10</span>
+                                    <button class="btn btn-outline" id="nextTicket">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+
+                                <div class="ticket-form" id="ticketForm">
+                                    <!-- Form will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- COMPARISON VIEW -->
+                        <div class="view-container" id="comparisonView">
+                            <!-- Comparison content will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Section -->
+                    <div class="assign-sidebar">
+                        <!-- Rate Card Preview -->
+                        <div class="rate-card-preview" id="rateCardPreview">
+                            <!-- Preview content will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Assignment Summary -->
+                        <div class="assignment-summary">
+                            <div class="summary-header">
+                                <h3>Assignment Summary</h3>
+                            </div>
+
+                            <div class="summary-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="summaryAssigned">0</div>
+                                    <div class="stat-label">Assigned</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="summaryPending">0</div>
+                                    <div class="stat-label">Pending</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="summaryMissing">0</div>
+                                    <div class="stat-label">Missing</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="summaryConflict">0</div>
+                                    <div class="stat-label">Conflict</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px;">
+                                <button class="btn btn-primary" style="width: 100%;" id="quickAssignBtn">
+                                    <i class="fas fa-bolt"></i> Quick Assign Missing
+                                </button>
+                            </div>
+
+                            <div style="margin-top: 15px; font-size: 12px; color: #95a5a6; text-align: center;">
+                                <p>Click "Overview" on any ticket to view and manage rate card assignments</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="assignment-summary">
+                            <div class="summary-header">
+                                <h3>Quick Actions</h3>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <button class="btn btn-outline" id="exportLogBtn">
+                                    <i class="fas fa-file-export"></i> Export Assignment Log
+                                </button>
+                                <button class="btn btn-outline" id="generateAnalyticsBtn">
+                                    <i class="fas fa-chart-bar"></i> Generate Analytics
+                                </button>
+                                <button class="btn btn-outline" id="rateCardLibraryBtn">
+                                    <i class="fas fa-book"></i> Rate Card Library
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Notes -->
+                <div
+                    style="margin-top: 30px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+                    <h3><i class="fas fa-info-circle"></i> Important Notes</h3>
+                    <ul style="color: #7f8c8d; line-height: 1.6; margin-top: 10px;">
+                        <li>Rate cards are automatically assigned based on customer, account, service type, band level,
+                            and date validity</li>
+                        <li>Tickets with assigned rate cards are locked and cannot be edited without admin override</li>
+                        <li>Use the "Overview" button to view detailed comparison between original ticket data and
+                            assigned rate card</li>
+                        <li>Click "Auto-Assign All" to automatically assign rate cards to all unassigned tickets</li>
+                        <li>Missing rate cards require manual assignment or creation in the Rate Card Library</li>
+                    </ul>
+                </div>
+            </div>
         </div>
+
+        <!-- Comparison Modal Templates (add these at the bottom of step 2) -->
+        <div id="overviewModal" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="width: 90%; max-width: 1200px;">
+                <div class="modal-header">
+                    <h2 id="overviewModalTitle">Rate Card Overview</h2>
+                    <button class="modal-close" onclick="rateCardApp.closeOverviewModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="overview-controls">
+                        <div class="overview-selectors">
+                            <div class="selector-group">
+                                <label><i class="fas fa-users"></i> Customer</label>
+                                <select id="overviewCustomer" class="filter-dropdown">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="selector-group">
+                                <label><i class="fas fa-building"></i> Account</label>
+                                <select id="overviewAccount" class="filter-dropdown">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="selector-group">
+                                <label><i class="fas fa-ticket-alt"></i> Ticket</label>
+                                <select id="overviewTicket" class="filter-dropdown">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="view-toggle-group">
+                            <span class="toggle-label">View Mode:</span>
+                            <div class="toggle-switch">
+                                <button class="toggle-btn active" data-view="sidebyside">
+                                    <i class="fas fa-columns"></i> Side by Side
+                                </button>
+                                <button class="toggle-btn" data-view="beforeafter">
+                                    <i class="fas fa-exchange-alt"></i> Before/After
+                                </button>
+                                <button class="toggle-btn" data-view="changes">
+                                    <i class="fas fa-list"></i> Changes Only
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overview-content" id="overviewContent">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+
+                    <div class="overview-summary">
+                        <div class="summary-header">
+                            <h3><i class="fas fa-chart-bar"></i> Change Summary</h3>
+                            <div class="summary-stats">
+                                <div class="stat-badge total">
+                                    <span class="stat-label">Total Changes</span>
+                                    <span class="stat-value" id="totalChanges">0</span>
+                                </div>
+                                <div class="stat-badge match">
+                                    <span class="stat-label">Matches</span>
+                                    <span class="stat-value" id="matchCount">0</span>
+                                </div>
+                                <div class="stat-badge conflict">
+                                    <span class="stat-label">Conflicts</span>
+                                    <span class="stat-value" id="conflictCount">0</span>
+                                </div>
+                                <div class="stat-badge new">
+                                    <span class="stat-label">New Fields</span>
+                                    <span class="stat-value" id="newCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="changes-list" id="changesList">
+                            <!-- Changes will be listed here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline" onclick="rateCardApp.closeOverviewModal()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button class="btn btn-primary" onclick="rateCardApp.exportComparison()">
+                        <i class="fas fa-download"></i> Export Comparison
+                    </button>
+                    <button class="btn btn-success" onclick="rateCardApp.applyChanges()">
+                        <i class="fas fa-check"></i> Apply Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add these links AFTER your HTML content -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="{% static 'css/RateCardAssign.css' %}">
+        <script src="{% static 'js/RateCard.js' %}"></script>
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
 
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 3 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
@@ -1640,67 +1971,71 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // 1. Safely parse the JSON data passed from the Django View
-        // We use |escapejs to ensure special characters don't break the JS syntax
         const customersData = JSON.parse('{{ customers_json|escapejs }}');
         const accountsData = JSON.parse('{{ accounts_json|escapejs }}');
 
         const customerSelect = document.getElementById('tmm_customerSelect');
         const accountSelect = document.getElementById('tmm_accountSelect');
 
-        // 2. Function to populate Customers
-        function initCustomers() {
+        const customerSelectFilter = document.getElementById('filterCustomer');
+        const accountSelectFilter = document.getElementById('filterAccount');
+
+        /* ---------- INIT CUSTOMERS ---------- */
+        function initCustomers(selectEl) {
             customersData.forEach(customer => {
                 const option = document.createElement('option');
-                option.value = customer.id; // Use ID for value
-                option.dataset.name = customer.name;
-                option.textContent = customer.name; // Display Name
-                customerSelect.appendChild(option);
+                option.value = customer.id;
+                option.textContent = customer.name;
+                selectEl.appendChild(option);
             });
         }
 
-        // 3. Function to populate Accounts (with optional filtering)
-        function populateAccounts(customerId = 'all') {
-            // Clear current options except the first "All Accounts"
-            accountSelect.innerHTML = '<option value="all">All Accounts</option>';
+        /* ---------- POPULATE ACCOUNTS ---------- */
+        function populateAccounts(selectEl, customerId = 'all') {
+            selectEl.innerHTML = '<option value="all">All Accounts</option>';
 
-            let filteredAccounts = accountsData;
+            let filtered = accountsData;
 
-            // If a specific customer is selected, filter the list
             if (customerId !== 'all') {
-                // Ensure we compare strings/numbers correctly
-                filteredAccounts = accountsData.filter(acc => String(acc.customer_id) === String(customerId));
+                filtered = accountsData.filter(
+                    acc => String(acc.customer_id) === String(customerId)
+                );
             }
 
-            // Append filtered accounts
-            filteredAccounts.forEach(account => {
+            filtered.forEach(account => {
                 const option = document.createElement('option');
-                option.value = account.id; // Use ID for value
-                option.dataset.name = account.name
-                option.textContent = account.name; // Display Name
-                accountSelect.appendChild(option);
+                option.value = account.id;
+                option.textContent = account.name;
+                selectEl.appendChild(option);
             });
 
-            // If no accounts found for this customer, show a placeholder
-            if (filteredAccounts.length === 0 && customerId !== 'all') {
+            if (!filtered.length && customerId !== 'all') {
                 const option = document.createElement('option');
-                option.text = "No accounts found";
+                option.textContent = 'No accounts found';
                 option.disabled = true;
-                accountSelect.appendChild(option);
+                selectEl.appendChild(option);
             }
         }
 
-        // 4. Event Listener for Customer Change
+        /* ---------- MAIN SELECT EVENTS ---------- */
         customerSelect.addEventListener('change', function () {
-            const selectedCustomerId = this.value;
-            populateAccounts(selectedCustomerId);
+            populateAccounts(accountSelect, this.value);
             $(accountSelect).selectpicker('refresh');
             accountSelect.value = 'all';
         });
 
-        // 5. Initialize the dropdowns on page load
-        initCustomers();
-        populateAccounts('all'); // Load all accounts initially
+        customerSelectFilter.addEventListener('change', function () {
+            populateAccounts(accountSelectFilter, this.value);
+            $(accountSelectFilter).selectpicker('refresh');
+            accountSelectFilter.value = 'all';
+        });
+
+        /* ---------- INIT ON LOAD ---------- */
+        initCustomers(customerSelect);
+        initCustomers(customerSelectFilter);
+
+        populateAccounts(accountSelect, 'all');
+        populateAccounts(accountSelectFilter, 'all');
     });
 </script>
 {% endblock %}
