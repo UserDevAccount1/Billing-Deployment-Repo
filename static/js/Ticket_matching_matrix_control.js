@@ -131,9 +131,6 @@ function toggleAdvancedFilters() {
 /**
  * Apply all filters to the matrix
  */
-/**
- * Apply all filters to the matrix
- */
 function applyFilters() {
   if (typeof STATE === 'undefined' || typeof FIELD_DEFINITIONS === 'undefined') return;
 
@@ -162,12 +159,8 @@ function applyFilters() {
   };
 
   if (tableFilter === 'SHOW_ALL') {
-    // FIX: If user explicitly wants SHOW ALL, we must clear hidden columns
-    // AND reset the site category dropdown so the UI doesn't look conflicting
     if (siteCategoryEl && siteCategoryEl.value !== '') {
       siteCategoryEl.value = ''; // Reset category to "All"
-      // Optional: Notify user
-      // showToast('Category filter cleared', 'info'); 
     }
     STATE.hiddenColumns.clear();
   } else {
@@ -317,9 +310,6 @@ function resetFilters() {
 /**
  * Filter by specific site category
  */
-/**
- * Filter by specific site category
- */
 function filterBySiteCategory() {
   const category = document.getElementById('siteCategory')?.value || '';
   const tableFilterEl = document.getElementById('tableFilter');
@@ -377,11 +367,6 @@ function handleInputMode() {
     siteCategoryGroup.style.display = (mode === 'SITE_CATEGORY') ? 'block' : 'none';
   }
 
-  if (mode === 'BULK') {
-    showBulkInputModal();
-    return;
-  }
-
   if (mode === 'FINAL_TABLE') {
     // show ticket_data + final_ticket only
     Object.keys(TABLE_SCHEMAS).forEach(k => {
@@ -403,105 +388,6 @@ function handleInputMode() {
 
   // NORMAL / VALIDATION_FIRST / etc. -> for now just re-apply filters
   applyFilters();
-}
-
-/**
- * Show bulk input modal
- */
-function showBulkInputModal() {
-  const modal = document.getElementById('bulkInputModal');
-  if (modal) {
-    modal.style.display = 'flex';
-
-    // Focus on textarea
-    const textarea = document.getElementById('bulkTextarea');
-    if (textarea) {
-      textarea.focus();
-      // Add placeholder example
-      if (!textarea.value) {
-        textarea.placeholder = 'Example:\nticket_number, 12345, ticket_data\ncustomer, Acme Corp, ticket_data\nregion, EMEA, ticket_data';
-      }
-    }
-  }
-}
-
-/**
- * Close bulk input modal
- */
-function closeBulkInputModal() {
-  const modal = document.getElementById('bulkInputModal');
-  if (modal) modal.style.display = 'none';
-
-  // Reset input mode dropdown
-  const inputMode = document.getElementById('inputMode');
-  if (inputMode) inputMode.value = 'NORMAL';
-}
-
-/**
- * Process bulk input data
- */
-function processBulkInput() {
-  const textarea = document.getElementById('bulkTextarea');
-  if (!textarea) return;
-
-  const lines = textarea.value.trim().split('\n');
-  let processed = 0;
-  let errors = 0;
-
-  console.log('[processBulkInput] Processing', lines.length, 'lines');
-
-  lines.forEach((line, index) => {
-    if (!line.trim()) return; // Skip empty lines
-
-    const parts = line.split(',').map(p => p.trim());
-
-    if (parts.length < 2) {
-      console.warn(`[processBulkInput] Line ${index + 1}: Invalid format (need at least field,value)`);
-      errors++;
-      return;
-    }
-
-    const field = parts[0].toLowerCase().replace(/\s+/g, '_');
-    const value = parts[1];
-    const table = parts[2] ? parts[2].toLowerCase().replace(/\s+/g, '_') : 'ticket_data';
-
-    if (!DATA_STORE[table]) {
-      console.warn(`[processBulkInput] Line ${index + 1}: Unknown table "${table}"`);
-      errors++;
-      return;
-    }
-
-    DATA_STORE[table][field] = value;
-    processed++;
-
-    // Apply smart add if enabled
-    if (STATE.smartAddEnabled) {
-      smartAddToOtherTables(field, value);
-    }
-
-    console.log(`[processBulkInput] Line ${index + 1}: ${field} = ${value} → ${table}`);
-  });
-
-  // Clear textarea
-  textarea.value = '';
-
-  // Close modal
-  closeBulkInputModal();
-
-  // Refresh matrix
-  renderMatrixBody();
-  applyColumnVisibility();
-  updateStatistics();
-  updateFinalTablePreview();
-
-  // Show result
-  if (errors > 0) {
-    showToast(`Processed ${processed} entries (${errors} errors)`, 'warning');
-  } else {
-    showToast(`Successfully processed ${processed} entries`, 'success');
-  }
-
-  console.log(`[processBulkInput] Complete: ${processed} processed, ${errors} errors`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -635,17 +521,13 @@ document.addEventListener('keydown', (e) => {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.focus();
   }
-
   // Ctrl/Cmd + Shift + F: Toggle advanced filters
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
     e.preventDefault();
     toggleAdvancedFilters();
   }
-
   // Escape: Close modals and dropdowns
   if (e.key === 'Escape') {
-    closeBulkInputModal();
-
     const dropdown = document.getElementById('columnDropdownContent');
     if (dropdown) dropdown.classList.remove('show');
 
@@ -654,4 +536,100 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+window.applyFilters = applyFilters;
 console.log('[Ticket_matching_matrix_control.js] Loaded successfully');
+
+
+let lastQuery = '';
+let currentMatchIndex = -1;
+
+// ──── SEARCH ────
+// ──── SEARCH ────
+function initSearchHighlight() {
+  const searchInput = document.getElementById('searchInput');
+  const matrixSearch = document.getElementById('matrixSearchInput');
+
+  const attach = (el) => {
+    if (!el) return;
+
+    // FIX 1: Prevent double-binding. 
+    // If we already attached a listener to this specific element, stop here.
+    if (el.dataset.hasSearchListener === 'true') return;
+    el.dataset.hasSearchListener = 'true';
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault(); 
+        e.stopImmediatePropagation();      
+        performSearchHighlight(el.value);
+      }
+    });
+
+    el.addEventListener('input', (e) => {
+      if (e.target.value === '') clearSearchHighlight();
+    });
+  };
+
+  attach(searchInput);
+  attach(matrixSearch);
+}
+
+function performSearchHighlight(query) {
+  const lowerQuery = query.toLowerCase().trim();
+  if (!lowerQuery) return;
+
+  const sameQuery = lowerQuery === lastQuery;
+  lastQuery = lowerQuery;
+
+  if (!sameQuery) {
+    clearSearchHighlight();
+    currentMatchIndex = -1;
+  }
+
+  const rows = document.querySelectorAll('#matrixBody .matrix-row');
+  let matches = [];
+
+  rows.forEach(row => {
+    const field = row.dataset.field;
+    const def = FIELD_DEFINITIONS[field] || {};
+    const fieldLabel = (def.label || field).toLowerCase();
+
+    let match = fieldLabel.includes(lowerQuery);
+
+    if (!match) {
+      row.querySelectorAll('.cell-input').forEach(input => {
+        if (input.value.toLowerCase().includes(lowerQuery)) {
+          input.closest('td').classList.add('search-match-cell');
+          match = true;
+        }
+      });
+    }
+
+    if (match) {
+      row.classList.add('search-match-row');
+      matches.push(row);
+    }
+  });
+
+  if (!matches.length) {
+    showToast('No matches found', 'warning');
+    return;
+  }
+
+  currentMatchIndex = (currentMatchIndex + 1) % matches.length;
+  matches[currentMatchIndex].scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+
+  showToast(`Match ${currentMatchIndex + 1} of ${matches.length}`, 'info');
+}
+
+
+function clearSearchHighlight() {
+  document.querySelectorAll('.search-match-row').forEach(el => el.classList.remove('search-match-row'));
+  document.querySelectorAll('.search-match-cell').forEach(el => el.classList.remove('search-match-cell'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSearchHighlight();
+});

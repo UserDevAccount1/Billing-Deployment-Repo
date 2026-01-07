@@ -203,7 +203,7 @@
 /* Table Styles */
 .rate-card-table-container {
     overflow-x: auto;
-    max-height: 600px;
+    max-height: 100%;
 }
 
 .rate-card-table {
@@ -1877,6 +1877,7 @@
 .summary-stats {
     display: flex;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 .stat-badge {
@@ -2196,8 +2197,4 @@
 
 .highlight-change {
     animation: highlightChange 2s ease;
-}
-
-.step-2-controls{
-    overflow-x: scroll;
 }

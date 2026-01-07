@@ -9,7 +9,12 @@
 <link rel="stylesheet" href="{% static 'css/Quick_Data_Input.css' %}">
 <link rel="stylesheet" href="{% static 'css/Step_Badges.css' %}">
 <link rel="stylesheet" href="{% static 'css/Ticket_upload&Validation.css' %}">
-<script src="{% static 'js/Step_Navigation.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/RateCardAssign.css' %}">
+<link rel="stylesheet" href="{% static 'css/Validation_Results.css' %}">
+<link rel="stylesheet" href="{% static 'css/Ticket_Matching_Matrix.css' %}">
+<link rel="stylesheet" href="{% static 'css/Band_Feature.css' %}">
+
+
 <div class="wrap">
     <!-- STEPPER HEADER -->
     <div class="stepper" id="stepper">
@@ -182,6 +187,21 @@
                             <div class="uploaded-files" id="uploadedFiles">
                                 <!-- Files will be listed here -->
                             </div>
+
+                            <div class="d-flex align-items-center gap-4">
+                                <button class="btn btn-primary btn-lg px-4 fs-6 shadow-sm" type="button"
+                                    id="viewRulesBtn">
+                                    Save
+                                </button>
+
+                                <div class="form-check form-switch d-flex align-items-center gap-2 mb-0 ps-0">
+                                    <input class="form-check-input fs-4 m-0" type="checkbox" id="overwriteToggle">
+                                    <label class="form-check-label fw-semibold pt-1 fs-10" for="overwriteToggle">
+                                        Overwrite
+                                    </label>
+                                </div>
+                            </div>
+
                         </div>
 
                         <div class="validation-card">
@@ -210,9 +230,6 @@
                                 <button class="btn-secondary full-width" type="button" id="validateFilesBtn" disabled>
                                     <i class="fas fa-play-circle"></i> Run Validation
                                 </button>
-                                <button class="btn-tertiary full-width" type="button" id="loadSampleDataBtn">
-                                    <i class="fas fa-database"></i> Load Sample Data
-                                </button>
                             </div>
 
                             <div class="validation-stats" id="validationStats">
@@ -233,15 +250,11 @@
                                     <i class="fas fa-edit"></i> Quick Data Input
                                 </h4>
 
-
-
                                 <!-- Block 1: Quick input -->
                                 <div class="qdi-block qdi-block--input">
                                     <div class="qdi-block-title">Quick Input</div>
 
                                     <div class="qdi-input-grid">
-
-
                                         <!-- Row 2: Target table (full width) -->
                                         <div class="qdi-item qdi-span-2">
                                             <label class="qdi-label" for="quickTable">Target table</label>
@@ -322,18 +335,14 @@
 
                         <!-------------------------------------------- Tab Control ------------------------------------------>
 
-
-
                         <!-- VALIDATION RESULTS TAB -->
                         <div class="tab-content active" id="validation">
 
                             <div class="validation-container">
-                                <link rel="stylesheet" href="{% static 'css/Validation_Results.css' %}">
                                 <div class="validation-header">
                                     <h1>
                                         <i class="fas fa-clipboard-check"></i> Ticket Validation Results
                                     </h1>
-
                                     <div class="header-controls">
                                         <button class="btn btn-primary" id="configureColumnsBtn">
                                             <i class="fas fa-cog"></i> Configure Columns
@@ -415,16 +424,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Table View -->
-                                <div id="tableDisplay" class="table-display">
-                                    <div class="table-wrapper">
-                                        <table class="data-table" id="ticketTable">
-                                            <thead id="tableHeader"></thead>
-                                            <tbody id="tableBody"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
                                 <!-- Card View -->
                                 <div class="form-view-container" id="formViewContainer">
                                     <div class="ticket-cards" id="ticketCards"></div>
@@ -482,18 +481,8 @@
 
                         </div>
 
-                        <script src="{% static 'js/Validation_Results.js' %}"></script>
-                        <script src="{% static 'vendor/papaparse/papaparse.min.js' %}"></script>
-                        <script src="{% static 'vendor/xlsx/xlsx.full.min.js' %}"></script>
-                        <script src="{% static 'js/Ticket_matching_matrix_control.js'%}"></script>
-                        <script defer src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
-                        <script src="{% static 'js/Band_features.js' %}" defer></script>
-
-
                         <!-- TICKET MATCHING MATRIX TAB -->
                         <div class="tab-content" id="distributionTab">
-                            <!-- Use ONLY these (your paths) -->
-                            <link rel="stylesheet" href="{% static 'css/Ticket_Matching_Matrix.css' %}">
                             <!-- Single scoped wrapper -->
                             <div id="tmm" class="tmm-container">
 
@@ -713,13 +702,6 @@
 
 
                                         </div>
-
-
-
-
-
-
-
 
                                     </div>
                                 </div>
@@ -1271,9 +1253,6 @@
 
                                     </div>
 
-                                    <!-- Divider -->
-                                    <div class="control-divider"></div>
-
                                     <!-- Standard Filters -->
                                     <div class="control-group">
                                         <label class="control-label"><i class="fas fa-table"></i> Table Filter</label>
@@ -1447,11 +1426,6 @@
                                     </div>
                                 </div>
 
-                                <div class="matrix-container">
-                                    <table class="matrix-table" id="matrixTable">
-                                    </table>
-                                </div>
-
                                 <!-- Matrix Legend -->
                                 <div class="matrix-legend tmm-card" style="padding: 12px 14px; margin-top: 14px;">
                                     <div class="legend-item"><span class="rag-green">●</span><span>Green
@@ -1515,26 +1489,6 @@
                                         <!-- Final table data will be populated here -->
                                     </div>
                                 </div>
-
-                                <!-- Bulk Input Modal -->
-                                <div class="bulk-input-modal" id="bulkInputModal">
-                                    <div class="bulk-input-content">
-                                        <h3><i class="fas fa-paste"></i> Bulk Input Mode</h3>
-                                        <textarea class="bulk-textarea" id="bulkTextarea"
-                                            placeholder="Field Name, Value, Table"></textarea>
-                                        <div style="display:flex; gap:10px; margin-top:15px;">
-                                            <button class="btn-primary" onclick="processBulkInput()"><i
-                                                    class="fas fa-play"></i>
-                                                Process</button>
-                                            <button class="btn-secondary" onclick="closeBulkInputModal()"><i
-                                                    class="fas fa-times"></i>
-                                                Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-
                             </div>
                         </div>
 
@@ -1678,11 +1632,11 @@
                             <div class="rate-card-table-container">
                                 <table class="rate-card-table" id="finalTicketTable">
                                     <thead>
-                                        <tr id="tableHeaders">
+                                        <tr id="tableHeaders-ratecard">
                                             <!-- Headers will be populated by JavaScript -->
                                         </tr>
                                     </thead>
-                                    <tbody id="tableBody">
+                                    <tbody id="tableBody-ratecard">
                                         <!-- Tickets will be populated by JavaScript -->
                                     </tbody>
                                 </table>
@@ -1885,10 +1839,8 @@
             </div>
         </div>
 
-        <!-- Add these links AFTER your HTML content -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link rel="stylesheet" href="{% static 'css/RateCardAssign.css' %}">
-        <script src="{% static 'js/RateCard.js' %}"></script>
+
+
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
 
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 3 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
@@ -1925,9 +1877,6 @@
 
 </div>
 
-
-<!-- Band Details Sliding Panel -->
-<link rel="stylesheet" href="{% static 'css/Band_Feature.css' %}">
 <!-- Overlay -->
 <div class="tmm-band-overlay" id="tmmBandOverlay" onclick="tmmCloseBandDetailsPanel()"></div>
 
@@ -2038,4 +1987,17 @@
         populateAccounts(accountSelectFilter, 'all');
     });
 </script>
+
+<!-- Libraries -->
+<script src="{% static 'vendor/papaparse/papaparse.min.js' %}"></script>
+<script src="{% static 'vendor/xlsx/xlsx.full.min.js' %}"></script>
+
+<!-- Custom JS -->
+<script src="{% static 'js/Step_Navigation.js' %}"></script>
+<script src="{% static 'js/Validation_Results.js' %}"></script>
+<script src="{% static 'js/Ticket_matching_matrix_control.js' %}"></script>
+<script defer src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
+<script src="{% static 'js/Band_features.js' %}" defer></script>
+<script src="{% static 'js/RateCard.js' %}"></script>
+
 {% endblock %}

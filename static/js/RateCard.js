@@ -56,7 +56,7 @@ class RateCardAssignmentEnhanced {
         
         // Auto-assign rate cards
         setTimeout(() => {
-            this.autoAssignRateCards();
+            // this.autoAssignRateCards();
         }, 500);
     }
 
@@ -750,8 +750,8 @@ class RateCardAssignmentEnhanced {
     }
 
     renderTable() {
-        const tableBody = document.getElementById('tableBody');
-        const tableHead = document.getElementById('tableHeaders');
+        const tableBody = document.getElementById('tableBody-ratecard');
+        const tableHead = document.getElementById('tableHeaders-ratecard');
         
         if (!tableBody || !tableHead) {
             console.error('Table elements not found!');
