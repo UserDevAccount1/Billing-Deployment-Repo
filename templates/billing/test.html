@@ -149,23 +149,8 @@
 
                                 <h4>Drop CSV files here</h4>
                                 <p>or click to browse</p>
-
-                                <!-- Target table selector -->
-                                <div class="tmm-upload-controls">
-                                    <div class="tmm-upload-control">
-                                        <label for="tmm_importMode" class="tmm-upload-label">Import mode</label>
-                                        <select id="tmm_importMode" class="tmm-upload-select">
-                                            <option value="smart">Smart map by column headers</option>
-                                            <option value="append">Append new columns if unknown</option>
-
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <input type="file" id="tmm_fileInput" accept=".csv,.xlsx,.xls,.pdf" multiple
                                     style="display:none;">
-
-
 
                                 <div class="file-types">
                                     <span>.csv</span>
@@ -186,6 +171,18 @@
 
                             <div class="uploaded-files" id="uploadedFiles">
                                 <!-- Files will be listed here -->
+                            </div>
+
+                            <!-- Target table selector -->
+                            <div class="tmm-upload-controls">
+                                <div class="tmm-upload-control">
+                                    <label for="tmm_importMode" class="tmm-upload-label">Import mode</label>
+                                    <select id="tmm_importMode" class="tmm-upload-select">
+                                        <option value="smart">Smart map by column headers</option>
+                                        <option value="append">Append new columns if unknown</option>
+
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="d-flex align-items-center gap-4">

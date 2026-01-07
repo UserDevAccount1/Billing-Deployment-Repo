@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════
-// TICKET MATCHING MATRIX - COMPLETE CONTROLLER (v3.1 - Fixed Filters)
+// TICKET MATCHING MATRIX - COMPLETE CONTROLLER (v3.2 - Fixes Applied)
 // ════════════════════════════════════════════════════════════════════════════
 
 // ──── 1. GLOBAL STATE & CONFIGURATION ────
@@ -24,6 +24,7 @@ const DATA_STORE = {
   dedicated: {}, sv_visit: {}, project: {}, final_ticket: {}
 };
 
+// SCHEMA: Defines which fields belong to which table
 const TABLE_SCHEMAS = {
   ticket_data: ['request_id', 'ticket_number', 'requester', 'subject', 'customer', 'account', 'region', 'country', 'city', 'site_name', 'address', 'postal_code', 'contact_name', 'contact_phone', 'contact_email', 'priority', 'status', 'created_date', 'scheduled_date', 'completed_date', 'sla_due_date', 'service_type', 'problem_description', 'resolution', 'notes'],
   rate_card: ['customer', 'ticket_number', 'account', 'region', 'country', 'service_type', 'rate_type', 'base_rate', 'hourly_rate', 'overtime_rate', 'weekend_rate', 'holiday_rate', 'travel_rate', 'per_diem', 'currency', 'effective_date', 'expiry_date'],
@@ -179,7 +180,7 @@ window.smartAddToOtherTables = smartAddToOtherTables;
 document.addEventListener('DOMContentLoaded', function () {
   initFileUpload();
   initMatrix();
-  initColumnVisibility();
+  initColumnVisibility(); // From Control JS
   initSaveButton(); 
   updateStatistics();
   updateFinalTablePreview();
@@ -553,11 +554,16 @@ function loadRecord(index) {
   });
 
   document.getElementById('currentRecordDisplay').innerText = `${index + 1} / ${window.MASTER_DATA.length}`;
+  
+  // 1. Render the HTML completely (resets classes/attributes)
   renderMatrixBody();
   
-  // FIX: Re-apply Filters & Search after Render!
+  // 2. CRITICAL: Re-Apply Filters Immediately
+  // Because rendering wipes the previous filter state from the DOM elements
   if(typeof window.applyFilters === 'function') window.applyFilters();
+  if(typeof window.applyColumnVisibility === 'function') window.applyColumnVisibility(); // Forces column hiding to re-run
   
+  // 3. Re-Apply Search Highlighting if active
   const searchVal = document.getElementById('searchInput')?.value;
   if(searchVal && typeof performSearchHighlight === 'function') performSearchHighlight(searchVal);
 
@@ -610,10 +616,12 @@ function renderMatrixHeader() {
   const header = document.getElementById('matrixHeader');
   if (!header) return;
   let html = '<th class="field-column">Field Name</th>';
+  
   Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
-    const isHidden = STATE.hiddenColumns.has(tableKey);
-    html += `<th class="table-column" data-table="${tableKey}" ${isHidden ? 'style="display:none;"' : ''}>${TABLE_NAMES[tableKey]}</th>`;
+    // CRITICAL: Ensure we add the data-table attribute here for filtering logic to find it
+    html += `<th class="table-column" data-table="${tableKey}">${TABLE_NAMES[tableKey]}</th>`;
   });
+  
   header.innerHTML = html;
 }
 
@@ -629,7 +637,7 @@ function renderMatrixBody() {
   allFields.forEach(field => {
     const def = FIELD_DEFINITIONS[field] || { label: field, type: 'TEXT', group: 'SYSTEM', rag: 'RED' };
     
-    // FIX: ADD DATA ATTRIBUTES FOR FILTERING
+    // CRITICAL: Added data attributes (field, group, type, rag) so filters can work
     html += `<tr class="matrix-row" data-field="${field}" data-group="${def.group}" data-type="${def.type}" data-rag="${def.rag}">
       <td class="field-cell">
         <span class="field-name">${def.label || ''}</span>
@@ -640,13 +648,13 @@ function renderMatrixBody() {
 
     Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
       const exists = TABLE_SCHEMAS[tableKey].includes(field);
-      const isHidden = STATE.hiddenColumns.has(tableKey);
       const value = DATA_STORE[tableKey][field] || '';
 
+      // CRITICAL: Ensure data-table attribute matches header for column hiding
       if (STATE.matrixMode === 'structural') {
-        html += `<td class="matrix-cell ${exists ? 'exists' : 'not-exists'}" ${isHidden ? 'style="display:none;"' : ''}>${exists ? '✔' : '✖'}</td>`;
+        html += `<td class="matrix-cell ${exists ? 'exists' : 'not-exists'}" data-table="${tableKey}" data-field="${field}">${exists ? '✔' : '✖'}</td>`;
       } else {
-        html += `<td class="matrix-cell data-cell ${exists ? '' : 'pending-data'}" data-table="${tableKey}" data-field="${field}" ${isHidden ? 'style="display:none;"' : ''}>
+        html += `<td class="matrix-cell data-cell ${exists ? '' : 'pending-data'}" data-table="${tableKey}" data-field="${field}">
           <input type="text" class="cell-input" value="${value}" onchange="handleCellChange('${tableKey}', '${field}', this.value)" placeholder="${exists ? 'Value' : 'Pending'}">
         </td>`;
       }
@@ -712,6 +720,7 @@ function updateFinalTablePreview() {
 function toggleMatrixMode() {
     STATE.matrixMode = STATE.matrixMode === 'structural' ? 'data' : 'structural';
     renderMatrixBody();
+    if(typeof window.applyFilters === 'function') window.applyFilters(); // Re-apply on toggle
 }
 
 function nextRecord() {
