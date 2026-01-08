@@ -13,9 +13,9 @@ const STATE = {
 };
 
 // MASTER DATA: The Single Source of Truth
-window.MASTER_DATA = []; 
-window.PENDING_DATA = []; 
-window.DIFF_LOG = [];     
+window.MASTER_DATA = [];
+window.PENDING_DATA = [];
+window.DIFF_LOG = [];
 window.currentImportIndex = 0;
 
 // VISUAL STORE: What is currently displayed in the DOM inputs
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initFileUpload();
   initMatrix();
   initColumnVisibility(); // From Control JS
-  initSaveButton(); 
+  initSaveButton();
   updateStatistics();
   updateFinalTablePreview();
 
@@ -244,7 +244,7 @@ function initFileUpload() {
     if (!checkSelection()) return;
     handleFiles(e.target.files);
   });
-  
+
   ['dragenter', 'dragover'].forEach(evt => dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add('highlight'); }));
   ['dragleave', 'drop'].forEach(evt => dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.remove('highlight'); }));
 }
@@ -289,136 +289,147 @@ function parseExcel(file) {
  * Handles Append Mode vs Smart Mode mapping
  */
 function normalizeBatch(rawData) {
-    const contextCustomer = document.getElementById('tmm_customerSelect')?.selectedOptions[0]?.text || "";
-    const contextAccount = document.getElementById('tmm_accountSelect')?.selectedOptions[0]?.text || "";
-    const isImportAll = contextCustomer.toLowerCase().includes("all");
-    const importMode = document.getElementById('tmm_importMode')?.value || 'smart'; // 'smart' or 'append'
+  const contextCustomer = document.getElementById('tmm_customerSelect')?.selectedOptions[0]?.text || "";
+  const contextAccount = document.getElementById('tmm_accountSelect')?.selectedOptions[0]?.text || "";
+  const isImportAll = contextCustomer.toLowerCase().includes("all");
+  const importMode = document.getElementById('tmm_importMode')?.value || 'smart'; // 'smart' or 'append'
 
-    return rawData.map(raw => {
-        let normalized = {};
-        
-        // 1. Context
-        if (!isImportAll) {
-            normalized['customer'] = contextCustomer;
-            normalized['account'] = contextAccount;
+  return rawData.map(raw => {
+    let normalized = {};
+
+    // 1. Context
+    if (!isImportAll) {
+      normalized['customer'] = contextCustomer;
+      normalized['account'] = contextAccount;
+    }
+
+    const matchedHeaders = new Set();
+
+    // 2. Smart Mapping (Synonyms)
+    for (const [systemField, synonyms] of Object.entries(FIELD_SYNONYMS)) {
+      let found = false;
+      if (raw[systemField] !== undefined) {
+        normalized[systemField] = String(raw[systemField]).trim();
+        matchedHeaders.add(systemField);
+        found = true;
+      } else {
+        for (const syn of synonyms) {
+          if (raw[syn] !== undefined && raw[syn] !== null && String(raw[syn]).trim() !== "") {
+            let val = String(raw[syn]).trim();
+            if (systemField === 'technician_name') val = val.replace(/[\r\n]+/g, ", ");
+            normalized[systemField] = val;
+            matchedHeaders.add(syn);
+            found = true;
+            break;
+          }
         }
+      }
+    }
 
-        const matchedHeaders = new Set();
-
-        // 2. Smart Mapping (Synonyms)
-        for (const [systemField, synonyms] of Object.entries(FIELD_SYNONYMS)) {
-            let found = false;
-            if (raw[systemField] !== undefined) {
-                normalized[systemField] = String(raw[systemField]).trim();
-                matchedHeaders.add(systemField);
-                found = true;
-            } else {
-                for (const syn of synonyms) {
-                    if (raw[syn] !== undefined && raw[syn] !== null && String(raw[syn]).trim() !== "") {
-                        let val = String(raw[syn]).trim();
-                        if (systemField === 'technician_name') val = val.replace(/[\r\n]+/g, ", ");
-                        normalized[systemField] = val;
-                        matchedHeaders.add(syn);
-                        found = true;
-                        break;
-                    }
-                }
-            }
+    // 3. Append Mode: Capture extra fields
+    if (importMode === 'append') {
+      Object.keys(raw).forEach(header => {
+        if (!matchedHeaders.has(header) && raw[header] !== undefined) {
+          const dynamicId = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          // Add definition if missing
+          if (!FIELD_DEFINITIONS[dynamicId]) {
+            FIELD_DEFINITIONS[dynamicId] = {
+              label: header, type: 'TEXT', group: 'IMPORTED', rag: 'GREY', required: false
+            };
+          }
+          normalized[dynamicId] = String(raw[header]).trim();
         }
+      });
+    }
 
-        // 3. Append Mode: Capture extra fields
-        if (importMode === 'append') {
-            Object.keys(raw).forEach(header => {
-                if (!matchedHeaders.has(header) && raw[header] !== undefined) {
-                    const dynamicId = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    // Add definition if missing
-                    if(!FIELD_DEFINITIONS[dynamicId]) {
-                        FIELD_DEFINITIONS[dynamicId] = { 
-                            label: header, type: 'TEXT', group: 'IMPORTED', rag: 'GREY', required: false
-                        };
-                    }
-                    normalized[dynamicId] = String(raw[header]).trim();
-                }
-            });
-        }
-        
-        // 4. Fill defaults
-        Object.keys(FIELD_DEFINITIONS).forEach(field => {
-            if (normalized[field] === undefined) normalized[field] = "";
-        });
-
-        return normalized;
+    // 4. Fill defaults
+    Object.keys(FIELD_DEFINITIONS).forEach(field => {
+      if (normalized[field] === undefined) normalized[field] = "";
     });
+
+    return normalized;
+  });
 }
 
 // ──── 4. IMPORT LOGIC & OVERWRITE ANALYZER ────
 
 function initializeImportData(rawArray) {
-    const newNormalizedData = normalizeBatch(rawArray);
-    const overwriteToggle = document.getElementById('overwriteToggle');
-    const isOverwrite = overwriteToggle && overwriteToggle.checked;
-    
-    if (window.MASTER_DATA.length > 0 && isOverwrite) {
-        window.PENDING_DATA = newNormalizedData;
-        runOverwriteAnalysis(window.MASTER_DATA, newNormalizedData);
-    } else {
-        window.MASTER_DATA = newNormalizedData;
-        finalizeLoad();
-    }
+  const newNormalizedData = normalizeBatch(rawArray);
+
+  // 1. VALIDATION PATH
+  if (window.IS_VALIDATION_MODE) {
+    window.showToast("Generating Validation Report...", "info");
+    runValidationAnalysis(window.MASTER_DATA, newNormalizedData);
+    window.IS_VALIDATION_MODE = false; // Reset flag immediately
+    return;
+  }
+
+  // 2. STANDARD IMPORT PATH (Existing Logic)
+  const overwriteToggle = document.getElementById('overwriteToggle');
+  const isOverwrite = overwriteToggle && overwriteToggle.checked;
+
+  if (window.MASTER_DATA.length > 0 && isOverwrite) {
+    window.PENDING_DATA = newNormalizedData;
+    runOverwriteAnalysis(window.MASTER_DATA, newNormalizedData);
+  } else {
+    window.MASTER_DATA = newNormalizedData;
+    finalizeLoad();
+  }
 }
 
+
 function finalizeLoad() {
-    window.currentImportIndex = 0;
-    document.getElementById('validateFilesBtn').disabled = false;
-    document.getElementById('fileCount').innerText = window.MASTER_DATA.length + " Records";
-    document.getElementById('recordNavigation').style.display = 'flex';
-    
-    loadRecord(0);
-    window.showToast(`Loaded ${window.MASTER_DATA.length} records`, "success");
+  window.currentImportIndex = 0;
+  document.getElementById('validateFilesBtn').disabled = false;
+  document.getElementById('fileCount').innerText = window.MASTER_DATA.length + " Records";
+  document.getElementById('recordNavigation').style.display = 'flex';
+
+  loadRecord(0);
+  window.showToast(`Loaded ${window.MASTER_DATA.length} records`, "success");
 }
 
 function runOverwriteAnalysis(currentData, newData) {
-    window.DIFF_LOG = [];
-    const limit = currentData.length; 
-    
-    for (let i = 0; i < limit; i++) {
-        if (!newData[i]) break; 
+  window.DIFF_LOG = [];
+  const limit = currentData.length;
 
-        const currentRow = currentData[i];
-        const newRow = newData[i];
-        let changes = [];
-        let hasChange = false;
+  for (let i = 0; i < limit; i++) {
+    if (!newData[i]) break;
 
-        Object.keys(FIELD_DEFINITIONS).forEach(field => {
-            const currentVal = currentRow[field] || "";
-            const newVal = newRow[field] || "";
+    const currentRow = currentData[i];
+    const newRow = newData[i];
+    let changes = [];
+    let hasChange = false;
 
-            if (currentVal !== newVal) {
-                hasChange = true;
-                // Identify which tables use this field
-                const tables = [];
-                Object.keys(TABLE_SCHEMAS).forEach(tbl => {
-                    if(TABLE_SCHEMAS[tbl].includes(field)) tables.push(TABLE_NAMES[tbl]);
-                });
-                
-                changes.push({ 
-                    field: field, 
-                    current: currentVal, 
-                    new: newVal,
-                    tables: tables 
-                });
-            }
+    Object.keys(FIELD_DEFINITIONS).forEach(field => {
+      const currentVal = currentRow[field] || "";
+      const newVal = newRow[field] || "";
+
+      if (currentVal !== newVal) {
+        hasChange = true;
+        // Identify which tables use this field
+        const tables = [];
+        Object.keys(TABLE_SCHEMAS).forEach(tbl => {
+          if (TABLE_SCHEMAS[tbl].includes(field)) tables.push(TABLE_NAMES[tbl]);
         });
 
-        window.DIFF_LOG.push({
-            index: i,
-            rowId: currentRow.ticket_number || `Row ${i+1}`,
-            hasChange: hasChange,
-            changes: changes
+        changes.push({
+          field: field,
+          current: currentVal,
+          new: newVal,
+          tables: tables
         });
-    }
+      }
+    });
 
-    renderDiffModal();
+    window.DIFF_LOG.push({
+      index: i,
+      rowId: currentRow.ticket_number || `Row ${i + 1}`,
+      hasChange: hasChange,
+      changes: changes
+    });
+  }
+
+  renderDiffModal();
 }
 
 // ──── 5. DIFF MODAL RENDERING ────
@@ -427,12 +438,12 @@ let DIFF_PAGE = 1;
 const DIFF_PER_PAGE = 20;
 
 function renderDiffModal() {
-    const existing = document.getElementById('tmmDiffModal');
-    if(existing) existing.remove();
+  const existing = document.getElementById('tmmDiffModal');
+  if (existing) existing.remove();
 
-    const changedCount = window.DIFF_LOG.filter(r => r.hasChange).length;
+  const changedCount = window.DIFF_LOG.filter(r => r.hasChange).length;
 
-    const html = `
+  const html = `
     <div id="tmmDiffModal" class="tmm-modal-overlay">
         <div class="tmm-modal-container">
             <div class="tmm-modal-header">
@@ -456,18 +467,18 @@ function renderDiffModal() {
             </div>
         </div>
     </div>`;
-    
-    document.body.insertAdjacentHTML('beforeend', html);
-    renderDiffPage();
+
+  document.body.insertAdjacentHTML('beforeend', html);
+  renderDiffPage();
 }
 
 function renderDiffPage() {
-    const container = document.getElementById('diffTableContainer');
-    const start = (DIFF_PAGE - 1) * DIFF_PER_PAGE;
-    const end = start + DIFF_PER_PAGE;
-    const slice = window.DIFF_LOG.slice(start, end);
+  const container = document.getElementById('diffTableContainer');
+  const start = (DIFF_PAGE - 1) * DIFF_PER_PAGE;
+  const end = start + DIFF_PER_PAGE;
+  const slice = window.DIFF_LOG.slice(start, end);
 
-    let html = `<table class="tmm-diff-table">
+  let html = `<table class="tmm-diff-table">
         <thead>
             <tr>
                 <th class="diff-meta-col">Record ID</th>
@@ -476,11 +487,11 @@ function renderDiffPage() {
         </thead>
         <tbody>`;
 
-    slice.forEach(row => {
-        if (!row.hasChange) {
-            // html += `<tr><td colspan="2" style="color:#aaa; text-align:center; padding:5px;">Row ${row.index + 1} Unchanged</td></tr>`;
-        } else {
-            let changeHtml = row.changes.map(c => `
+  slice.forEach(row => {
+    if (!row.hasChange) {
+      // html += `<tr><td colspan="2" style="color:#aaa; text-align:center; padding:5px;">Row ${row.index + 1} Unchanged</td></tr>`;
+    } else {
+      let changeHtml = row.changes.map(c => `
                 <div class="diff-change-box">
                     <span class="diff-field-label">${FIELD_DEFINITIONS[c.field]?.label || c.field}</span>
                     <div style="margin-bottom:2px;">
@@ -494,43 +505,43 @@ function renderDiffPage() {
                 </div>
             `).join('');
 
-            html += `<tr class="diff-row-changed">
+      html += `<tr class="diff-row-changed">
                 <td class="diff-meta-col">
                     <div class="diff-record-id">${row.rowId}</div>
                     <small style="color:#666">Row Index: ${row.index + 1}</small>
                 </td>
                 <td class="diff-changes-col">${changeHtml}</td>
             </tr>`;
-        }
-    });
+    }
+  });
 
-    html += `</tbody></table>`;
-    container.innerHTML = html;
-    document.getElementById('diffPageDisplay').innerText = `Page ${DIFF_PAGE}`;
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+  document.getElementById('diffPageDisplay').innerText = `Page ${DIFF_PAGE}`;
 }
 
 function changeDiffPage(dir) {
-    const max = Math.ceil(window.DIFF_LOG.length / DIFF_PER_PAGE);
-    DIFF_PAGE += dir;
-    if(DIFF_PAGE < 1) DIFF_PAGE = 1;
-    if(DIFF_PAGE > max) DIFF_PAGE = max;
-    renderDiffPage();
+  const max = Math.ceil(window.DIFF_LOG.length / DIFF_PER_PAGE);
+  DIFF_PAGE += dir;
+  if (DIFF_PAGE < 1) DIFF_PAGE = 1;
+  if (DIFF_PAGE > max) DIFF_PAGE = max;
+  renderDiffPage();
 }
 
 function closeDiffModal() {
-    document.getElementById('tmmDiffModal').remove();
-    window.PENDING_DATA = [];
+  document.getElementById('tmmDiffModal').remove();
+  window.PENDING_DATA = [];
 }
 
 function confirmOverwrite() {
-    for(let i=0; i < window.PENDING_DATA.length; i++) {
-        if (i < window.MASTER_DATA.length) {
-            window.MASTER_DATA[i] = window.PENDING_DATA[i];
-        }
+  for (let i = 0; i < window.PENDING_DATA.length; i++) {
+    if (i < window.MASTER_DATA.length) {
+      window.MASTER_DATA[i] = window.PENDING_DATA[i];
     }
-    window.showToast("Data Overwritten Successfully", "success");
-    closeDiffModal();
-    loadRecord(window.currentImportIndex);
+  }
+  window.showToast("Data Overwritten Successfully", "success");
+  closeDiffModal();
+  loadRecord(window.currentImportIndex);
 }
 
 // ──── 6. MATRIX UI & NAVIGATION ────
@@ -549,23 +560,23 @@ function loadRecord(index) {
 
   // Populate Visual Stores
   Object.keys(FIELD_DEFINITIONS).forEach(field => {
-      const val = record[field];
-      if (val) smartAddToOtherTables(field, val); 
+    const val = record[field];
+    if (val) smartAddToOtherTables(field, val);
   });
 
   document.getElementById('currentRecordDisplay').innerText = `${index + 1} / ${window.MASTER_DATA.length}`;
-  
+
   // 1. Render the HTML completely (resets classes/attributes)
   renderMatrixBody();
-  
+
   // 2. CRITICAL: Re-Apply Filters Immediately
   // Because rendering wipes the previous filter state from the DOM elements
-  if(typeof window.applyFilters === 'function') window.applyFilters();
-  if(typeof window.applyColumnVisibility === 'function') window.applyColumnVisibility(); // Forces column hiding to re-run
-  
+  if (typeof window.applyFilters === 'function') window.applyFilters();
+  if (typeof window.applyColumnVisibility === 'function') window.applyColumnVisibility(); // Forces column hiding to re-run
+
   // 3. Re-Apply Search Highlighting if active
   const searchVal = document.getElementById('searchInput')?.value;
-  if(searchVal && typeof performSearchHighlight === 'function') performSearchHighlight(searchVal);
+  if (searchVal && typeof performSearchHighlight === 'function') performSearchHighlight(searchVal);
 
   updateStatistics();
   updateFinalTablePreview();
@@ -573,12 +584,12 @@ function loadRecord(index) {
 
 function handleCellChange(tableKey, field, value) {
   DATA_STORE[tableKey][field] = value;
-  
+
   // Update Master Data
   if (window.MASTER_DATA[window.currentImportIndex]) {
-      window.MASTER_DATA[window.currentImportIndex][field] = value;
+    window.MASTER_DATA[window.currentImportIndex][field] = value;
   }
-  
+
   if (STATE.smartAddEnabled) smartAddToOtherTables(field, value);
   updateStatistics();
   updateFinalTablePreview();
@@ -603,10 +614,10 @@ function smartAddToOtherTables(field, value) {
       }
     }
   });
-  
+
   if (populatedCount > 0) {
-      STATE.smartAddCount++;
-      STATE.autoPopulatedCount += populatedCount;
+    STATE.smartAddCount++;
+    STATE.autoPopulatedCount += populatedCount;
   }
 }
 
@@ -616,12 +627,12 @@ function renderMatrixHeader() {
   const header = document.getElementById('matrixHeader');
   if (!header) return;
   let html = '<th class="field-column">Field Name</th>';
-  
+
   Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
     // CRITICAL: Ensure we add the data-table attribute here for filtering logic to find it
     html += `<th class="table-column" data-table="${tableKey}">${TABLE_NAMES[tableKey]}</th>`;
   });
-  
+
   header.innerHTML = html;
 }
 
@@ -629,14 +640,14 @@ function renderMatrixBody() {
   const body = document.getElementById('matrixBody');
   if (!body) return;
   const allFields = Array.from(new Set([
-      ...Object.values(TABLE_SCHEMAS).flat(),
-      ...Object.keys(FIELD_DEFINITIONS)
+    ...Object.values(TABLE_SCHEMAS).flat(),
+    ...Object.keys(FIELD_DEFINITIONS)
   ])).sort();
 
   let html = '';
   allFields.forEach(field => {
     const def = FIELD_DEFINITIONS[field] || { label: field, type: 'TEXT', group: 'SYSTEM', rag: 'RED' };
-    
+
     // CRITICAL: Added data attributes (field, group, type, rag) so filters can work
     html += `<tr class="matrix-row" data-field="${field}" data-group="${def.group}" data-type="${def.type}" data-rag="${def.rag}">
       <td class="field-cell">
@@ -665,37 +676,37 @@ function renderMatrixBody() {
 }
 
 function updateStatistics() {
-    // 1. Calculate Columns
-    const allFields = Array.from(new Set([
-        ...Object.values(TABLE_SCHEMAS).flat(),
-        ...Object.keys(FIELD_DEFINITIONS)
-    ]));
-    
-    let commonCount = 0;
-    let uniqueCount = 0;
-    const schemas = Object.values(TABLE_SCHEMAS);
-    
-    allFields.forEach(f => {
-        const occurences = schemas.filter(s => s.includes(f)).length;
-        if(occurences === schemas.length) commonCount++;
-        if(occurences === 1) uniqueCount++;
-    });
+  // 1. Calculate Columns
+  const allFields = Array.from(new Set([
+    ...Object.values(TABLE_SCHEMAS).flat(),
+    ...Object.keys(FIELD_DEFINITIONS)
+  ]));
 
-    // 2. Update DOM
-    const elTotal = document.getElementById('totalColumns');
-    if(elTotal) elTotal.textContent = allFields.length;
-    
-    const elCommon = document.getElementById('commonColumns');
-    if(elCommon) elCommon.textContent = commonCount;
-    
-    const elUnique = document.getElementById('uniqueColumns');
-    if(elUnique) elUnique.textContent = uniqueCount;
-    
-    const elSmart = document.getElementById('smartAddCount');
-    if(elSmart) elSmart.textContent = STATE.smartAddCount;
-    
-    const elAuto = document.getElementById('autoPopulated');
-    if(elAuto) elAuto.textContent = STATE.autoPopulatedCount;
+  let commonCount = 0;
+  let uniqueCount = 0;
+  const schemas = Object.values(TABLE_SCHEMAS);
+
+  allFields.forEach(f => {
+    const occurences = schemas.filter(s => s.includes(f)).length;
+    if (occurences === schemas.length) commonCount++;
+    if (occurences === 1) uniqueCount++;
+  });
+
+  // 2. Update DOM
+  const elTotal = document.getElementById('totalColumns');
+  if (elTotal) elTotal.textContent = allFields.length;
+
+  const elCommon = document.getElementById('commonColumns');
+  if (elCommon) elCommon.textContent = commonCount;
+
+  const elUnique = document.getElementById('uniqueColumns');
+  if (elUnique) elUnique.textContent = uniqueCount;
+
+  const elSmart = document.getElementById('smartAddCount');
+  if (elSmart) elSmart.textContent = STATE.smartAddCount;
+
+  const elAuto = document.getElementById('autoPopulated');
+  if (elAuto) elAuto.textContent = STATE.autoPopulatedCount;
 }
 
 function updateFinalTablePreview() {
@@ -705,8 +716,8 @@ function updateFinalTablePreview() {
   const columns = TABLE_SCHEMAS.final_ticket;
 
   if (Object.keys(activeData).length === 0) {
-      container.innerHTML = `<div style="text-align:center;color:#999;padding:20px;">No Final Ticket Data</div>`;
-      return;
+    container.innerHTML = `<div style="text-align:center;color:#999;padding:20px;">No Final Ticket Data</div>`;
+    return;
   }
 
   let html = '<div class="final-table-scroll"><table class="final-preview-table"><thead><tr>';
@@ -718,59 +729,260 @@ function updateFinalTablePreview() {
 }
 
 function toggleMatrixMode() {
-    STATE.matrixMode = STATE.matrixMode === 'structural' ? 'data' : 'structural';
-    renderMatrixBody();
-    if(typeof window.applyFilters === 'function') window.applyFilters(); // Re-apply on toggle
+  STATE.matrixMode = STATE.matrixMode === 'structural' ? 'data' : 'structural';
+  renderMatrixBody();
+  if (typeof window.applyFilters === 'function') window.applyFilters(); // Re-apply on toggle
 }
 
 function nextRecord() {
-    if (window.currentImportIndex < window.MASTER_DATA.length - 1) loadRecord(window.currentImportIndex + 1);
-    else showToast("End of records", "info");
+  if (window.currentImportIndex < window.MASTER_DATA.length - 1) loadRecord(window.currentImportIndex + 1);
+  else showToast("End of records", "info");
 }
 
 function prevRecord() {
-    if (window.currentImportIndex > 0) loadRecord(window.currentImportIndex - 1);
+  if (window.currentImportIndex > 0) loadRecord(window.currentImportIndex - 1);
 }
 
 function clearCsvData() {
-    window.MASTER_DATA = [];
-    window.currentImportIndex = 0;
-    Object.keys(DATA_STORE).forEach(key => DATA_STORE[key] = {});
-    renderMatrixBody();
-    updateFinalTablePreview();
-    document.getElementById('recordNavigation').style.display = 'none';
-    showToast("Data Cleared", "info");
+  window.MASTER_DATA = [];
+  window.currentImportIndex = 0;
+  Object.keys(DATA_STORE).forEach(key => DATA_STORE[key] = {});
+  renderMatrixBody();
+  updateFinalTablePreview();
+  document.getElementById('recordNavigation').style.display = 'none';
+  showToast("Data Cleared", "info");
 }
 
 function showToast(message, type = 'info') {
-    let container = document.querySelector('.tmm-notifications');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'tmm-notifications';
-        document.body.appendChild(container);
-    }
-    const toast = document.createElement('div');
-    toast.className = `tmm-toast tmm-toast-${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => { toast.remove(); }, 3000);
+  let container = document.querySelector('.tmm-notifications');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'tmm-notifications';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `tmm-toast tmm-toast-${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => { toast.remove(); }, 3000);
 }
 
 function initSaveButton() {
-    const saveBtn = document.getElementById('viewRulesBtn');
-    if (!saveBtn) return;
-    saveBtn.addEventListener('click', function() {
-        if (window.MASTER_DATA.length === 0) {
-            showToast("No data to save.", "error");
-            return;
-        }
-        console.group("💾 FULL DATA DUMP");
-        console.log(`Timestamp: ${new Date().toISOString()}`);
-        console.log(`Records: ${window.MASTER_DATA.length}`);
-        console.log("Master Data (Current State):", window.MASTER_DATA);
-        console.groupEnd();
-        showToast("Data dumped to Console", "success");
-    });
+  const saveBtn = document.getElementById('viewRulesBtn');
+  if (!saveBtn) return;
+  saveBtn.addEventListener('click', function () {
+    if (window.MASTER_DATA.length === 0) {
+      showToast("No data to save.", "error");
+      return;
+    }
+    console.group("💾 FULL DATA DUMP");
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    console.log(`Records: ${window.MASTER_DATA.length}`);
+    console.log("Master Data (Current State):", window.MASTER_DATA);
+    console.groupEnd();
+    showToast("Data dumped to Console", "success");
+  });
 }
-// ──── END OF FILE ────
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 8. VALIDATION MODE (READ-ONLY COMPARISON)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Global Flag to distinguish between regular Import and Validation Check
+window.IS_VALIDATION_MODE = false;
+window.VALIDATION_LOG = [];
+
+/**
+ * Triggered by the "Import File for Validation" button
+ */
+function CheckParsingFile() {
+  window.IS_VALIDATION_MODE = true;
+  const fileInput = document.getElementById('tmm_fileInput');
+  if (fileInput) {
+    // Reset value to allow selecting the same file again if needed
+    fileInput.value = '';
+    fileInput.click();
+  } else {
+    showToast("File input element not found.", "error");
+  }
+}
+
+
+
+/**
+ * Validation Analysis Engine
+ * Compares Master vs New File and categorize discrepancies
+ */
+function runValidationAnalysis(currentData, newData) {
+  window.VALIDATION_LOG = [];
+  const limit = Math.max(currentData.length, newData.length);
+
+  for (let i = 0; i < limit; i++) {
+    const currentRow = currentData[i] || {};
+    const newRow = newData[i] || {};
+
+    let discrepancies = [];
+    let hasIssue = false;
+
+    // If one of the records is completely missing (Row count mismatch)
+    if (!currentData[i]) {
+      discrepancies.push({ type: 'NEW_RECORD', msg: "Row exists in File but not in System" });
+      hasIssue = true;
+    } else if (!newData[i]) {
+      discrepancies.push({ type: 'MISSING_RECORD', msg: "Row exists in System but missing in File" });
+      hasIssue = true;
+    } else {
+      // Field-level comparison
+      Object.keys(FIELD_DEFINITIONS).forEach(field => {
+        const currentVal = String(currentRow[field] || "").trim();
+        const newVal = String(newRow[field] || "").trim();
+
+        if (currentVal !== newVal) {
+          hasIssue = true;
+          let type = 'MISMATCH';
+
+          if (currentVal && !newVal) type = 'MISSING_IN_FILE'; // Value lost
+          else if (!currentVal && newVal) type = 'NEW_IN_FILE'; // Value added
+
+          discrepancies.push({
+            field: field,
+            current: currentVal,
+            new: newVal,
+            type: type
+          });
+        }
+      });
+    }
+
+    if (hasIssue) {
+      window.VALIDATION_LOG.push({
+        index: i,
+        rowId: currentRow.ticket_number || newRow.ticket_number || `Row ${i + 1}`,
+        issues: discrepancies
+      });
+    }
+  }
+
+  if (window.VALIDATION_LOG.length === 0) {
+    showToast("Validation Passed: File matches System Data exactly.", "success");
+  } else {
+    renderValidationModal();
+  }
+}
+
+/**
+ * Renders the Read-Only Validation Modal
+ */
+let VAL_PAGE = 1;
+const VAL_PER_PAGE = 20;
+
+function renderValidationModal() {
+  const existing = document.getElementById('tmmValidationModal');
+  if (existing) existing.remove();
+
+  const count = window.VALIDATION_LOG.length;
+
+  const html = `
+    <div id="tmmValidationModal" class="tmm-modal-overlay">
+        <div class="tmm-modal-container" style="border-top: 5px solid #17a2b8;">
+            <div class="tmm-modal-header">
+                <div>
+                    <h3 style="margin:0; color:#17a2b8;"><i class="fas fa-clipboard-check"></i> Validation Report</h3>
+                    <small>Comparing File against Current System Data (Read Only)</small>
+                </div>
+                <span class="badge" style="background:#17a2b8; color:#fff;">${count} Discrepancies Found</span>
+            </div>
+            
+            <div class="tmm-modal-body" id="valTableContainer"></div>
+
+            <div class="tmm-modal-footer">
+                <div>
+                    <button class="btn btn-sm" onclick="changeValPage(-1)">Previous</button>
+                    <span id="valPageDisplay" style="margin:0 15px; font-weight:bold;">Page 1</span>
+                    <button class="btn btn-sm" onclick="changeValPage(1)">Next</button>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" onclick="document.getElementById('tmmValidationModal').remove()">Close Report</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+  VAL_PAGE = 1;
+  renderValPage();
+}
+
+function renderValPage() {
+  const container = document.getElementById('valTableContainer');
+  const start = (VAL_PAGE - 1) * VAL_PER_PAGE;
+  const end = start + VAL_PER_PAGE;
+  const slice = window.VALIDATION_LOG.slice(start, end);
+
+  let html = `<table class="tmm-diff-table">
+        <thead>
+            <tr>
+                <th class="diff-meta-col">Row / ID</th>
+                <th class="diff-changes-col">Discrepancy Details</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+  slice.forEach(row => {
+    let detailsHtml = row.issues.map(issue => {
+      if (issue.type === 'NEW_RECORD' || issue.type === 'MISSING_RECORD') {
+        return `<div style="padding:5px; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; font-weight:bold; color:#d9534f;">${issue.msg}</div>`;
+      }
+
+      // Color coding based on issue type
+      let badgeColor = '#6c757d'; // Mismatch (Grey)
+      if (issue.type === 'MISSING_IN_FILE') badgeColor = '#dc3545'; // Red (Warning)
+      if (issue.type === 'NEW_IN_FILE') badgeColor = '#28a745'; // Green (Info)
+
+      return `
+                <div class="diff-change-box" style="border-left: 3px solid ${badgeColor};">
+                    <span class="diff-field-label">${FIELD_DEFINITIONS[issue.field]?.label || issue.field}</span>
+                    <div style="font-size:11px; margin-bottom:3px; color:${badgeColor}; font-weight:700;">${issue.type.replace(/_/g, ' ')}</div>
+                    <div>
+                        <span style="color:#dc3545; text-decoration:none; display:block; font-size:0.9em;">
+                            <i class="fas fa-database"></i> Sys: ${issue.current || "<em>(empty)</em>"}
+                        </span>
+                        <span style="color:#28a745; font-weight:700; display:block; font-size:0.9em;">
+                            <i class="fas fa-file-excel"></i> File: ${issue.new || "<em>(empty)</em>"}
+                        </span>
+                    </div>
+                </div>
+            `;
+    }).join('');
+
+    html += `<tr>
+            <td class="diff-meta-col">
+                <div class="diff-record-id">${row.rowId}</div>
+                <small style="color:#666">Index: ${row.index + 1}</small>
+            </td>
+            <td class="diff-changes-col">${detailsHtml}</td>
+        </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+
+  const max = Math.ceil(window.VALIDATION_LOG.length / VAL_PER_PAGE) || 1;
+  document.getElementById('valPageDisplay').innerText = `Page ${VAL_PAGE} of ${max}`;
+}
+
+function changeValPage(dir) {
+  const max = Math.ceil(window.VALIDATION_LOG.length / VAL_PER_PAGE) || 1;
+  VAL_PAGE += dir;
+  if (VAL_PAGE < 1) VAL_PAGE = 1;
+  if (VAL_PAGE > max) VAL_PAGE = max;
+  renderValPage();
+}
+
+function toggleSmartAdd() {
+  STATE.smartAddEnabled = !STATE.smartAddEnabled;
+  const btn = document.getElementById('smartAddStatus');
+  btn.innerText = STATE.smartAddEnabled ? "ACTIVE" : "NOT ACTIVE";
+}
