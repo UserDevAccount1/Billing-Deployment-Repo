@@ -32,6 +32,35 @@ const TMM_BAND_STATE = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STATE SYNCHRONIZATION HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+
+function tmmSyncStateWithGlobal() {
+  // Ensure global state exists
+  if (typeof window.STATE === 'undefined' || !window.STATE.hiddenColumns) return;
+
+  // Clear current local selection
+  TMM_BAND_STATE.selectedTables.clear();
+
+  // Iterate through all defined Band Tables
+  Object.keys(TMM_BAND_TABLES).forEach(tableKey => {
+    // Logic: If it is NOT hidden in Global State, it must be Selected in Band State
+    if (!window.STATE.hiddenColumns.has(tableKey)) {
+      TMM_BAND_STATE.selectedTables.add(tableKey);
+    }
+  });
+
+  // Update the Checkbox UI to match the new state
+  const checkboxes = document.querySelectorAll('.tmm-band-filter-item input[type="checkbox"]');
+  checkboxes.forEach(cb => {
+    cb.checked = TMM_BAND_STATE.selectedTables.has(cb.value);
+  });
+
+  console.log('[TMM Band Features] Synced with Global State:', TMM_BAND_STATE.selectedTables);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2. TABLE CONFIGURATION (Added 'dispatch_imac')
 // ─────────────────────────────────────────────────────────────────────────────
 const TMM_BAND_TABLES = {
@@ -646,12 +675,67 @@ function tmmDeleteBandRow(key, group, band) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 9. FINAL INITIALIZATION
+// 9. FINAL INITIALIZATION & UI BUILDER
 // ─────────────────────────────────────────────────────────────────────────────
+
+function tmmBuildFilterDropdown() {
+  const container = document.getElementById('tmmBandFilterContainer');
+  if (!container) return; // Guard clause if HTML element missing
+
+  let html = `
+    <button id="tmmBandFilterBtn" class="tmm-btn-band-filter" onclick="tmmToggleBandFilterDropdown()">
+      <i class="fas fa-filter"></i> Filter Tables
+    </button>
+    <div id="tmmBandFilterDropdown" class="tmm-band-dropdown-menu">
+      <div class="tmm-band-dropdown-header">
+        <span>Select Tables</span>
+        <div style="display:flex; gap:5px;">
+           <small onclick="tmmSelectAllBandFilters()" style="cursor:pointer; color:#667eea;">All</small>
+           <small onclick="tmmClearBandFilters()" style="cursor:pointer; color:#ef4444;">None</small>
+        </div>
+      </div>
+      <div class="tmm-band-dropdown-body">`;
+
+  Object.keys(TMM_BAND_TABLES).forEach(key => {
+    const table = TMM_BAND_TABLES[key];
+    // Checkbox state will be updated by tmmSyncStateWithGlobal immediately after
+    html += `
+      <label class="tmm-band-filter-item">
+        <input type="checkbox" value="${key}" onchange="tmmHandleBandTableFilter(this)">
+        <i class="${table.icon}" style="color:${table.color}; width:20px;"></i>
+        <span>${table.name}</span>
+      </label>`;
+  });
+
+  html += `</div></div>`;
+  container.innerHTML = html;
+}
+
+function tmmInitializeBandFeatures() {
+  console.log('[TMM Band Features] Initializing...');
+
+  // 1. Build the Filter UI elements
+  tmmBuildFilterDropdown();
+
+  // 2. CRITICAL: Sync Local Band State with Global Window State
+  // This ensures checkboxes match what is currently visible/hidden in the matrix
+  tmmSyncStateWithGlobal();
+
+  // 3. Setup Imports & Listeners
+  tmmSetupImportControls();
+  tmmSyncWithMainMatrix(); // Hooks into Customer/Account Selectors
+
+  // 4. Global Event Listeners
+  document.addEventListener('click', tmmHandleOutsideClick);
+  document.addEventListener('keydown', tmmHandleEscapeKey);
+
+  // 5. Apply the initial state to the matrix (Consistency check)
+  tmmApplyBandTableFilterToMatrix();
+}
+
+// Check loading state
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', tmmInitializeBandFeatures);
 } else {
   tmmInitializeBandFeatures();
 }
-
-console.log('[TMM Band Features] Script loaded and ready');

@@ -167,8 +167,6 @@ function applyFilters() {
     // Specific table selected
     const target = tableMap[tableFilter];
     if (target) {
-      // If we are filtering by a specific table, we also reset the category
-      // to avoid confusion
       if (siteCategoryEl && siteCategoryEl.value !== '') {
         siteCategoryEl.value = '';
       }
@@ -183,6 +181,20 @@ function applyFilters() {
   // Apply visual changes to columns
   applyColumnVisibility();
   updateCheckboxes();
+
+  // --- NEW LOGIC: PRE-CALCULATE VISIBLE TABLES FOR "REQUIRED_TABLE" FILTER ---
+  const visibleTables = Object.keys(TABLE_SCHEMAS).filter(key => !STATE.hiddenColumns.has(key));
+  let ignoreRequiredTableFilter = false;
+
+  if (ragFilter === 'REQUIRED_TABLE') {
+      if (visibleTables.length !== 1) {
+          // If the user tries to use this filter with multiple tables visible, show a warning
+          // We use a small timeout to ensure the toast renders after any previous UI updates
+          setTimeout(() => showToast("Select exactly one table to use 'Required in table'", "warning"), 100);
+          ignoreRequiredTableFilter = true;
+      }
+  }
+  // ---------------------------------------------------------------------------
 
   // 2) ROW FILTER LOGIC (Hide/Show Rows based on content)
   const rows = Array.from(document.querySelectorAll('#matrixBody .matrix-row'));
@@ -199,9 +211,20 @@ function applyFilters() {
     if (fieldGroupFilter !== 'ALL' && group !== fieldGroupFilter) visible = false;
 
     if (ragFilter !== 'ALL') {
-      if (ragFilter === 'REQUIRED' && !def.required) visible = false;
-      if (ragFilter === 'OPTIONAL' && def.required) visible = false;
-      if (['GREEN', 'AMBER', 'RED'].includes(ragFilter) && rag !== ragFilter) visible = false;
+      // --- NEW LOGIC: REQUIRED_TABLE ---
+      if (ragFilter === 'REQUIRED_TABLE') {
+          if (!ignoreRequiredTableFilter) {
+              const activeTable = visibleTables[0];
+              // Check if the field exists in the schema of the single visible table
+              if (!TABLE_SCHEMAS[activeTable].includes(field)) {
+                  visible = false;
+              }
+          }
+      } 
+      // ---------------------------------
+      else if (ragFilter === 'REQUIRED' && !def.required) visible = false;
+      else if (ragFilter === 'OPTIONAL' && def.required) visible = false;
+      else if (['GREEN', 'AMBER', 'RED'].includes(ragFilter) && rag !== ragFilter) visible = false;
     }
 
     if (dataTypeFilter !== 'ALL' && type !== dataTypeFilter) visible = false;
@@ -223,7 +246,6 @@ function applyFilters() {
   // 3) SORT LOGIC
   applySortOrder(sortOrder);
 }
-
 function applySortOrder(sortOrder) {
   const tbody = document.getElementById('matrixBody');
   if (!tbody) return;
