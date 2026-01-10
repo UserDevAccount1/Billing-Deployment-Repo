@@ -17,6 +17,7 @@ window.MASTER_DATA = [];
 window.PENDING_DATA = [];
 window.DIFF_LOG = [];
 window.currentImportIndex = 0;
+window.VALIDATION_RESULTS = [];
 
 // VISUAL STORE: What is currently displayed in the DOM inputs
 const DATA_STORE = {
@@ -184,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initSaveButton();
   updateStatistics();
   updateFinalTablePreview();
+  initValidationViewToggles();
 
   const navBar = document.getElementById('recordNavigation');
   if (navBar) navBar.style.display = 'none';
@@ -203,11 +205,48 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
+
+  const validateBtn = document.getElementById('validateFilesBtn');
+  if (validateBtn) {
+    validateBtn.addEventListener('click', function () {
+      window.showToast("Running Validation...", "info");
+      runFinalTicketValidation();
+    });
+  }
 });
 
 function initMatrix() {
   renderMatrixHeader();
   renderMatrixBody();
+}
+
+function initValidationViewToggles() {
+  const tableBtn = document.getElementById('tableViewBtn');
+  const cardBtn = document.getElementById('formViewBtn');
+  const tableView = document.getElementById('validationTableView');
+  const cardView = document.getElementById('validationCardView');
+
+  if (tableBtn && cardBtn) {
+    tableBtn.addEventListener('click', () => {
+      // Update Buttons
+      tableBtn.classList.add('active');
+      cardBtn.classList.remove('active');
+
+      // Update Views
+      tableView.style.display = 'block';
+      cardView.style.display = 'none';
+    });
+
+    cardBtn.addEventListener('click', () => {
+      // Update Buttons
+      cardBtn.classList.add('active');
+      tableBtn.classList.remove('active');
+
+      // Update Views
+      tableView.style.display = 'none';
+      cardView.style.display = 'block'; // Or 'grid' if you use grid css
+    });
+  }
 }
 
 // ──── 3. FILE UPLOAD & NORMALIZATION ENGINE ────
@@ -273,9 +312,22 @@ function parseExcel(file) {
   const reader = new FileReader();
   reader.onload = function (e) {
     try {
+      const currentTable = document.getElementById('tmm_categorySelect');
       const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+      const sheetNames = workbook.SheetNames;
+      const sheetMap = {
+        "dispatch": "Dispatch",
+        "standby": "Dispatch Stand by Charges",
+        "dedicated": "Dedicated",
+        "sv": "SV,Full & Half day Visit",
+        "project": "Project work"
+      };
+      const selectedValue = currentTable.value;
+      const sheetNameToUse = sheetMap[selectedValue] && sheetNames.includes(sheetMap[selectedValue])
+        ? sheetMap[selectedValue]
+        : sheetNames[0];
+      const sheet = workbook.Sheets[sheetNameToUse];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
       initializeImportData(jsonData);
     } catch (error) {
       window.showToast(`Error parsing Excel`, 'error');
@@ -380,10 +432,10 @@ function initializeImportData(rawArray) {
 
 function finalizeLoad() {
   window.currentImportIndex = 0;
-  document.getElementById('validateFilesBtn').disabled = false;
+  const valBtn = document.getElementById('validateFilesBtn');
+  if (valBtn) valBtn.disabled = false;
   document.getElementById('fileCount').innerText = window.MASTER_DATA.length + " Records";
   document.getElementById('recordNavigation').style.display = 'flex';
-
   loadRecord(0);
   window.showToast(`Loaded ${window.MASTER_DATA.length} records`, "success");
 }
@@ -985,4 +1037,147 @@ function toggleSmartAdd() {
   STATE.smartAddEnabled = !STATE.smartAddEnabled;
   const btn = document.getElementById('smartAddStatus');
   btn.innerText = STATE.smartAddEnabled ? "ACTIVE" : "NOT ACTIVE";
+}
+function runFinalTicketValidation() {
+  // 1. Reset Global Object and Counters
+  window.VALIDATION_RESULTS = [];
+  let validCount = 0;
+  let warningCount = 0;
+  let errorCount = 0;
+
+  const finalTicketFields = TABLE_SCHEMAS['final_ticket'];
+
+  // --- PREPARE HTML ACCUMULATORS ---
+
+  // A. Table Header Construction
+  let tableHtml = `<table class="val-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th class="col-status">Validation Status </th>`;
+
+  finalTicketFields.forEach(key => {
+    const label = FIELD_DEFINITIONS[key]?.label || key;
+    tableHtml += `<th>${label}</th>`;
+  });
+  tableHtml += `</tr></thead><tbody>`;
+
+  // B. Card HTML Accumulator
+  let cardsHtml = '';
+
+  // --- ITERATE DATA ---
+  window.MASTER_DATA.forEach((record, index) => {
+    let status = 'SUCCESS';
+    let missingFields = [];
+
+    // --- 1. VALIDATION LOGIC ---
+    // We generate the Table Cells (td) and check validation at the same time
+    let tableCellsHtml = '';
+
+    finalTicketFields.forEach(fieldKey => {
+      const fieldConfig = FIELD_DEFINITIONS[fieldKey];
+      const value = record[fieldKey] || '';
+      let cellClass = '';
+
+      // Check Required
+      if (fieldConfig && fieldConfig.required) {
+        if (value === undefined || value === null || String(value).trim() === '') {
+          status = 'ERROR';
+          missingFields.push(fieldConfig.label || fieldKey);
+          cellClass = 'cell-error'; // Highlight cell in table
+        }
+      }
+
+      tableCellsHtml += `<td class="${cellClass}">${value}</td>`;
+    });
+
+    // Update Counters
+    if (status === 'SUCCESS') validCount++;
+    else errorCount++;
+
+    // --- 2. BUILD TABLE ROW ---
+    let statusDisplay = '';
+    if (status === 'SUCCESS') {
+      statusDisplay = `<span class="text-success"><i class="fas fa-check-circle"></i> Valid</span>`;
+    } else {
+      statusDisplay = `<span class="text-error"><i class="fas fa-times-circle"></i> Invalid</span>`;
+    }
+
+    tableHtml += `<tr>
+                        <td>${index + 1}</td>
+                        <td>${statusDisplay}</td>
+                        ${tableCellsHtml}
+                    </tr>`;
+
+    // --- 3. BUILD CARD ITEM ---
+    // (Re-using the logic from previous step for cards)
+    cardsHtml += generateValidationCard({
+      rowIndex: index,
+      ticketNumber: record.ticket_number || 'N/A',
+      status: status,
+      missing: missingFields,
+      data: record
+    });
+
+    // Store result
+    window.VALIDATION_RESULTS.push({
+      rowIndex: index,
+      ticketNumber: record.ticket_number,
+      status: status,
+      missing: missingFields
+    });
+  });
+
+  tableHtml += `</tbody></table>`;
+
+  // --- INJECT CONTENT ---
+
+  // Inject Table
+  const tableContainer = document.getElementById('validationTableContent');
+  if (tableContainer) tableContainer.innerHTML = tableHtml;
+
+  // Inject Cards
+  const cardContainer = document.getElementById('validationCardContent');
+  if (cardContainer) cardContainer.innerHTML = cardsHtml;
+
+  // --- UPDATE COUNTERS ---
+  if (document.getElementById('validCount')) document.getElementById('validCount').innerText = validCount;
+  if (document.getElementById('errorCount')) document.getElementById('errorCount').innerText = errorCount;
+  if (document.getElementById('totalCount')) document.getElementById('totalCount').innerText = window.MASTER_DATA.length;
+
+  console.log("Validation Complete. Views Updated.");
+}
+
+// Helper for Card View (Same as before)
+function generateValidationCard(valObj) {
+  let borderClass = 'border-success';
+  let icon = '<i class="fas fa-check-circle" style="color:#28a745"></i>';
+  let statusText = '';
+
+  if (valObj.status === 'ERROR') {
+    borderClass = 'border-danger';
+    icon = '<i class="fas fa-times-circle" style="color:#dc3545"></i>';
+    statusText = `<div style="margin-top:8px; color:#dc3545; font-size:0.9em; background:#faeaea; padding:5px;">
+                        <strong>Missing:</strong> ${valObj.missing.join(', ')}
+                      </div>`;
+  }
+
+  // A simpler card for the "Card View"
+  return `
+    <div class="ticket-card" style="border-left: 5px solid; margin-bottom: 10px; padding: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" class="${borderClass}">
+        <div style="display:flex; justify-content:space-between;">
+            <h4 style="margin:0;">${icon} ${valObj.ticketNumber} 
+
+[Image of ticket icon]
+</h4>
+            <span style="color:#888; font-size:0.8em;">Row ${valObj.rowIndex + 1}</span>
+        </div>
+        ${statusText}
+        <div style="margin-top:10px; font-size:0.85em; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+             <div><strong>Cust:</strong> ${valObj.data.customer || '-'}</div>
+            <div><strong>Region:</strong> ${valObj.data.region || '-'}</div>
+            <div><strong>Svc Type:</strong> ${valObj.data.service_type || '-'}</div>
+            <div><strong>Status:</strong> ${valObj.data.status || '-'}</div>
+        </div>
+    </div>`;
 }

@@ -312,7 +312,6 @@
 
 /* Card View */
 #validation .form-view-container {
-    display: none;
     margin-bottom: 20px;
 }
 
@@ -570,33 +569,33 @@
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     #validation .validation-header h1 {
         font-size: 24px;
     }
-    
+
     #validation .summary-cards {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     #validation .table-tools {
         flex-direction: column;
     }
-    
+
     #validation .tool-buttons {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     #validation .ticket-cards {
         grid-template-columns: 1fr;
     }
-    
+
     #validation .pagination {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     #validation .btn-text {
         display: none;
     }
@@ -606,16 +605,52 @@
     #validation .summary-cards {
         grid-template-columns: 1fr;
     }
-    
+
     #validation .card-value {
         font-size: 28px;
     }
-    
+
     #validation .view-toggle-btn {
         padding: 8px 12px;
     }
-    
+
     #validation .ticket-card-body {
         grid-template-columns: 1fr;
     }
+}
+
+.val-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    font-family: sans-serif;
+    background: #fff;
+}
+
+.val-table th {
+    background-color: #f1f3f5;
+    color: #495057;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 8px;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+}
+
+.val-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.cell-error {
+    background-color: #ffe3e6 !important;
+    /* Soft Red for error cells */
+    border: 1px solid #f5c6cb;
+    color: #b02a37;
+}
+
+.col-status {
+    min-width: 150px;
 }

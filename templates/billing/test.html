@@ -421,9 +421,21 @@
                                     </div>
                                 </div>
 
-                                <!-- Card View -->
-                                <div class="form-view-container" id="formViewContainer">
-                                    <div class="ticket-cards" id="ticketCards"></div>
+                                <div id="validationTableView" class="validation-view-mode"
+                                    style="overflow-x: auto; margin-top: 15px; display: block;">
+                                    <div id="validationTableContent">
+                                        <div
+                                            style="padding: 40px; text-align: center; color: #999; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px;">
+                                            <i class="fas fa-arrow-up"></i> Upload a file and click "Run Validation" to
+                                            see the Table.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="validationCardView" class="validation-view-mode"
+                                    style="margin-top: 15px; display: none;">
+                                    <div class="ticket-cards" id="validationCardContent">
+                                    </div>
                                 </div>
 
                                 <!-- Pagination -->

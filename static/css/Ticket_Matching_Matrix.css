@@ -1966,3 +1966,50 @@
 .tmm-upload-control {
   margin-bottom: 10px;
 }
+/* Validation Table Styles */
+.val-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    font-family: sans-serif;
+}
+
+.val-table thead th {
+    background-color: #f8f9fa;
+    color: #333;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.val-table tbody td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.val-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Status Column specific width */
+.col-status {
+    min-width: 200px;
+    white-space: normal !important;
+}
+
+/* Error Highlights */
+.cell-error {
+    background-color: #f8d7da !important; /* Red background for bad cells */
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.text-error { color: #dc3545; font-weight: bold; }
+.text-success { color: #28a745; font-weight: bold; }
