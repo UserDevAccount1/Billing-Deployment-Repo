@@ -786,6 +786,9 @@ function loadRecord(index) {
 
   const record = window.MASTER_DATA[index];
 
+  STATE.smartAddCount = 0;      // Reset trigger count
+  STATE.autoPopulatedCount = 0; // Reset field count
+
   // Clear Visual Stores
   Object.keys(DATA_STORE).forEach(key => DATA_STORE[key] = {});
 
@@ -1227,13 +1230,11 @@ function runFinalTicketValidation() {
   const finalTicketFields = TABLE_SCHEMAS['final_ticket'];
 
   // --- PREPARE HTML ACCUMULATORS ---
-
-  // A. Table Header Construction
   let tableHtml = `<table class="val-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">#</th>
-                                <th class="col-status">Validation Status </th>`;
+    <thead>
+        <tr>
+            <th style="width: 50px;">#</th>
+            <th style="width: 80px;">Action</th> <th class="col-status">Validation Status </th>`;
 
   finalTicketFields.forEach(key => {
     const label = FIELD_DEFINITIONS[key]?.label || key;
@@ -1283,10 +1284,15 @@ function runFinalTicketValidation() {
     }
 
     tableHtml += `<tr>
-                        <td>${index + 1}</td>
-                        <td>${statusDisplay}</td>
-                        ${tableCellsHtml}
-                    </tr>`;
+        <td>${index + 1}</td>
+        <td style="text-align:center;">
+            <button class="btn btn-sm btn-danger" onclick="deleteValidationRecord(${index})" title="Delete Record">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+        <td>${statusDisplay}</td>
+        ${tableCellsHtml}
+    </tr>`;
 
     // --- 3. BUILD CARD ITEM ---
     // (Re-using the logic from previous step for cards)
@@ -1344,13 +1350,17 @@ function generateValidationCard(valObj) {
   // A simpler card for the "Card View"
   return `
     <div class="ticket-card" style="border-left: 5px solid; margin-bottom: 10px; padding: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" class="${borderClass}">
-        <div style="display:flex; justify-content:space-between;">
+        <div style="display:flex; justify-content:space-between; align-items: flex-start;">
             <h4 style="margin:0;">${icon} ${valObj.ticketNumber} 
-
-[Image of ticket icon]
-</h4>
-            <span style="color:#888; font-size:0.8em;">Row ${valObj.rowIndex + 1}</span>
-        </div>
+    </h4>
+            
+            <div style="text-align:right;">
+                 <span style="color:#888; font-size:0.8em; display:block; margin-bottom:5px;">Row ${valObj.rowIndex + 1}</span>
+                 <button class="btn btn-sm btn-danger" onclick="deleteValidationRecord(${valObj.rowIndex})" style="padding: 2px 8px; font-size: 12px;">
+                    <i class="fas fa-trash"></i> Delete
+                 </button>
+            </div>
+            </div>
         ${statusText}
         <div style="margin-top:10px; font-size:0.85em; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
              <div><strong>Cust:</strong> ${valObj.data.customer || '-'}</div>
@@ -1360,3 +1370,13 @@ function generateValidationCard(valObj) {
         </div>
     </div>`;
 }
+
+window.deleteValidationRecord = function (index) {
+  if (!confirm("Are you sure you want to remove this record from the dataset?")) return;
+  window.MASTER_DATA.splice(index, 1);
+  if (document.getElementById('fileCount')) {
+    document.getElementById('fileCount').innerText = window.MASTER_DATA.length + " Records";
+  }
+  runFinalTicketValidation();
+  window.showToast("Record deleted", "success");
+};
