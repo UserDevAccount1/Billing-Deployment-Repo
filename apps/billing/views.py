@@ -10,14 +10,17 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.db.models.functions import Lower
 from django.utils.dateformat import format
+from django.views import View
 
 from .models import BillingRun
 from apps.customers.models import Customer, Account, BillingCycle, Currency, Country
 from apps.customers.forms import AccountForm
 from apps.purchase_orders.models import PurchaseOrder
 from apps.rate_cards.models import RateCard
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
-logger = logging.getLogger('billing')
+logger = logging.getLogger("billing")
 
 
 @login_required
@@ -25,20 +28,24 @@ def test_page(request):
     """A simple test page for billing with customers and accounts"""
     try:
         # Fetch customers
-        customers = Customer.objects.filter(is_active=True).order_by(Lower('name'))
+        customers = Customer.objects.filter(is_active=True).order_by(Lower("name"))
 
         # Fetch accounts
-        accounts = Account.objects.select_related(
-            'customer', 'billing_cycle', 'currency', 'country'
-        ).filter(is_active=True).order_by('customer__name', 'name')
+        accounts = (
+            Account.objects.select_related(
+                "customer", "billing_cycle", "currency", "country"
+            )
+            .filter(is_active=True)
+            .order_by("customer__name", "name")
+        )
 
         # Build customers JSON
         customers_data = [
             {
-                'id': customer.id,
-                'name': str(customer.name),
-                'code': str(customer.code or ''),
-                'account_count': customer.accounts.filter(is_active=True).count()
+                "id": customer.id,
+                "name": str(customer.name),
+                "code": str(customer.code or ""),
+                "account_count": customer.accounts.filter(is_active=True).count(),
             }
             for customer in customers
         ]
@@ -47,38 +54,39 @@ def test_page(request):
         # Build accounts JSON
         accounts_data = [
             {
-                'id': account.id,
-                'customer_id': account.customer.id if account.customer else None,
-                'name': str(account.name or ''),
-                'account_id': str(getattr(account, 'account_id', '') or '')
+                "id": account.id,
+                "customer_id": account.customer.id if account.customer else None,
+                "name": str(account.name or ""),
+                "account_id": str(getattr(account, "account_id", "") or ""),
             }
             for account in accounts
         ]
         accounts_json = json.dumps(accounts_data, ensure_ascii=False)
 
         context = {
-            'customers': customers,
-            'accounts': accounts,
-            'customers_json': customers_json,
-            'accounts_json': accounts_json,
-            'form': AccountForm(),
-            'currencies': Currency.objects.filter(is_active=True),
-            'countries': Country.objects.filter(is_active=True),
+            "customers": customers,
+            "accounts": accounts,
+            "customers_json": customers_json,
+            "accounts_json": accounts_json,
+            "form": AccountForm(),
+            "currencies": Currency.objects.filter(is_active=True),
+            "countries": Country.objects.filter(is_active=True),
         }
 
     except Exception as e:
         logger.error(f"Error loading billing test page data: {e}", exc_info=True)
         context = {
-            'customers': [],
-            'accounts': [],
-            'customers_json': '[]',
-            'accounts_json': '[]',
-            'form': AccountForm(),
-            'currencies': Currency.objects.filter(is_active=True),
-            'countries': Country.objects.filter(is_active=True),
+            "customers": [],
+            "accounts": [],
+            "customers_json": "[]",
+            "accounts_json": "[]",
+            "form": AccountForm(),
+            "currencies": Currency.objects.filter(is_active=True),
+            "countries": Country.objects.filter(is_active=True),
         }
 
     return render(request, "billing/test.html", context)
+
 
 @login_required
 def billing_run_list(request):
@@ -380,3 +388,191 @@ def create_billing_run(request):
         "purchase_orders": purchase_orders,
     }
     return render(request, "billing/create.html", context)
+
+
+from .models import BandTable, FinalTicket
+
+
+# @login_required
+def get_all_band_data(request):
+    """API to retrieve all BandTable JSON data"""
+    try:
+        band_entries = BandTable.objects.all().order_by("-created_at")
+        if not band_entries.exists():
+            return JsonResponse(
+                {"success": False, "error": "No band data found"},
+                status=404,
+            )
+
+        data = []
+        for entry in band_entries:
+            data.append(
+                {
+                    "ticket_number": entry.ticket_number,
+                    "customer": entry.customer.name,
+                    "account": entry.account.name if entry.account else None,
+                    "band_data": entry.band_data,
+                    "updated_at": entry.updated_at,
+                }
+            )
+
+        return JsonResponse({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Error fetching band data: {e}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+# @login_required
+def get_all_final_data(request):
+    """API to retrieve all FinalTicket JSON data"""
+    try:
+        final_entries = FinalTicket.objects.all().order_by("-created_at")
+        if not final_entries.exists():
+            return JsonResponse(
+                {"success": False, "error": "No final ticket data found"},
+                status=404,
+            )
+
+        data = []
+        for entry in final_entries:
+            data.append(
+                {
+                    "ticket_number": entry.ticket_number,
+                    "request_id": entry.request_id,
+                    "customer": entry.customer.name,
+                    "account": entry.account.name if entry.account else None,
+                    "data_table": entry.data_table,
+                    "created_at": entry.created_at,
+                }
+            )
+
+        return JsonResponse({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Error fetching final ticket data: {e}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class BatchStoreBandTableView(View):
+    """
+    Standard Django View to batch store BandTable records.
+    Expects a JSON array of objects.
+    """
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+
+            # Ensure payload is a list
+            if not isinstance(payload, list):
+                payload = [payload]
+
+            saved_count = 0
+            errors = []
+
+            for index, item in enumerate(payload):
+                try:
+                    # Validate required fields
+                    if "customer" not in item or "ticket_number" not in item:
+                        raise ValueError(f"Missing required fields in item {index}")
+
+                    # Resolve Customer and Account instances
+                    # Assumes payload sends IDs. If sending names, logic needs adjustment.
+                    customer_instance = get_object_or_404(Customer, pk=item["customer"])
+
+                    account_instance = None
+                    if item.get("account"):
+                        account_instance = get_object_or_404(
+                            Account, pk=item["account"]
+                        )
+
+                    # Create Record
+                    BandTable.objects.create(
+                        customer=customer_instance,
+                        account=account_instance,
+                        ticket_number=item["ticket_number"],
+                        band_data=item.get("band_data", {}),
+                    )
+                    saved_count += 1
+
+                except Exception as row_error:
+                    errors.append(f"Row {index}: {str(row_error)}")
+
+            response_data = {
+                "success": True,
+                "message": f"Successfully saved {saved_count} BandTable records.",
+                "errors": errors if errors else None,
+            }
+            return JsonResponse(response_data, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "Invalid JSON format"}, status=400
+            )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class BatchStoreFinalTicketView(View):
+    """
+    Standard Django View to batch store FinalTicket records.
+    Expects a JSON array of objects.
+    """
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+
+            # Ensure payload is a list
+            if not isinstance(payload, list):
+                payload = [payload]
+
+            saved_count = 0
+            errors = []
+
+            for index, item in enumerate(payload):
+                try:
+                    # Validate required fields
+                    if (
+                        "customer" not in item
+                        or "ticket_number" not in item
+                        or "request_id" not in item
+                    ):
+                        raise ValueError(f"Missing required fields in item {index}")
+
+                    # Resolve Customer and Account instances
+                    customer_instance = get_object_or_404(Customer, pk=item["customer"])
+
+                    account_instance = None
+                    if item.get("account"):
+                        account_instance = get_object_or_404(
+                            Account, pk=item["account"]
+                        )
+
+                    # Create Record
+                    FinalTicket.objects.create(
+                        customer=customer_instance,
+                        account=account_instance,
+                        ticket_number=item["ticket_number"],
+                        request_id=item["request_id"],
+                        data_table=item.get("data_table", {}),
+                    )
+                    saved_count += 1
+
+                except Exception as row_error:
+                    errors.append(f"Row {index}: {str(row_error)}")
+
+            response_data = {
+                "success": True,
+                "message": f"Successfully saved {saved_count} FinalTicket records.",
+                "errors": errors if errors else None,
+            }
+            return JsonResponse(response_data, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "Invalid JSON format"}, status=400
+            )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)

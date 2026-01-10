@@ -364,6 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initSaveButton();
   updateStatistics();
   updateFinalTablePreview();
+  initRecordValidationButton();
   initValidationViewToggles();
 
   const navBar = document.getElementById('recordNavigation');
@@ -426,6 +427,100 @@ function initValidationViewToggles() {
       cardView.style.display = 'block'; // Or 'grid' if you use grid css
     });
   }
+}
+function initRecordValidationButton() {
+  const btn = document.getElementById('saveRecordBtn'); // The green "Save Record" button
+  if (!btn) return;
+
+  btn.addEventListener('click', function () {
+    // 1. Check if we have data
+    if (!window.MASTER_DATA || window.MASTER_DATA.length === 0) {
+      showToast("No records available to save.", "error");
+      return;
+    }
+
+    // 2. Get Context IDs from DOM
+    const customerSelect = document.getElementById('tmm_customerSelect');
+    const accountSelect = document.getElementById('tmm_accountSelect');
+
+    const customerId = (customerSelect && customerSelect.value !== 'all') ? parseInt(customerSelect.value) : null;
+    const accountId = (accountSelect && accountSelect.value !== 'all') ? parseInt(accountSelect.value) : null;
+
+    if (!customerId) {
+      showToast('Error: Please select a specific Customer before saving.', 'error');
+      return;
+    }
+
+    // 3. Force Validation Run (Ensure Sync)
+    runFinalTicketValidation();
+
+    // 4. Construct Payload for API
+    const payload = window.VALIDATION_RESULTS.map(res => {
+      const record = window.MASTER_DATA[res.rowIndex];
+
+      // Prepare the Data Table JSON (Actual data + Validation Metadata)
+      const jsonStorage = {
+        ...record,
+        _meta: {
+          row_index: res.rowIndex,
+          validation_status: res.status,
+          missing_fields: res.missing
+        }
+      };
+
+      return {
+        customer: customerId,
+        account: accountId, // Can be null
+        ticket_number: record.ticket_number || "UNKNOWN",
+        request_id: record.request_id || "UNKNOWN",
+        data_table: jsonStorage
+      };
+    });
+
+    console.group("💾 SAVING FINAL TICKETS");
+    console.log(`Payload (${payload.length} records):`, payload);
+
+    // 5. Send to API
+    const csrftoken = getCookie('csrftoken');
+    const btnOriginalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+
+    fetch('/billing/api/final-ticket/batch/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw new Error(err.message || 'Server Error'); });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Success:", data);
+        showToast(`Successfully saved ${payload.length} validated records!`, 'success');
+
+        // Visual Success Feedback
+        btn.innerHTML = '<i class="fas fa-check"></i> Saved';
+        setTimeout(() => {
+          btn.innerHTML = btnOriginalText;
+          btn.disabled = false;
+        }, 2000);
+      })
+      .catch(error => {
+        console.error("Save Error:", error);
+        showToast(`Save Failed: ${error.message}`, 'error');
+        btn.innerHTML = btnOriginalText;
+        btn.disabled = false;
+      })
+      .finally(() => {
+        console.groupEnd();
+      });
+  });
 }
 
 // ──── 3. FILE UPLOAD & NORMALIZATION ENGINE ────

@@ -379,21 +379,25 @@
 
                                 <!-- Table Tools -->
                                 <div class="table-tools">
-
                                     <div class="search-box">
                                         <i class="fas fa-search"></i>
-                                        <input type="text" id="searchInput"
-                                            placeholder="Search across all columns..." />
+                                        <input type="text" id="searchInput" placeholder="Search across all columns..."
+                                            data-has-search-listener="true">
                                     </div>
 
                                     <div class="tool-buttons">
+
+                                        <button class="btn btn-primary" id="saveRecordBtn"
+                                            style="background-color: #10b981; border-color: #10b981; color: white;">
+                                            <i class="fas fa-save"></i>
+                                            <span class="btn-text">Save Tickets</span>
+                                        </button>
 
                                         <div class="view-toggle">
                                             <button class="view-toggle-btn active" id="tableViewBtn">
                                                 <i class="fas fa-table"></i>
                                                 <span class="btn-text">Table</span>
                                             </button>
-
                                             <button class="view-toggle-btn" id="formViewBtn">
                                                 <i class="fas fa-th-large"></i>
                                                 <span class="btn-text">Cards</span>
@@ -411,13 +415,12 @@
                                             <label for="rowsPerPage">Show:</label>
                                             <select id="rowsPerPage">
                                                 <option value="10">10</option>
-                                                <option value="25" selected>25</option>
+                                                <option value="25" selected="">25</option>
                                                 <option value="50">50</option>
                                                 <option value="100">100</option>
                                                 <option value="all">All</option>
                                             </select>
                                         </div>
-
                                     </div>
                                 </div>
 

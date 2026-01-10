@@ -5,17 +5,17 @@
 console.log('[TMM Band Features] Script loading...');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. STATE MANAGEMENT (Added 'dispatch_imac')
+// 1. STATE MANAGEMENT (Removed 'dispatch_imac', added grouping support)
 // ─────────────────────────────────────────────────────────────────────────────
 const TMM_BAND_STATE = {
-  selectedTables: new Set(['dispatch', 'dispatch_imac', 'dedicated', 'sv_visit', 'project', 'standby']),
+  // 'dispatch' now covers both Incident and IMAC
+  selectedTables: new Set(['dispatch', 'dedicated', 'sv_visit', 'project', 'standby']),
   currentCustomer: 'HCL',
   currentAccount: '',
 
   // Holds the visual data for the currently displayed record
   bandData: {
     dispatch: {},
-    dispatch_imac: {},
     dedicated: {},
     sv_visit: {},
     project: {},
@@ -36,45 +36,46 @@ const TMM_BAND_STATE = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function tmmSyncStateWithGlobal() {
-  // Ensure global state exists
   if (typeof window.STATE === 'undefined' || !window.STATE.hiddenColumns) return;
 
-  // Clear current local selection
   TMM_BAND_STATE.selectedTables.clear();
 
-  // Iterate through all defined Band Tables
   Object.keys(TMM_BAND_TABLES).forEach(tableKey => {
-    // Logic: If it is NOT hidden in Global State, it must be Selected in Band State
     if (!window.STATE.hiddenColumns.has(tableKey)) {
       TMM_BAND_STATE.selectedTables.add(tableKey);
     }
   });
 
-  // Update the Checkbox UI to match the new state
   const checkboxes = document.querySelectorAll('.tmm-band-filter-item input[type="checkbox"]');
   checkboxes.forEach(cb => {
     cb.checked = TMM_BAND_STATE.selectedTables.has(cb.value);
   });
-
-  console.log('[TMM Band Features] Synced with Global State:', TMM_BAND_STATE.selectedTables);
 }
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. TABLE CONFIGURATION (Added 'dispatch_imac')
+// 2. TABLE CONFIGURATION (MERGED DISPATCH & DISPATCH_IMAC)
 // ─────────────────────────────────────────────────────────────────────────────
 const TMM_BAND_TABLES = {
   dispatch: {
-    name: 'Dispatch Services (Incident)', icon: 'fas fa-truck-fast', color: '#10b981',
-    description: 'On-demand incident pricing',
-    bands: ['4 Hour', 'SBD', 'NBD', '2 BD', '3 BD', 'Additional Hour'],
-    columns: ['Price', 'SLA', 'Description'], hasBandLevels: false
-  },
-  dispatch_imac: {
-    name: 'Dispatch Services (IMAC)', icon: 'fas fa-tools', color: '#059669',
-    description: 'Install, Move, Add, Change services',
-    bands: ['2 BD', '3 BD', '4 BD'],
-    columns: ['Price', 'SLA', 'Description'], hasBandLevels: false
+    name: 'Dispatch Services',
+    icon: 'fas fa-truck-fast',
+    color: '#10b981',
+    description: 'Incident & IMAC pricing',
+    // GROUPED STRUCTURE (Like sv_visit)
+    groups: [
+      {
+        title: 'Incident Services',
+        bands: ['4 Hour', 'SBD', 'NBD', '2 BD', '3 BD', 'Additional Hour'],
+        columns: ['Price', 'SLA', 'Description']
+      },
+      {
+        title: 'IMAC Services',
+        bands: ['2 BD', '3 BD', '4 BD'],
+        columns: ['Price', 'SLA', 'Description']
+      }
+    ],
+    hasBandLevels: false
   },
   dedicated: {
     name: 'Dedicated Services', icon: 'fas fa-user-tie', color: '#ef4444',
@@ -106,15 +107,17 @@ const TMM_BAND_TABLES = {
   }
 };
 
-// Default Sample Data
+// Default Sample Data (Updated structure)
 const TMM_SAMPLE_BAND_DATA = {
-  dispatch: { '4 Hour': ['$350', '4h', 'Crit'] },
-  dispatch_imac: { '2 BD': ['$400', '2BD', 'Std'] },
+  dispatch: {
+    'Incident Services': { '4 Hour': ['$350', '4h', 'Crit'] },
+    'IMAC Services': { '2 BD': ['$400', '2BD', 'Std'] }
+  },
   dedicated: { 'Band 0': ['$26,000', '$23,000', '$3,000'] }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. CORE FUNCTIONS
+// 3. CORE FUNCTIONS (Unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function tmmSyncWithMainMatrix() {
@@ -144,7 +147,8 @@ function tmmLoadBandDataForCustomer(customer) {
   if (customer && customer.toUpperCase().includes('HCL')) {
     TMM_BAND_STATE.bandData = JSON.parse(JSON.stringify(TMM_SAMPLE_BAND_DATA));
   } else {
-    Object.keys(TMM_BAND_STATE.bandData).forEach(k => TMM_BAND_STATE.bandData[k] = {});
+    // Reset data
+    Object.keys(TMM_BAND_TABLES).forEach(k => TMM_BAND_STATE.bandData[k] = {});
   }
   if (TMM_BAND_STATE.isPanelOpen) tmmLoadBandDetailsContent();
 }
@@ -178,7 +182,7 @@ function tmmSetupImportControls() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. CSV IMPORT PARSING LOGIC (Dynamic Start & Fixed Columns)
+// 4. CSV IMPORT PARSING LOGIC (Mapped to new Grouped Dispatch)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function tmmHandleBandCSVUpload(inputElement) {
@@ -210,21 +214,14 @@ function tmmHandleBandCSVUpload(inputElement) {
   inputElement.value = '';
 }
 
-// CUSTOM PARSER: Handles complex header structure & Empty fields
 function tmmConvertRateCardCsvToJson(csvString) {
   const lines = csvString.trim().split('\n');
   const result = [];
 
-  // FIXED: Split by comma ONLY if it's not inside quotes
-  // This preserves empty fields like ,, -> ""
   const splitCSV = (str) => {
-    // Regex explanation: Match a comma that is followed by an even number of double quotes
-    // This ensures we don't split commas inside "..."
     const parts = str.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-
     return parts.map(p => {
       let val = p.trim();
-      // Remove surrounding quotes if they exist
       if (val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
@@ -232,7 +229,6 @@ function tmmConvertRateCardCsvToJson(csvString) {
     });
   };
 
-  // Helper: Calculate diff for Dedicated services
   const calcDiff = (v1, v2) => {
     if (!v1 || !v2) return '';
     const n1 = parseFloat(v1.replace(/[^0-9.-]+/g, ""));
@@ -240,7 +236,6 @@ function tmmConvertRateCardCsvToJson(csvString) {
     return (isNaN(n1) || isNaN(n2)) ? '' : '$' + (n1 - n2).toLocaleString(undefined, { minimumFractionDigits: 2 });
   };
 
-  // 1. Find the header row index dynamically
   let headerIndex = -1;
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].toLowerCase().includes('region') && lines[i].toLowerCase().includes('country')) {
@@ -254,16 +249,12 @@ function tmmConvertRateCardCsvToJson(csvString) {
     return [];
   }
 
-  // Data starts immediately after the header row
   const startDataIndex = headerIndex + 1;
 
   for (let i = startDataIndex; i < lines.length; i++) {
     const row = splitCSV(lines[i]);
-
-    // Basic check: Ensure row isn't empty or malformed
     if (!row || row.length < 5 || (row.length === 1 && row[0] === '')) continue;
 
-    // 0-5: Meta
     const meta = {
       region: row[0] || "",
       country: row[1] || "",
@@ -274,7 +265,7 @@ function tmmConvertRateCardCsvToJson(csvString) {
     };
 
     const services = {
-      // 6-15: Dedicated (Pairs)
+      // 6-15: Dedicated
       dedicated: {
         'Band 0': [row[6], row[7], calcDiff(row[6], row[7])],
         'Band 1': [row[8], row[9], calcDiff(row[8], row[9])],
@@ -293,18 +284,21 @@ function tmmConvertRateCardCsvToJson(csvString) {
         }
       },
 
-      // 22-27: Dispatch Incident
+      // 22-30: Dispatch (Merged Group)
       dispatch: {
-        '4 Hour': [row[22], '4 hours', 'Critical'], 'SBD': [row[23], 'Same Day', 'Urgent'],
-        'NBD': [row[24], 'Next Day', 'Standard'], '2 BD': [row[25], '2 Days', 'Standard'],
-        '3 BD': [row[26], '3 Days', 'Standard'], 'Additional Hour': [row[27], 'Hourly', 'Overage']
-      },
-
-      // 28-30: Dispatch IMAC (2BD, 3BD, 4BD)
-      dispatch_imac: {
-        '2 BD': [row[28], '2 Days', 'IMAC'],
-        '3 BD': [row[29], '3 Days', 'IMAC'],
-        '4 BD': [row[30], '4 Days', 'IMAC']
+        'Incident Services': {
+          '4 Hour': [row[22], '4 hours', 'Critical'],
+          'SBD': [row[23], 'Same Day', 'Urgent'],
+          'NBD': [row[24], 'Next Day', 'Standard'],
+          '2 BD': [row[25], '2 Days', 'Standard'],
+          '3 BD': [row[26], '3 Days', 'Standard'],
+          'Additional Hour': [row[27], 'Hourly', 'Overage']
+        },
+        'IMAC Services': {
+          '2 BD': [row[28], '2 Days', 'IMAC'],
+          '3 BD': [row[29], '3 Days', 'IMAC'],
+          '4 BD': [row[30], '4 Days', 'IMAC']
+        }
       },
 
       // 31-40: Projects
@@ -329,7 +323,7 @@ function tmmConvertRateCardCsvToJson(csvString) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. EXPORT LOGIC (Updated for IMAC)
+// 5. EXPORT LOGIC (Updated for Grouped Dispatch)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function tmmExportBandDetails() {
@@ -364,13 +358,13 @@ function tmmExportBandDetails() {
     ['Band 0', 'Band 1', 'Band 2'].forEach(b => row += `${q(svF[b]?.[0])},`);
     ['Band 0', 'Band 1', 'Band 2'].forEach(b => row += `${q(svH[b]?.[0])},`);
 
-    // 22-27 Dispatch Incident
-    const disp = s.dispatch || {};
-    ['4 Hour', 'SBD', 'NBD', '2 BD', '3 BD', 'Additional Hour'].forEach(b => row += `${q(disp[b]?.[0])},`);
+    // 22-27 Dispatch Incident (Accessed via Group Name)
+    const dispInc = s.dispatch?.['Incident Services'] || {};
+    ['4 Hour', 'SBD', 'NBD', '2 BD', '3 BD', 'Additional Hour'].forEach(b => row += `${q(dispInc[b]?.[0])},`);
 
-    // 28-30 Dispatch IMAC (New)
-    const imac = s.dispatch_imac || {};
-    ['2 BD', '3 BD', '4 BD'].forEach(b => row += `${q(imac[b]?.[0])},`);
+    // 28-30 Dispatch IMAC (Accessed via Group Name)
+    const dispImac = s.dispatch?.['IMAC Services'] || {};
+    ['2 BD', '3 BD', '4 BD'].forEach(b => row += `${q(dispImac[b]?.[0])},`);
 
     // 31-40 Projects
     const pShort = s.project?.['Short Term (≤3 months)'] || {};
@@ -543,12 +537,70 @@ function tmmCalculateDedicatedDifference(band) {
 
 function tmmSaveBandDetails() {
   console.group("💾 SAVING BAND DATA");
-  console.log(TMM_BAND_STATE.importedRecords.length > 0 ? TMM_BAND_STATE.importedRecords : TMM_BAND_STATE.bandData);
-  console.groupEnd();
-  tmmShowToast('Data saved to Console', 'success');
-  TMM_BAND_STATE.isModified = false;
-  if (typeof window.tmmSyncBandDataToMatrix === 'function') window.tmmSyncBandDataToMatrix();
+
+  const customerSelect = document.getElementById('tmm_customerSelect');
+  const accountSelect = document.getElementById('tmm_accountSelect');
+
+  const customerId = (customerSelect && customerSelect.value !== 'all') ? parseInt(customerSelect.value) : null;
+  const accountId = (accountSelect && accountSelect.value !== 'all') ? parseInt(accountSelect.value) : null;
+
+  if (!customerId) {
+    tmmShowToast('Error: Please select a specific Customer.', 'error');
+    console.groupEnd();
+    return;
+  }
+  let payload = [];
+
+  if (TMM_BAND_STATE.importedRecords.length > 0) {
+    payload = TMM_BAND_STATE.importedRecords.map(record => ({
+      customer: customerId,
+      account: accountId, // Can be null
+      ticket_number: record.meta.ticket_number || "UNKNOWN",
+      band_data: record.services
+    }));
+  } else {
+    // Manual Entry Case
+    const currentTicket = TMM_BAND_STATE.currentMeta.ticket_number || "MANUAL_ENTRY";
+    payload.push({
+      customer: customerId,
+      account: accountId,
+      ticket_number: currentTicket,
+      band_data: TMM_BAND_STATE.bandData
+    });
+  }
+
+  console.log("Payload:", payload);
+  const csrftoken = getCookie('csrftoken');
+
+  fetch('/billing/api/band-table/batch/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(err => { throw new Error(err.message || 'Server Error'); });
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log("Success:", data);
+      tmmShowToast(`Saved ${payload.length} records successfully!`, 'success');
+      TMM_BAND_STATE.isModified = false;
+      if (typeof window.tmmSyncBandDataToMatrix === 'function') window.tmmSyncBandDataToMatrix();
+    })
+    .catch(error => {
+      console.error("Save Error:", error);
+      tmmShowToast(`Save Failed: ${error.message}`, 'error');
+    })
+    .finally(() => {
+      console.groupEnd();
+    });
 }
+
 
 function tmmShowToast(message, type = 'info') {
   if (typeof showToast === 'function') { showToast(message, type); return; }
@@ -680,7 +732,7 @@ function tmmDeleteBandRow(key, group, band) {
 
 function tmmBuildFilterDropdown() {
   const container = document.getElementById('tmmBandFilterContainer');
-  if (!container) return; // Guard clause if HTML element missing
+  if (!container) return;
 
   let html = `
     <button id="tmmBandFilterBtn" class="tmm-btn-band-filter" onclick="tmmToggleBandFilterDropdown()">
@@ -698,7 +750,6 @@ function tmmBuildFilterDropdown() {
 
   Object.keys(TMM_BAND_TABLES).forEach(key => {
     const table = TMM_BAND_TABLES[key];
-    // Checkbox state will be updated by tmmSyncStateWithGlobal immediately after
     html += `
       <label class="tmm-band-filter-item">
         <input type="checkbox" value="${key}" onchange="tmmHandleBandTableFilter(this)">
@@ -713,29 +764,32 @@ function tmmBuildFilterDropdown() {
 
 function tmmInitializeBandFeatures() {
   console.log('[TMM Band Features] Initializing...');
-
-  // 1. Build the Filter UI elements
   tmmBuildFilterDropdown();
-
-  // 2. CRITICAL: Sync Local Band State with Global Window State
-  // This ensures checkboxes match what is currently visible/hidden in the matrix
   tmmSyncStateWithGlobal();
-
-  // 3. Setup Imports & Listeners
   tmmSetupImportControls();
-  tmmSyncWithMainMatrix(); // Hooks into Customer/Account Selectors
-
-  // 4. Global Event Listeners
+  tmmSyncWithMainMatrix();
   document.addEventListener('click', tmmHandleOutsideClick);
   document.addEventListener('keydown', tmmHandleEscapeKey);
-
-  // 5. Apply the initial state to the matrix (Consistency check)
   tmmApplyBandTableFilterToMatrix();
 }
 
-// Check loading state
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', tmmInitializeBandFeatures);
 } else {
   tmmInitializeBandFeatures();
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
 }
