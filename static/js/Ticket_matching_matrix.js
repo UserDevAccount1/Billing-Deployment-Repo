@@ -27,14 +27,85 @@ const DATA_STORE = {
 
 // SCHEMA: Defines which fields belong to which table
 const TABLE_SCHEMAS = {
-  ticket_data: ['request_id', 'ticket_number', 'requester', 'subject', 'customer', 'account', 'region', 'country', 'city', 'site_name', 'address', 'postal_code', 'contact_name', 'contact_phone', 'contact_email', 'priority', 'status', 'created_date', 'scheduled_date', 'completed_date', 'sla_due_date', 'service_type', 'problem_description', 'resolution', 'notes'],
-  rate_card: ['customer', 'ticket_number', 'account', 'region', 'country', 'service_type', 'rate_type', 'base_rate', 'hourly_rate', 'overtime_rate', 'weekend_rate', 'holiday_rate', 'travel_rate', 'per_diem', 'currency', 'effective_date', 'expiry_date'],
-  dispatch: ['ticket_number', 'account', 'dispatch_id', 'technician_name', 'technician_id', 'dispatch_date', 'arrival_time', 'departure_time', 'travel_time', 'onsite_time', 'total_hours', 'status', 'notes'],
-  standby: ['ticket_number', 'account', 'standby_id', 'technician_name', 'technician_id', 'standby_date', 'start_time', 'end_time', 'total_hours', 'rate', 'total_cost', 'status', 'notes'],
-  dedicated: ['ticket_number', 'dedicated_id', 'technician_name', 'technician_id', 'start_date', 'end_date', 'daily_rate', 'total_days', 'total_cost', 'customer', 'account', 'site_name', 'status', 'notes'],
-  sv_visit: ['ticket_number', 'account', 'sv_id', 'technician_name', 'technician_id', 'visit_date', 'visit_type', 'arrival_time', 'departure_time', 'total_hours', 'rate', 'total_cost', 'status', 'notes'],
-  project: ['project_id', 'ticket_number', 'project_name', 'customer', 'account', 'region', 'country', 'start_date', 'end_date', 'budget', 'actual_cost', 'status', 'project_manager', 'team_size', 'notes'],
-  final_ticket: ['request_id', 'ticket_number', 'customer_reference', 'requester', 'subject', 'site_name', 'priority', 'technician_name', 'status', 'worklog_type', 'completed_date', 'account', 'region', 'country', 'city', 'contact_email', 'band_type', 'total_hours', 'hourly_rate', 'revenue', 'currency', 'labor_cost', 'profit', 'margin', 'vendor_po', 'pre_visit', 'post_visit', 'notes']
+  ticket_data: [
+    'request_id', 'ticket_number', 'requester', 'source_of_request', 'subject', 'customer',
+    'account', 'region', 'country', 'city', 'site_name', 'address', 'postal_code',
+    'contact_name', 'contact_phone', 'contact_email', 'priority', 'status',
+    'created_date', 'scheduled_date', 'completed_date', 'sla_due_date',
+    'service_type', 'problem_description', 'resolution', 'notes'
+  ],
+  rate_card: [
+    'customer', 'ticket_number', 'account', 'region', 'country', 'service_type',
+    'rate_type', 'base_rate', 'hourly_rate', 'overtime_rate', 'weekend_rate',
+    'holiday_rate', 'travel_rate', 'per_diem', 'currency', 'effective_date', 'expiry_date'
+  ],
+  dispatch: [
+    'ticket_number', 'account', 'customer', 'request_id', 'vendor_po', 'dispatch_id',
+    'site_name', 'region', 'country', 'city', 'address', 'postal_code',
+    'technician_name', 'technician_id', 'technician_in_date',
+    'dispatch_date', 'arrival_time', 'departure_time', 'scheduled_date',
+    'travel_time', 'onsite_time', 'total_hours',
+    'first_hour_qty', 'first_hour_rate', 'first_hour_cost',
+    'after_hours_qty', 'after_hours_rate', 'after_hours_cost',
+    'ot_hours', 'ot_rate', 'ot_cost',
+    'out_of_office_hours', 'out_of_office_rate', 'out_of_office_cost',
+    'weekend_ot_hours', 'weekend_rate', 'weekend_cost',
+    'travel_extra_cost', 'total_cost',
+    'tax_percent', 'tax_cost', 'total_cost_inc_tax',
+    'currency', 'sla_met', 'sla_reason', 'csr_report', 'service_month', 'status', 'notes'
+  ],
+  standby: [
+    'ticket_number', 'account', 'customer', 'vendor_po', 'standby_id',
+    'site_name', 'region', 'country', 'city', 'address', 'postal_code',
+    'technician_name', 'technician_id', 'standby_date', 'start_time', 'end_time',
+    'site_support', 'standby_monthly_cost',
+    'total_hours', 'rate', 'total_cost',
+    'tax_percent', 'tax_cost', 'total_cost_inc_tax',
+    'currency', 'service_month', 'status', 'notes'
+  ],
+  dedicated: [
+    'ticket_number', 'dedicated_id', 'customer', 'account', 'vendor_po',
+    'site_name', 'region', 'country', 'city', 'address', 'postal_code',
+    'technician_name', 'technician_id', 'band', 'variant',
+    'start_date', 'end_date', 'service_month',
+    'working_days', 'worked_days', 'monthly_rate', 'actual_cost',
+    'ot_hours', 'ot_rate', 'ot_cost',
+    'weekend_ot_hours', 'weekend_rate', 'weekend_cost',
+    'travel_extra_cost', 'tax_percent', 'tax_cost', 'total_cost',
+    'currency', 'sla_percentage', 'sla_met', 'sla_reason', 'attendance_approved',
+    'status', 'notes'
+  ],
+  sv_visit: [
+    'ticket_number', 'account', 'customer', 'request_id', 'vendor_po', 'sv_id',
+    'site_name', 'region', 'country', 'city', 'address', 'postal_code',
+    'technician_name', 'technician_id', 'technician_in_date',
+    'visit_date', 'visit_type', 'category_visit',
+    'arrival_time', 'departure_time', 'scheduled_date',
+    'total_hours', 'half_day_rate', 'full_day_rate', 'per_hour_rate', 'weekend_rate',
+    'out_of_office_hours', 'out_of_office_rate', 'out_of_office_cost',
+    'travel_extra_cost', 'rate', 'total_cost',
+    'tax_percent', 'tax_cost', 'total_cost_inc_tax',
+    'currency', 'sla_met', 'sla_reason', 'service_month', 'status', 'notes'
+  ],
+  project: [
+    'project_id', 'ticket_number', 'project_name', 'customer', 'account', 'vendor_po',
+    'region', 'country', 'city', 'address', 'postal_code',
+    'start_date', 'end_date', 'service_month',
+    'technician_name', 'band', 'variant',
+    'working_days', 'worked_days', 'monthly_rate',
+    'ot_hours', 'ot_rate', 'ot_cost',
+    'weekend_ot_hours', 'weekend_rate', 'weekend_cost',
+    'travel_extra_cost', 'tax_percent', 'tax_cost', 'total_cost',
+    'budget', 'actual_cost', 'status', 'project_manager', 'team_size',
+    'sla_percentage', 'sla_met', 'sla_reason', 'attendance_approved', 'notes'
+  ],
+  final_ticket: [
+    'request_id', 'ticket_number', 'customer_reference', 'requester', 'subject',
+    'site_name', 'priority', 'technician_name', 'status', 'worklog_type',
+    'completed_date', 'account', 'region', 'country', 'city', 'contact_email',
+    'band_type', 'total_hours', 'hourly_rate', 'revenue', 'currency',
+    'labor_cost', 'profit', 'margin', 'vendor_po', 'pre_visit', 'post_visit', 'notes'
+  ]
 };
 
 const TABLE_NAMES = {
@@ -44,69 +115,129 @@ const TABLE_NAMES = {
 };
 
 const FIELD_DEFINITIONS = {
-  request_id: { label: 'Request ID', type: 'TEXT', group: 'BASIC_INFO', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'final_ticket'] },
+  // --- Basic Info ---
+  request_id: { label: 'Request ID', type: 'TEXT', group: 'BASIC_INFO', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'sv_visit', 'final_ticket'] },
   ticket_number: { label: 'Ticket Number', type: 'TEXT', group: 'BASIC_INFO', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'rate_card', 'project', 'sv_visit', 'final_ticket'] },
-  requester: { label: 'Requester', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
-  subject: { label: 'Subject', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
+  requester: { label: 'Requester', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'final_ticket'] },
+  source_of_request: { label: 'Source of Request', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
+  subject: { label: 'Subject', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'sv_visit', 'final_ticket'] },
   customer: { label: 'Customer', type: 'DROPDOWN', group: 'BASIC_INFO', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'rate_card', 'project', 'sv_visit', 'final_ticket'] },
   account: { label: 'Account', type: 'DROPDOWN', group: 'BASIC_INFO', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'rate_card', 'project', 'sv_visit', 'final_ticket'] },
-  region: { label: 'Region', type: 'DROPDOWN', group: 'GEOGRAPHIC', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'rate_card', 'project', 'final_ticket'] },
-  country: { label: 'Country', type: 'DROPDOWN', group: 'GEOGRAPHIC', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'rate_card', 'project', 'final_ticket'] },
-  city: { label: 'City', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'final_ticket'] },
-  site_name: { label: 'Site Name', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'AMBER', autoPopTo: ['ticket_data', 'dedicated', 'final_ticket'] },
-  address: { label: 'Address', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
-  postal_code: { label: 'Postal Code', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
+  vendor_po: { label: 'Vendor PO', type: 'TEXT', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
+
+  // --- Geographic ---
+  region: { label: 'Region', type: 'DROPDOWN', group: 'GEOGRAPHIC', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'rate_card', 'final_ticket'] },
+  country: { label: 'Country', type: 'DROPDOWN', group: 'GEOGRAPHIC', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'rate_card', 'final_ticket'] },
+  city: { label: 'City', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
+  site_name: { label: 'Site Name', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'AMBER', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
+  address: { label: 'Address', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project'] },
+  postal_code: { label: 'Postal Code', type: 'TEXT', group: 'GEOGRAPHIC', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project'] },
+
+  // --- Contacts ---
   contact_name: { label: 'Contact Name', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
   contact_phone: { label: 'Contact Phone', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
-  contact_email: { label: 'Contact Email', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
-  priority: { label: 'Priority', type: 'DROPDOWN', group: 'SERVICE', required: false, rag: 'AMBER', autoPopTo: ['ticket_data'] },
+  contact_email: { label: 'Contact Email', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'final_ticket'] },
+
+  // --- Service & Dates ---
+  priority: { label: 'Priority', type: 'DROPDOWN', group: 'SERVICE', required: false, rag: 'AMBER', autoPopTo: ['ticket_data', 'dispatch', 'final_ticket'] },
   status: { label: 'Status', type: 'DROPDOWN', group: 'SERVICE', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
-  created_date: { label: 'Created Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
-  scheduled_date: { label: 'Scheduled Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'AMBER', autoPopTo: ['ticket_data', 'final_ticket'] },
+  created_date: { label: 'Created Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'sv_visit'] },
+  scheduled_date: { label: 'Scheduled Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'AMBER', autoPopTo: ['ticket_data', 'dispatch', 'sv_visit', 'final_ticket'] },
   completed_date: { label: 'Completed Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'final_ticket'] },
   sla_due_date: { label: 'SLA Due Date', type: 'DATE', group: 'QUALITY', required: false, rag: 'AMBER', autoPopTo: ['ticket_data'] },
-  service_type: { label: 'Service Type', type: 'DROPDOWN', group: 'SERVICE', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'rate_card', 'final_ticket'] },
+  service_type: { label: 'Service Type', type: 'DROPDOWN', group: 'SERVICE', required: true, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'rate_card', 'final_ticket'] },
+  service_month: { label: 'Service Month', type: 'TEXT', group: 'SYSTEM', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'project'] },
   problem_description: { label: 'Problem Description', type: 'TEXT', group: 'SERVICE', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
   resolution: { label: 'Resolution', type: 'TEXT', group: 'SERVICE', required: false, rag: 'GREEN', autoPopTo: ['ticket_data'] },
   notes: { label: 'Notes', type: 'TEXT', group: 'SYSTEM', required: false, rag: 'GREEN', autoPopTo: ['ticket_data', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
-  technician_name: { label: 'Technician Name', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'final_ticket'] },
+
+  // --- Technician & Dispatch ---
+  technician_name: { label: 'Technician Name', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
   technician_id: { label: 'Technician ID', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit'] },
   dispatch_id: { label: 'Dispatch ID', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
   dispatch_date: { label: 'Dispatch Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+  technician_in_date: { label: 'Technician IN Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'sv_visit'] },
   arrival_time: { label: 'Arrival Time', type: 'TIME', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'sv_visit'] },
   departure_time: { label: 'Departure Time', type: 'TIME', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'sv_visit'] },
   travel_time: { label: 'Travel Time', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
   onsite_time: { label: 'Onsite Time', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
   total_hours: { label: 'Total Hours', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'sv_visit', 'final_ticket'] },
+
+  // --- Breakdown of Hours & Rates (Dispatch/Visit) ---
+  first_hour_qty: { label: 'First Hour Qty', type: 'NUMBER', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+  first_hour_rate: { label: 'First Hour Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+  first_hour_cost: { label: 'First Hour Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+
+  after_hours_qty: { label: 'After Hours Qty', type: 'NUMBER', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+  after_hours_rate: { label: 'After Hours Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+  after_hours_cost: { label: 'After Hours Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+
+  ot_hours: { label: 'OT Hours', type: 'NUMBER', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'dedicated', 'project'] },
+  ot_rate: { label: 'OT Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'dedicated', 'project'] },
+  ot_cost: { label: 'OT Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'dedicated', 'project'] },
+
+  out_of_office_hours: { label: 'Out of Office Hours', type: 'NUMBER', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'sv_visit'] },
+  out_of_office_rate: { label: 'Out of Office Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'sv_visit'] },
+  out_of_office_cost: { label: 'Out of Office Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'sv_visit'] },
+
+  weekend_ot_hours: { label: 'Weekend OT Hours', type: 'NUMBER', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'dedicated', 'project'] },
+  weekend_rate: { label: 'Weekend Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['rate_card', 'dispatch', 'dedicated', 'sv_visit', 'project'] },
+  weekend_cost: { label: 'Weekend Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['dispatch', 'dedicated', 'project'] },
+
+  travel_extra_cost: { label: 'Travel/Extra Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['dispatch', 'dedicated', 'sv_visit', 'project'] },
+
+  // --- Dedicated / Project Specifics ---
+  band: { label: 'Band', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  variant: { label: 'Variant', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  working_days: { label: 'Number of Working Days', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  worked_days: { label: 'Number of Worked Days', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  monthly_rate: { label: 'Monthly Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  attendance_approved: { label: 'Attendance Approved', type: 'BOOLEAN', group: 'QUALITY', required: false, rag: 'AMBER', autoPopTo: ['dedicated', 'project'] },
+
+  // --- Standby Specifics ---
   standby_id: { label: 'Standby ID', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['standby'] },
   standby_date: { label: 'Standby Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['standby'] },
   start_time: { label: 'Start Time', type: 'TIME', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['standby'] },
   end_time: { label: 'End Time', type: 'TIME', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['standby'] },
+  site_support: { label: 'Site Support', type: 'TEXT', group: 'SERVICE', required: false, rag: 'GREEN', autoPopTo: ['standby'] },
+  standby_monthly_cost: { label: 'Standby Monthly Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['standby'] },
+
+  // --- SV Visit Specifics ---
+  sv_id: { label: 'SV ID', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+  visit_date: { label: 'Visit Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+  visit_type: { label: 'Visit Type', type: 'DROPDOWN', group: 'SERVICE', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+  category_visit: { label: 'Visit Category', type: 'TEXT', group: 'SERVICE', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+  half_day_rate: { label: 'Half Day Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+  full_day_rate: { label: 'Full Day Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+
+  // --- Financials (Totals & Taxes) ---
   rate: { label: 'Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['standby', 'sv_visit'] },
-  total_cost: { label: 'Total Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['standby', 'dedicated', 'sv_visit', 'final_ticket'] },
+  total_cost: { label: 'Total Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
+  tax_percent: { label: 'Tax %', type: 'PERCENTAGE', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'project'] },
+  tax_cost: { label: 'Tax Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit', 'project'] },
+  total_cost_inc_tax: { label: 'Total Cost (Inc Tax)', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'standby', 'dedicated', 'sv_visit'] },
+
   dedicated_id: { label: 'Dedicated ID', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['dedicated'] },
   start_date: { label: 'Start Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
   end_date: { label: 'End Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
   daily_rate: { label: 'Daily Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['dedicated'] },
   total_days: { label: 'Total Days', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated'] },
-  sv_id: { label: 'SV ID', type: 'TEXT', group: 'BASIC_INFO', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
-  visit_date: { label: 'Visit Date', type: 'DATE', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
-  visit_type: { label: 'Visit Type', type: 'DROPDOWN', group: 'SERVICE', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] },
+
   project_id: { label: 'Project ID', type: 'TEXT', group: 'PROJECT', required: false, rag: 'GREEN', autoPopTo: ['project'] },
   project_name: { label: 'Project Name', type: 'TEXT', group: 'PROJECT', required: false, rag: 'GREEN', autoPopTo: ['project'] },
   budget: { label: 'Budget', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['project'] },
-  actual_cost: { label: 'Actual Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['project'] },
+  actual_cost: { label: 'Actual Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['dedicated', 'project'] },
   project_manager: { label: 'Project Manager', type: 'TEXT', group: 'PROJECT', required: false, rag: 'GREEN', autoPopTo: ['project'] },
   team_size: { label: 'Team Size', type: 'NUMBER', group: 'PROJECT', required: false, rag: 'GREEN', autoPopTo: ['project'] },
+
   rate_type: { label: 'Rate Type', type: 'DROPDOWN', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
   base_rate: { label: 'Base Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
-  hourly_rate: { label: 'Hourly Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
+  hourly_rate: { label: 'Hourly Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card', 'final_ticket'] },
   overtime_rate: { label: 'Overtime Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['rate_card'] },
-  weekend_rate: { label: 'Weekend Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['rate_card'] },
   holiday_rate: { label: 'Holiday Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['rate_card'] },
   travel_rate: { label: 'Travel Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
   per_diem: { label: 'Per Diem', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
-  currency: { label: 'Currency', type: 'DROPDOWN', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
+  currency: { label: 'Currency', type: 'DROPDOWN', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['rate_card', 'dispatch', 'standby', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
   effective_date: { label: 'Effective Date', type: 'DATE', group: 'SYSTEM', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
   expiry_date: { label: 'Expiry Date', type: 'DATE', group: 'SYSTEM', required: false, rag: 'GREEN', autoPopTo: ['rate_card'] },
   labor_cost: { label: 'Labor Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['final_ticket'] },
@@ -115,12 +246,16 @@ const FIELD_DEFINITIONS = {
   revenue: { label: 'Revenue', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['final_ticket'] },
   profit: { label: 'Profit', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['final_ticket'] },
   margin: { label: 'Margin', type: 'PERCENTAGE', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['final_ticket'] },
-  sla_met: { label: 'SLA Met', type: 'BOOLEAN', group: 'QUALITY', required: false, rag: 'GREEN', autoPopTo: ['final_ticket'] }
+  sla_met: { label: 'SLA Met', type: 'BOOLEAN', group: 'QUALITY', required: false, rag: 'GREEN', autoPopTo: ['dispatch', 'dedicated', 'sv_visit', 'project', 'final_ticket'] },
+  sla_reason: { label: 'SLA Failure Reason', type: 'TEXT', group: 'QUALITY', required: false, rag: 'AMBER', autoPopTo: ['dispatch', 'dedicated', 'sv_visit', 'project'] },
+  sla_percentage: { label: 'SLA %', type: 'PERCENTAGE', group: 'QUALITY', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  csr_report: { label: 'CSR Report Submitted', type: 'BOOLEAN', group: 'QUALITY', required: false, rag: 'GREEN', autoPopTo: ['dispatch'] },
+  per_hour_rate: { label: 'Per Hour Rate', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'GREEN', autoPopTo: ['sv_visit'] }
 };
 
 const FIELD_SYNONYMS = {
   request_id: ["Request ID", "Req ID", "Ticket Ref", "Case ID", "Partner Ticket Number"],
-  ticket_number: ["Ticket Number", "Ticket #", "Inc Number", "Incident ID", "PO number", "External PO NUMBER", "Customer Ticket Number", "Vendor PO"],
+  ticket_number: ["Ticket Number", "Ticket #", "Inc Number", "Incident ID", "Customer Ticket Number"],
   status: ["Request Status", "Status", "State", "Current Status"],
   worklog_type: ["Worklog Type"],
   priority: ["Priority", "Severity", "SLA Level", "Ticket Priority"],
@@ -129,21 +264,23 @@ const FIELD_SYNONYMS = {
   country: ["Country", "Nation", "Location"],
   site_name: ["Site", "Site Name", "Facility", "Site Category"],
   address: ["Address", "Site Address"],
-  postal_code: ["Postal Code", "Zip", "Zip code"],
+  postal_code: ["Postal Code", "Zip", "Zip code", "Zip Code"],
   requester: ["Requester", "Created By", "Source of Request"],
-  technician_name: ["FIELD ENGINEERS RESOLVER", "Technician", "Engineer", "Resolver", "Technician Name", "Assigned Technician", "Field Engineer Resolver"],
+  technician_name: ["FIELD ENGINEERS RESOLVER", "Technician", "Engineer", "Resolver", "Technician Name", "Assigned Technician", "Field Engineer Resolver", "Technician name"],
   contact_email: ["Engineer details", "Contact Email", "Engineer Details"],
   customer_reference: ["Customer Reference", "CUSTOMER REFERENCE"],
   subject: ["Subject", "Short Description", "Summary", "Activity Details"],
   service_type: ["Service Type", "Dispatch Category"],
   currency: ["Currency", "Currency ", "currency", "currency-cost"],
   band_type: ["Band Type"],
-  vendor_po: ["Vendor PO"],
+  vendor_po: ["Vendor PO", "PO number", "External PO NUMBER", "PO Number"],
   pre_visit: ["PRE Visit"],
   post_visit: ["POST Visit"],
-  hourly_rate: ["Rate for NBD Per Hour", "Rate for SBD Per Hour", "Hourly Rate", "First Hour rate", "Revenue rate", "1st Hour Revenue Rate", "Revenue Rate"],
+  hourly_rate: ["Rate for NBD Per Hour", "Rate for SBD Per Hour", "Hourly Rate", "Revenue rate", "1st Hour Revenue Rate", "Revenue Rate"],
   total_hours: ["Total Hours in Hours", "Total Hours", "Time Spent (Hours)"],
-  total_cost: ["Total Amount", "Billing as per PO", "Amount on PO", "Total Cost", "Total Cost including Tax"],
+  total_cost: ["Total Amount", "Billing as per PO", "Amount on PO", "Total Cost"],
+  // Separated tax inclusive cost as requested
+  total_cost_inc_tax: ["Total Cost including Tax"],
   labor_cost: ["Total labor Cost", "Labor Cost", "Total Labor Cost"],
   parts_cost: ["Parts Cost", "Misc. cost ( travel&others)"],
   revenue: ["Total Revenue", "Revenue"],
@@ -157,7 +294,49 @@ const FIELD_SYNONYMS = {
   scheduled_date: ["ETA Date (MM/DD/YYYY)", "ETA Time (HH:MM)"],
   notes: ["HCL Comments", "Excis SDM comments", "Notes", "Description", "Remarks", "Comments"],
   customer: ["Customer", "Customer Name", "CUSTOMER REFERENCE"],
-  account: ["Account", "Partner Name"]
+  account: ["Account", "Partner Name"],
+
+  // --- New Synonyms based on provided headers ---
+  technician_in_date: ["Technician IN Date (MM/DD/YYYY)"],
+  first_hour_qty: ["First Hour"],
+  first_hour_rate: ["First Hour rate"],
+  first_hour_cost: ["First Hour cost"],
+  after_hours_qty: ["Hours worked after First Hour"],
+  after_hours_rate: ["After First Hours rate"],
+  after_hours_cost: ["After First Hour cost"],
+  ot_hours: ["OT Hours"],
+  ot_rate: ["OT Hours rate", "OT per Hour Rate"],
+  ot_cost: ["OT Hours Cost", "OT Hours cost"],
+  out_of_office_hours: ["Out of office Hours"],
+  out_of_office_rate: ["Out of Office Hours Rate"],
+  out_of_office_cost: ["Out of office Hours Cost"],
+  weekend_ot_hours: ["Weekened OT Hours"],
+  weekend_rate: ["Weekend Rates", "Weekend Rate (if applicable)", "Weekend Rate"],
+  weekend_cost: ["Weekend Cost"],
+  travel_extra_cost: ["Travel/extra cost if applicable as per contract"],
+  tax_percent: ["Tax %"],
+  tax_cost: ["Tax cost"],
+  sla_met: ["SLA Met"],
+  sla_reason: ["Reason for SLA not met(if applicable)"],
+  csr_report: ["CSR Report submitted"],
+  service_month: ["Service Month (MM/YYYY)"],
+  site_support: ["Site support"],
+  standby_monthly_cost: ["Stand by Monthly cost"],
+  band: ["Band"],
+  variant: ["Variant"],
+  working_days: ["Number of working days"],
+  worked_days: ["Number of worked days"],
+  monthly_rate: ["Monthly rate"],
+  actual_cost: ["Actual Cost"],
+  sla_percentage: ["SLA %"],
+  attendance_approved: ["Attendence approved by Delivery"],
+  category_visit: ["Category (Half day/Full Day/Per Hour)"],
+  half_day_rate: ["Half Day Rate"],
+  full_day_rate: ["Full Date Rate"],
+  per_hour_rate: ["Per Hour rate"],
+  project_name: ["Project Name"],
+  start_date: ["Project Start Date (MM/DD/YYYY)"],
+  end_date: ["Project End Date (MM/DD/YYYY)"]
 };
 
 // ──── 2. EXPORTS & INIT ────
