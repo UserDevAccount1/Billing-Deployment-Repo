@@ -1684,8 +1684,23 @@
                     <!-- Sidebar Section -->
                     <div class="assign-sidebar">
                         <!-- Rate Card Preview -->
-                        <div class="rate-card-preview" id="rateCardPreview">
-                            <!-- Preview content will be populated by JavaScript -->
+                        <div class="rate-card-preview-container">
+                            <div class="summary-header"
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h3>Band Data Records</h3>
+                                <div class="pagination-controls">
+                                    <button class="btn btn-sm btn-outline" id="prevBandBtn" disabled><i
+                                            class="fas fa-chevron-left"></i></button>
+                                    <span id="bandCounter" style="font-size: 0.85em; margin: 0 5px;">0/0</span>
+                                    <button class="btn btn-sm btn-outline" id="nextBandBtn" disabled><i
+                                            class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div id="rateCardPreview" class="rate-card-content">
+                                <div class="empty-state"><i>📄</i>
+                                    <p>Loading Band Data...</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Assignment Summary -->
@@ -1771,26 +1786,6 @@
                 </div>
                 <div class="modal-body">
                     <div class="overview-controls">
-                        <div class="overview-selectors">
-                            <div class="selector-group">
-                                <label><i class="fas fa-users"></i> Customer</label>
-                                <select id="overviewCustomer" class="filter-dropdown">
-                                    <!-- Populated by JavaScript -->
-                                </select>
-                            </div>
-                            <div class="selector-group">
-                                <label><i class="fas fa-building"></i> Account</label>
-                                <select id="overviewAccount" class="filter-dropdown">
-                                    <!-- Populated by JavaScript -->
-                                </select>
-                            </div>
-                            <div class="selector-group">
-                                <label><i class="fas fa-ticket-alt"></i> Ticket</label>
-                                <select id="overviewTicket" class="filter-dropdown">
-                                    <!-- Populated by JavaScript -->
-                                </select>
-                            </div>
-                        </div>
                         <div class="view-toggle-group">
                             <span class="toggle-label">View Mode:</span>
                             <div class="toggle-switch">

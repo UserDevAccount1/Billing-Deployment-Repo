@@ -1,401 +1,636 @@
-// RateCardEnhanced.js - UPDATED with floating modal comparison
+// RateCardEnhanced.js - Complete Implementation with Manual Assignment Modal
 class RateCardAssignmentEnhanced {
     constructor() {
         this.currentTicket = null;
         this.currentView = 'table';
         this.currentFormIndex = 0;
+
+        // Data Stores
+        this.bandRecords = [];
+        this.currentBandIndex = 0;
         this.rateCards = [];
         this.tickets = [];
+        this.originalTickets = [];
+        this.modifiedTickets = [];
+
+        // Filter State
         this.filters = {
             status: 'all',
             search: '',
-            customer: 'All customers',
+            customer: 'all',
             account: 'all'
         };
+
+        // Full Column Visibility Map
         this.visibleColumns = {
-            'requestId': true,
-            'customerRef': true,
-            'requester': true,
-            'subject': true,
-            'site': true,
-            'priority': true,
-            'technician': true,
-            'timeFields': true,
+            'ticket_number': true,
+            'request_id': true,
+            'customer': true,
             'account': true,
+            'subject': true,
+            'site_name': true,
+            'technician_name': true,
+            'service_type': true,
+            'total_cost': true,
+            'currency': true,
+            'priority': true,
             'region': true,
-            'engineerDetails': true,
-            'poNumber': true,
-            'revenue': true,
-            'cost': true,
-            'profit': true,
-            'vendorPo': true,
-            'visitType': true,
-            'band': true,
-            'status': true
+            'status': true,
+            'city': false,
+            'country': false,
+            'vendor_po': true,
+            'total_hours': true,
+            'created_date': false,
+            'sla_met': true,
+            'sla_reason': false
         };
-        
-        // For comparison tracking
-        this.originalTickets = [];
-        this.modifiedTickets = [];
-        
+
         this.initialize();
     }
 
     async initialize() {
-        // Load sample data immediately
-        this.loadSampleTickets();
-        this.loadSampleRateCards();
-        
-        // Create copies for comparison
-        this.originalTickets = JSON.parse(JSON.stringify(this.tickets));
-        this.modifiedTickets = JSON.parse(JSON.stringify(this.tickets));
-        
-        // Initialize the UI
-        this.setupEventListeners();
-        this.render();
-        
-        // Auto-assign rate cards
-        setTimeout(() => {
-            // this.autoAssignRateCards();
-        }, 500);
+        console.log('Initializing Rate Card Application...');
+
+        try {
+            const tableBody = document.getElementById('tableBody-ratecard');
+            if (tableBody) tableBody.innerHTML = '<tr><td colspan="100%" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading Data...</td></tr>';
+
+            await Promise.all([
+                this.fetchFinalTickets(),
+                this.fetchRateCards(),
+                this.fetchBandData()
+            ]);
+
+            this.restoreAssignments();
+
+            this.originalTickets = JSON.parse(JSON.stringify(this.tickets));
+            this.modifiedTickets = JSON.parse(JSON.stringify(this.tickets));
+
+            this.setupEventListeners();
+            this.setupBandNavigation();
+            this.setupOverviewModalEvents();
+            this.setupColumnFilter();
+
+            this.switchView('table');
+            this.renderBandDataCard();
+
+            console.log(`Init Complete. Tickets: ${this.tickets.length}`);
+
+        } catch (error) {
+            console.error("Init Error:", error);
+            this.showNotification("Failed to load data.", "error");
+        }
     }
 
-    loadSampleTickets() {
-        
-        console.log('Loaded tickets:', this.tickets.length);
+    // ==================== API CALLS ====================
+
+    async fetchFinalTickets() {
+        try {
+            const response = await fetch('/billing/api/final-data/');
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+            const jsonResponse = await response.json();
+
+            if (jsonResponse.success && Array.isArray(jsonResponse.data)) {
+                this.tickets = jsonResponse.data;
+            } else if (Array.isArray(jsonResponse)) {
+                this.tickets = jsonResponse;
+            } else {
+                this.tickets = [];
+            }
+
+            this.tickets.forEach(t => {
+                if (t.customer) t.customer = String(t.customer);
+                if (t.account) t.account = String(t.account);
+                if (!t.rateCardAssigned) t.rateCardAssigned = null;
+                if (!t.assignmentStatus) t.assignmentStatus = 'pending';
+
+                if (t.data_table) {
+                    Object.keys(t.data_table).forEach(key => {
+                        let val = t.data_table[key];
+                        if (typeof val === 'string' && val.includes('>')) {
+                            const div = document.createElement('div');
+                            div.innerHTML = val;
+                            t.data_table[key] = div.textContent || val.replace(/<[^>]*>/g, '');
+                        }
+                    });
+                }
+            });
+
+        } catch (error) {
+            console.error("Error fetching tickets:", error);
+            this.tickets = [];
+        }
     }
 
-    loadSampleRateCards() {
-        // Service Rate Cards
-        
-        console.log('Loaded rate cards:', this.rateCards.length);
+    async fetchRateCards() {
+        try {
+            const response = await fetch('/billing/api/rate-cards/');
+            if (!response.ok) {
+                this.rateCards = [];
+                return;
+            }
+            const data = await response.json();
+            this.rateCards = (data.data && Array.isArray(data.data)) ? data.data : (Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error fetching rate cards:", error);
+            this.rateCards = [];
+        }
     }
 
-    setupEventListeners() {
-        // View Toggle
-        document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const view = e.target.closest('.view-btn').dataset.view;
-                this.switchView(view);
-            });
-        });
-
-        // Search input
-        const searchInput = document.getElementById('searchTickets');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                this.filters.search = e.target.value;
-                this.renderTable();
-            });
+    async fetchBandData() {
+        try {
+            const response = await fetch('/billing/api/band-data/');
+            if (!response.ok) {
+                this.bandRecords = [];
+                return;
+            }
+            const jsonResponse = await response.json();
+            if (jsonResponse.success && Array.isArray(jsonResponse.data)) {
+                this.bandRecords = jsonResponse.data;
+            } else if (Array.isArray(jsonResponse)) {
+                this.bandRecords = jsonResponse;
+            } else {
+                this.bandRecords = [];
+            }
+        } catch (error) {
+            console.error("Error fetching band data:", error);
+            this.bandRecords = [];
         }
-
-        // Filter dropdowns
-        const customerFilter = document.getElementById('filterCustomer');
-        if (customerFilter) {
-            customerFilter.addEventListener('change', (e) => {
-                this.filters.customer = e.target.value;
-                this.renderTable();
-            });
-        }
-
-        const accountFilter = document.getElementById('filterAccount');
-        if (accountFilter) {
-            accountFilter.addEventListener('change', (e) => {
-                this.filters.account = e.target.value;
-                this.renderTable();
-            });
-        }
-
-        const statusFilter = document.getElementById('filterStatus');
-        if (statusFilter) {
-            statusFilter.addEventListener('change', (e) => {
-                this.filters.status = e.target.value;
-                this.renderTable();
-            });
-        }
-
-        // Action buttons
-        const autoAssignBtn = document.getElementById('autoAssignAll');
-        if (autoAssignBtn) {
-            autoAssignBtn.addEventListener('click', () => {
-                this.autoAssignRateCards();
-            });
-        }
-
-        const exportBtn = document.getElementById('exportReport');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                this.exportReport();
-            });
-        }
-
-        // Quick actions
-        const quickAssignBtn = document.getElementById('quickAssignBtn');
-        if (quickAssignBtn) {
-            quickAssignBtn.addEventListener('click', () => {
-                this.autoAssignRateCards();
-            });
-        }
-
-        // Form navigation
-        const prevBtn = document.getElementById('prevTicket');
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
-                this.navigateForm(-1);
-            });
-        }
-
-        const nextBtn = document.getElementById('nextTicket');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                this.navigateForm(1);
-            });
-        }
-
-        // Setup column filter
-        this.setupColumnFilter();
     }
 
-    setupColumnFilter() {
-        const columnOptions = {
-            'requestId': 'Request ID',
-            'customerRef': 'Customer Reference',
-            'requester': 'Requester',
-            'subject': 'Subject',
-            'site': 'Site',
-            'priority': 'Priority',
-            'technician': 'Assigned Technician',
-            'timeFields': 'Time Fields',
-            'account': 'Account',
-            'region': 'Region/Country/City',
-            'engineerDetails': 'Engineer Details',
-            'poNumber': 'PO NUMBER',
-            'revenue': 'Revenue',
-            'cost': 'Cost',
-            'profit': 'Profit/Margin',
-            'vendorPo': 'Vendor PO',
-            'visitType': 'PRE/POST Visit',
-            'band': 'Band',
-            'status': 'Status'
+    // ==================== PERSISTENCE ====================
+
+    restoreAssignments() {
+        const storedData = localStorage.getItem('tmm_assignments');
+        if (storedData) {
+            const assignments = JSON.parse(storedData);
+            this.tickets.forEach(ticket => {
+                const uniqueId = this.getUniqueId(ticket);
+                if (assignments[uniqueId]) {
+                    ticket.assignmentStatus = 'assigned';
+                    ticket.rateCardAssigned = assignments[uniqueId].rateCardId || 'Manual Assign';
+                }
+            });
+        }
+    }
+
+    saveAssignment(uniqueId, rateCardId) {
+        let assignments = JSON.parse(localStorage.getItem('tmm_assignments') || '{}');
+        assignments[uniqueId] = {
+            status: 'assigned',
+            rateCardId: rateCardId,
+            timestamp: new Date().toISOString()
         };
-
-        const optionsDiv = document.getElementById('columnFilterOptions');
-        if (!optionsDiv) return;
-        
-        optionsDiv.innerHTML = '';
-
-        for (const [key, label] of Object.entries(columnOptions)) {
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'column-option';
-            optionDiv.innerHTML = `
-                <input type="checkbox" id="col_${key}" ${this.visibleColumns[key] ? 'checked' : ''}>
-                <label for="col_${key}">${label}</label>
-            `;
-            
-            const checkbox = optionDiv.querySelector('input');
-            checkbox.addEventListener('change', (e) => {
-                this.visibleColumns[key] = e.target.checked;
-                this.renderTable();
-            });
-            
-            optionsDiv.appendChild(optionDiv);
-        }
+        localStorage.setItem('tmm_assignments', JSON.stringify(assignments));
     }
 
+    // ==================== VIEW MANAGEMENT ====================
 
     switchView(view) {
         this.currentView = view;
-        
-        // Update active button
+
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.classList.remove('active');
+            if (btn.dataset.view === view) btn.classList.add('active');
         });
-        const activeBtn = document.querySelector(`[data-view="${view}"]`);
-        if (activeBtn) {
-            activeBtn.classList.add('active');
+
+        document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+        const activeContainer = document.getElementById(`${view}View`);
+        if (activeContainer) activeContainer.classList.add('active');
+
+        if (view === 'table') {
+            this.renderTable();
+        } else if (view === 'form') {
+            this.renderForm();
+        } else if (view === 'comparison') {
+            const ticketToCompare = this.currentTicket || this.filterTickets()[0];
+            if (ticketToCompare) {
+                this.showOverview(this.getUniqueId(ticketToCompare));
+            } else {
+                this.showNotification("No ticket available to compare.", "warning");
+            }
         }
-        
-        // Show/hide view containers
-        document.querySelectorAll('.view-container').forEach(container => {
-            container.classList.remove('active');
-        });
-        const viewContainer = document.getElementById(`${view}View`);
-        if (viewContainer) {
-            viewContainer.classList.add('active');
-        }
-        
-        // Render specific view
-        switch(view) {
-            case 'table':
-                this.renderTable();
-                break;
-            case 'form':
-                this.renderForm();
-                break;
-            case 'comparison':
-                this.renderComparison();
-                break;
-        }
+        this.updateSummary();
     }
 
-    render() {
-        this.renderTable();
-        this.updateSummary();
-        this.updateRateCardPreview();
+    getUniqueId(ticket) {
+        return (ticket.ticket_number && ticket.ticket_number !== 'NA') ? ticket.ticket_number : ticket.request_id;
     }
+
+    // ==================== TABLE VIEW RENDER ====================
 
     renderTable() {
         const tableBody = document.getElementById('tableBody-ratecard');
         const tableHead = document.getElementById('tableHeaders-ratecard');
-        
-        if (!tableBody || !tableHead) {
-            console.error('Table elements not found!');
-            return;
-        }
+
+        if (!tableBody || !tableHead) return;
 
         const filteredTickets = this.filterTickets();
-        
-        // Render headers based on visible columns
-        const columnDefinitions = {
-            'requestId': { label: 'Request ID', source: 'Generated', width: '100px' },
-            'customerRef': { label: 'Customer Ref', source: 'Customer Ticket Number', width: '120px' },
-            'requester': { label: 'Requester', source: 'Ticket Data', width: '120px' },
-            'subject': { label: 'Subject', source: 'Activity Details', width: '150px' },
-            'site': { label: 'Site', source: 'Site Address', width: '150px' },
-            'priority': { label: 'Priority', source: 'Ticket Priority', width: '80px' },
-            'technician': { label: 'Technician', source: 'Technician Name', width: '120px' },
-            'timeFields': { label: 'Time Fields', source: 'IN/OUT times', width: '150px' },
-            'account': { label: 'Account', source: 'Customer Name', width: '120px' },
-            'region': { label: 'Region', source: 'Geographic fields', width: '150px' },
-            'engineerDetails': { label: 'Engineer Details', source: 'Contact info', width: '150px' },
-            'poNumber': { label: 'PO Number', source: 'PO number', width: '100px' },
-            'revenue': { label: 'Revenue', source: 'Calculations', width: '100px' },
-            'cost': { label: 'Cost', source: 'Calculations', width: '100px' },
-            'profit': { label: 'Profit/Margin', source: 'Calculations', width: '120px' },
-            'vendorPo': { label: 'Vendor PO', source: 'Formatted PO', width: '120px' },
-            'visitType': { label: 'Visit Type', source: 'Activity type', width: '100px' },
-            'band': { label: 'Band', source: 'Band Level', width: '80px' },
-            'status': { label: 'Status', source: 'Assignment Status', width: '100px' }
+
+        const columnMap = {
+            'ticket_number': { label: 'Ticket #', path: 'data_table.ticket_number', width: '120px', tooltip: 'Customer Ticket Number' },
+            'request_id': { label: 'Request ID', path: 'data_table.request_id', width: '100px', tooltip: 'Generated ID' },
+            'customer': { label: 'Customer', path: 'customer', width: '100px', tooltip: 'Customer Name' },
+            'account': { label: 'Account', path: 'account', width: '120px', tooltip: 'Account Name' },
+            'site_name': { label: 'Site', path: 'data_table.site_name', width: '150px', tooltip: 'Site Address' },
+            'subject': { label: 'Subject', path: 'data_table.subject', width: '200px', tooltip: 'Activity Details' },
+            'priority': { label: 'Priority', path: 'data_table.priority', width: '80px', tooltip: 'Ticket Priority' },
+            'technician_name': { label: 'Technician', path: 'data_table.technician_name', width: '120px', tooltip: 'Technician Name' },
+            'region': { label: 'Region', path: 'data_table.region', width: '100px', tooltip: 'Geographic Region' },
+            'city': { label: 'City', path: 'data_table.city', width: '100px', tooltip: 'City' },
+            'country': { label: 'Country', path: 'data_table.country', width: '100px', tooltip: 'Country' },
+            'service_type': { label: 'Service', path: 'data_table.service_type', width: '80px', tooltip: 'Dispatch Category' },
+            'vendor_po': { label: 'Vendor PO', path: 'data_table.vendor_po', width: '100px', tooltip: 'Formatted PO' },
+            'total_hours': { label: 'Hours', path: 'data_table.total_hours', width: '80px', tooltip: 'Total Hours' },
+            'total_cost': { label: 'Cost', path: 'data_table.total_cost', width: '100px', tooltip: 'Calculations' },
+            'created_date': { label: 'Date', path: 'data_table.created_date', width: '100px', tooltip: 'Created Date' },
+            'sla_met': { label: 'SLA Met', path: 'data_table.sla_met', width: '80px', tooltip: 'SLA Compliance' },
+            'sla_reason': { label: 'SLA Reason', path: 'data_table.sla_reason', width: '150px', tooltip: 'Reason for Failure' },
+            'status': { label: 'Status', path: 'assignmentStatus', width: '100px', tooltip: 'Assignment Status' }
         };
 
-        // Render headers
+        // Render Headers
         let headersHtml = '<th style="width: 40px;"><input type="checkbox" id="selectAll"></th>';
-        
-        for (const [key, def] of Object.entries(columnDefinitions)) {
+        for (const [key, def] of Object.entries(columnMap)) {
             if (this.visibleColumns[key]) {
-                headersHtml += `
-                    <th style="width: ${def.width}" 
-                        data-tooltip="Source: ${def.source}">
-                        ${def.label}
-                    </th>
-                `;
+                headersHtml += `<th style="width: ${def.width}" data-tooltip="Source: ${def.tooltip}">${def.label}</th>`;
             }
         }
-        
-        headersHtml += '<th style="width: 150px;">Actions</th>';
+        headersHtml += '<th style="width: 220px;">Actions</th>';
         tableHead.innerHTML = headersHtml;
 
-        // Render table rows
+        // Render Rows
         if (filteredTickets.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="${Object.keys(this.visibleColumns).filter(k => this.visibleColumns[k]).length + 2}" 
-                        class="empty-state">
-                        <i>📭</i>
-                        <h4>No tickets found</h4>
-                        <p>Try adjusting your filters</p>
-                    </td>
-                </tr>
-            `;
+            tableBody.innerHTML = `<tr><td colspan="100%" class="empty-state">No tickets found matching filters.</td></tr>`;
         } else {
             tableBody.innerHTML = filteredTickets.map(ticket => {
-                let rowHtml = `
-                    <td>
-                        <input type="checkbox" class="ticket-checkbox" data-id="${ticket.id}">
-                    </td>
-                `;
+                const uniqueId = this.getUniqueId(ticket);
+                let rowHtml = `<td><input type="checkbox" class="ticket-checkbox" data-id="${uniqueId}"></td>`;
 
-                // Add columns based on visibility
-                for (const [key, def] of Object.entries(columnDefinitions)) {
+                for (const [key, def] of Object.entries(columnMap)) {
                     if (this.visibleColumns[key]) {
-                        let value = ticket[key] || '-';
-                        
-                        // Format specific columns
-                        if (key === 'profit') {
-                            value = `${ticket.currency || ''} ${ticket.profit} (${ticket.margin || 'N/A'})`;
-                        } else if (key === 'revenue' || key === 'cost') {
-                            value = `${ticket.currency || ''} ${value}`;
+                        let value = this.getValueByPath(ticket, def.path);
+
+                        if (key === 'total_cost') {
+                            const curr = this.getValueByPath(ticket, 'data_table.currency') || '';
+                            value = `${curr} ${value || 0}`;
                         } else if (key === 'status') {
-                            value = this.getStatusBadge(ticket.assignmentStatus);
+                            value = this.getStatusBadge(ticket.assignmentStatus || 'pending');
                         } else if (key === 'priority') {
-                            value = `<span class="priority-badge ${ticket.priority.toLowerCase()}">${ticket.priority}</span>`;
+                            value = `<span class="priority-badge ${(value || '').toLowerCase()}">${value || '-'}</span>`;
+                        } else if (key === 'sla_met') {
+                            const isMet = String(value).toLowerCase().includes('yes');
+                            value = isMet ? '<span style="color:#2ecc71; font-weight:600;">Yes</span>' : '<span style="color:#e74c3c; font-weight:600;">No</span>';
                         }
-                        
-                        rowHtml += `<td>${value}</td>`;
+
+                        rowHtml += `<td title="${String(value).replace(/<[^>]*>/g, '')}">${value}</td>`;
                     }
                 }
 
-                // Actions column
                 rowHtml += `
                     <td>
-                        <div class="table-actions">
-                            <button class="btn btn-sm btn-outline" onclick="rateCardApp.showOverview('${ticket.id}')">
-                                <i>👁️</i> Overview
+                        <div class="table-actions" style="display: flex; gap: 5px;">
+                            <button class="btn btn-sm btn-outline" style="display: inline-flex; align-items: center; gap: 5px;" onclick="rateCardApp.showOverview('${uniqueId}')" title="View Overview">
+                                <i class="fas fa-eye"></i> Overview
                             </button>
-                            <button class="btn btn-sm btn-primary" onclick="rateCardApp.showComparisonForTicket('${ticket.id}')">
-                                <i>🔍</i> Compare
-                            </button>
-                            ${!ticket.rateCardAssigned ? 
-                                `<button class="btn btn-sm btn-success" onclick="rateCardApp.manualAssignRateCard('${ticket.id}', '')">
-                                    <i>➕</i> Assign
-                                </button>` : 
-                                `<button class="btn btn-sm btn-danger" onclick="rateCardApp.removeRateCardAssignment('${ticket.id}')">
-                                    <i>🗑️</i> Remove
-                                </button>`
-                            }
+                            ${ticket.assignmentStatus !== 'assigned' ?
+                        `<button class="btn btn-sm btn-success" style="display: inline-flex; align-items: center; gap: 5px;" onclick="rateCardApp.manualAssignRateCard('${uniqueId}')" title="Assign">
+                                    <i class="fas fa-plus"></i> Assign
+                                </button>` :
+                        `<span class="status-badge status-assigned" style="padding: 5px 10px;">Assigned</span>`
+                    }
                         </div>
                     </td>
                 `;
-
                 return `<tr>${rowHtml}</tr>`;
             }).join('');
         }
 
-        // Update ticket count
-        const ticketCountElement = document.getElementById('ticketCount');
-        if (ticketCountElement) {
-            ticketCountElement.textContent = filteredTickets.length;
+        const countEl = document.getElementById('ticketCount');
+        if (countEl) countEl.innerText = filteredTickets.length;
+    }
+
+    // ==================== FORM VIEW RENDER ====================
+
+    renderForm() {
+        const filteredTickets = this.filterTickets();
+        const formContainer = document.getElementById('ticketForm');
+
+        if (!formContainer) return;
+
+        if (filteredTickets.length === 0) {
+            formContainer.innerHTML = `<div class="empty-state"><h4>No tickets found</h4><p>Adjust filters to view tickets</p></div>`;
+            return;
+        }
+
+        if (this.currentFormIndex >= filteredTickets.length) this.currentFormIndex = 0;
+        if (this.currentFormIndex < 0) this.currentFormIndex = filteredTickets.length - 1;
+
+        const ticket = filteredTickets[this.currentFormIndex];
+        const uniqueId = this.getUniqueId(ticket);
+        const data = ticket.data_table || {};
+
+        const posEl = document.getElementById('currentFormPosition');
+        if (posEl) posEl.innerText = `Ticket ${this.currentFormIndex + 1} of ${filteredTickets.length}`;
+
+        formContainer.innerHTML = `
+            <div class="form-header" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3>${uniqueId}</h3>
+                ${this.getStatusBadge(ticket.assignmentStatus || 'pending')}
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group"><div class="form-label">Customer</div><div class="form-value">${ticket.customer || '-'}</div></div>
+                <div class="form-group"><div class="form-label">Account</div><div class="form-value">${ticket.account || '-'}</div></div>
+                <div class="form-group"><div class="form-label">Request ID</div><div class="form-value">${ticket.request_id || '-'}</div></div>
+                <div class="form-group"><div class="form-label">Service Type</div><div class="form-value">${data.service_type || '-'}</div></div>
+                <div class="form-group" style="grid-column: span 2;"><div class="form-label">Subject</div><div class="form-value">${data.subject || '-'}</div></div>
+                <div class="form-group"><div class="form-label">Site</div><div class="form-value">${data.site_name || '-'}</div></div>
+                <div class="form-group"><div class="form-label">Priority</div><div class="form-value">${data.priority || '-'}</div></div>
+                <div class="form-group"><div class="form-label">Total Cost</div><div class="form-value">${data.currency} ${data.total_cost || 0}</div></div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+                <button class="btn btn-outline" onclick="rateCardApp.showOverview('${uniqueId}')"><i class="fas fa-eye"></i> Full Overview</button>
+                ${ticket.assignmentStatus !== 'assigned' ?
+                `<button class="btn btn-primary" onclick="rateCardApp.manualAssignRateCard('${uniqueId}')">Assign Rate Card</button>` :
+                `<span class="badge badge-success">Assigned</span>`
+            }
+            </div>
+        `;
+    }
+
+    // ==================== ASSIGNMENT MODAL ====================
+
+    manualAssignRateCard(id) {
+        const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
+        if (!ticket) return;
+
+        // 1. Intelligent Filtering: Match Customer & Account
+        const matchingCards = this.rateCards.filter(rc =>
+            String(rc.customer) === String(ticket.customer) &&
+            String(rc.account) === String(ticket.account)
+        );
+
+        // 2. Fallback: Match Customer only if no account specific cards
+        const allCustomerCards = matchingCards.length > 0 ? [] : this.rateCards.filter(rc =>
+            String(rc.customer) === String(ticket.customer)
+        );
+
+        this.showManualAssignmentModal(ticket, matchingCards, allCustomerCards);
+    }
+
+    showManualAssignmentModal(ticket, exactMatches = [], otherMatches = []) {
+        this.closeOverviewModal(); // Ensure other modals close
+        const uniqueId = this.getUniqueId(ticket);
+
+        const modalHtml = `
+            <div class="modal-overlay" id="assignModal">
+                <div class="modal-content" style="width:600px; max-height:80vh; overflow-y:auto;">
+                    <div class="modal-header">
+                        <h3>Assign Rate Card to ${uniqueId}</h3>
+                        <button onclick="document.getElementById('assignModal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background:#f8f9fa; padding:10px; border-radius:5px; margin-bottom:15px;">
+                            <p style="margin:5px 0;"><strong>Service:</strong> ${ticket.data_table?.service_type}</p>
+                            <p style="margin:5px 0;"><strong>Region:</strong> ${ticket.data_table?.region}</p>
+                        </div>
+
+                        ${exactMatches.length > 0 ? `
+                            <h5 style="margin-bottom:10px; color:#2c3e50;">Recommended Cards (Account Match)</h5>
+                            ${exactMatches.map(card => this.renderRateCardItem(card, uniqueId)).join('')}
+                        ` : ''}
+
+                        ${otherMatches.length > 0 ? `
+                            <h5 style="margin:15px 0 10px; color:#e67e22;">Other Customer Cards</h5>
+                            ${otherMatches.map(card => this.renderRateCardItem(card, uniqueId)).join('')}
+                        ` : ''}
+
+                        ${exactMatches.length === 0 && otherMatches.length === 0 ? `
+                            <div style="text-align:center; padding:20px; color:#7f8c8d;">
+                                <i class="fas fa-exclamation-circle" style="font-size:24px; margin-bottom:10px;"></i>
+                                <p>No matching rate cards found for this Customer.</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    renderRateCardItem(card, ticketId) {
+        return `
+            <div style="border:1px solid #eee; padding:12px; margin-bottom:8px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; background:white;">
+                <div>
+                    <div style="font-weight:bold; color:#2980b9;">${card.category} - ${card.bandLevel || 'Standard'}</div>
+                    <div style="font-size:0.85em; color:#666;">
+                        ID: ${card.id} | Ver: ${card.version}
+                    </div>
+                    <div style="font-weight:bold; margin-top:4px;">${card.currency} ${card.rateValue}</div>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="rateCardApp.confirmAssignment('${ticketId}', '${card.id}')">Select</button>
+            </div>
+        `;
+    }
+
+    confirmAssignment(id, rateCardId) {
+        console.log(`Assigning Ticket ${id} to Rate Card ${rateCardId}`);
+
+        // 1. Update State
+        const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
+        if (ticket) {
+            ticket.assignmentStatus = 'assigned';
+            ticket.rateCardAssigned = rateCardId;
+
+            // 2. Persist
+            this.saveAssignment(id, rateCardId);
+
+            // 3. UI Feedback
+            this.showNotification(`Successfully assigned rate card to ${id}`, 'success');
+            document.getElementById('assignModal')?.remove();
+
+            // 4. Refresh View
+            this.switchView(this.currentView);
         }
     }
 
-    // ==================== FLOATING MODAL OVERVIEW ====================
-    
-    showOverview(ticketId) {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        if (!ticket) {
-            this.showNotification('Ticket not found', 'error');
+    // ==================== BAND DATA RENDERING ====================
+    // (This logic remains the same as previous step, ensuring sidebar works)
+
+    setupBandNavigation() {
+        const prevBtn = document.getElementById('prevBandBtn');
+        const nextBtn = document.getElementById('nextBandBtn');
+
+        if (prevBtn) prevBtn.addEventListener('click', () => {
+            if (this.currentBandIndex > 0) { this.currentBandIndex--; this.renderBandDataCard(); }
+        });
+
+        if (nextBtn) nextBtn.addEventListener('click', () => {
+            if (this.currentBandIndex < this.bandRecords.length - 1) { this.currentBandIndex++; this.renderBandDataCard(); }
+        });
+    }
+
+    renderBandDataCard() {
+        const container = document.getElementById('rateCardPreview');
+        const counter = document.getElementById('bandCounter');
+        const prevBtn = document.getElementById('prevBandBtn');
+        const nextBtn = document.getElementById('nextBandBtn');
+
+        if (!container) return;
+
+        if (!this.bandRecords || this.bandRecords.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p>No Band Records Found</p></div>`;
+            if (counter) counter.innerText = "0/0";
             return;
         }
-        
+
+        if (this.currentBandIndex >= this.bandRecords.length) this.currentBandIndex = 0;
+        const record = this.bandRecords[this.currentBandIndex];
+        const bandData = record.band_data || {};
+
+        if (counter) counter.innerText = `${this.currentBandIndex + 1} / ${this.bandRecords.length}`;
+        if (prevBtn) prevBtn.disabled = this.currentBandIndex === 0;
+        if (nextBtn) nextBtn.disabled = this.currentBandIndex === this.bandRecords.length - 1;
+
+        let html = `
+            <div class="band-card" style="font-size: 0.9em;">
+                <div class="band-header" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #3498db;">
+                    <div style="font-weight: bold; color: #2c3e50;">${record.customer || 'N/A'} - ${record.account || 'N/A'}</div>
+                    <div style="color: #7f8c8d; font-size: 0.85em;">Ticket: ${record.ticket_number || 'N/A'}</div>
+                </div>
+                <div class="band-tables" style="max-height: 500px; overflow-y: auto;">
+        `;
+
+        const renderCategoryTable = (title, dataObj) => {
+            if (!dataObj || Object.keys(dataObj).length === 0) return '';
+            const isGrouped = Object.values(dataObj).some(val => !Array.isArray(val) && typeof val === 'object');
+            let content = '';
+
+            if (isGrouped) {
+                Object.entries(dataObj).forEach(([groupName, groupData]) => {
+                    content += renderCategoryTable(`${title} - ${groupName}`, groupData);
+                });
+            } else {
+                content += `
+                    <div style="margin-bottom: 15px; border: 1px solid #eee; border-radius: 4px;">
+                        <div style="background: #ecf0f1; padding: 5px 10px; font-weight: 600; font-size: 0.85em;">${title}</div>
+                        <table style="width: 100%; border-collapse: collapse;"><tbody>`;
+
+                Object.entries(dataObj).forEach(([band, values]) => {
+                    if (Array.isArray(values) && values.some(v => v && v.trim() !== '')) {
+                        content += `<tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding:4px;">${band}</td><td style="padding:4px;">${values.join(' | ')}</td></tr>`;
+                    }
+                });
+                content += `</tbody></table></div>`;
+            }
+            return content;
+        };
+
+        html += renderCategoryTable('Dispatch', bandData.dispatch);
+        html += renderCategoryTable('Dedicated', bandData.dedicated);
+        html += renderCategoryTable('SV Visit', bandData.sv_visit);
+        html += `</div></div>`;
+        container.innerHTML = html;
+    }
+
+    // ==================== HELPERS ====================
+
+    setupColumnFilter() {
+        const optionsDiv = document.getElementById('columnFilterOptions');
+        if (!optionsDiv) return;
+        optionsDiv.innerHTML = '';
+        const labels = { 'ticket_number': 'Ticket #', 'request_id': 'Request ID', 'customer': 'Customer', 'total_cost': 'Cost', 'status': 'Status' }; // Add more as needed
+
+        Object.keys(this.visibleColumns).forEach(key => {
+            const optionDiv = document.createElement('div');
+            optionDiv.innerHTML = `<label style="display:flex; gap:5px; padding:5px;"><input type="checkbox" ${this.visibleColumns[key] ? 'checked' : ''} onchange="rateCardApp.toggleColumn('${key}', this.checked)"> ${labels[key] || key}</label>`;
+            optionsDiv.appendChild(optionDiv);
+        });
+
+        document.getElementById('columnFilterBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('columnFilterDropdown').classList.toggle('show');
+        });
+        document.addEventListener('click', () => document.getElementById('columnFilterDropdown')?.classList.remove('show'));
+    }
+
+    toggleColumn(key, checked) {
+        this.visibleColumns[key] = checked;
+        this.renderTable();
+    }
+
+    getValueByPath(obj, path) {
+        return path.split('.').reduce((acc, part) => acc && acc[part], obj) || '-';
+    }
+
+    filterTickets() {
+        const customerSelect = document.getElementById('filterCustomer');
+        const accountSelect = document.getElementById('filterAccount');
+        const statusSelect = document.getElementById('filterStatus');
+
+        const selectedCust = customerSelect ? customerSelect.value : 'all';
+        const selectedAcc = accountSelect ? accountSelect.value : 'all';
+        const selectedStatus = statusSelect ? statusSelect.value : 'all';
+
+        return this.tickets.filter(ticket => {
+            const data = ticket.data_table || {};
+            const uniqueId = this.getUniqueId(ticket);
+
+            if (selectedStatus !== 'all') {
+                const currentStatus = ticket.assignmentStatus || 'pending';
+                if (currentStatus !== selectedStatus) return false;
+            }
+            if (selectedCust !== 'all' && String(ticket.customer) !== String(selectedCust)) return false;
+            if (selectedAcc !== 'all' && String(ticket.account) !== String(selectedAcc)) return false;
+
+            if (this.filters.search) {
+                const term = this.filters.search.toLowerCase();
+                const searchable = [uniqueId, data.site_name, data.technician_name, data.subject].map(s => (s || '').toString().toLowerCase());
+                if (!searchable.some(val => val.includes(term))) return false;
+            }
+            return true;
+        });
+    }
+
+    getStatusBadge(status) {
+        const badges = {
+            'assigned': '<span class="status-badge status-assigned">Assigned</span>',
+            'pending': '<span class="status-badge status-pending">Pending</span>',
+            'missing': '<span class="status-badge status-missing">Missing</span>',
+            'conflict': '<span class="status-badge status-conflict">Conflict</span>'
+        };
+        return badges[status] || badges['pending'];
+    }
+
+    updateSummary() {
+        const counts = {
+            assigned: this.tickets.filter(t => t.assignmentStatus === 'assigned').length,
+            pending: this.tickets.filter(t => t.assignmentStatus === 'pending').length,
+            missing: this.tickets.filter(t => t.assignmentStatus === 'missing').length,
+            conflict: this.tickets.filter(t => t.assignmentStatus === 'conflict').length
+        };
+        ['assignedCount', 'pendingCount', 'missingCount', 'conflictCount'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = counts[id.replace('Count', '')];
+        });
+    }
+
+    // ==================== MODAL OVERVIEW ====================
+
+    showOverview(id) {
+        const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
+        if (!ticket) return;
         this.currentTicket = ticket;
         this.showOverviewModal(ticket);
     }
 
     showOverviewModal(ticket) {
-        // Create or get modal
         let modal = document.getElementById('overviewModal');
-        if (!modal) {
-            modal = this.createOverviewModal();
-        }
-        
-        // Populate modal with ticket data
+        if (!modal) modal = this.createOverviewModal();
         this.populateOverviewModal(ticket);
-        
-        // Show modal
         modal.style.display = 'flex';
-        
-        // Setup modal event listeners
-        this.setupOverviewModalEvents();
     }
 
     createOverviewModal() {
@@ -408,1198 +643,280 @@ class RateCardAssignmentEnhanced {
                     </div>
                     <div class="modal-body" style="overflow-y: auto;">
                         <div class="overview-controls">
-                            <div class="overview-selectors">
-                                <div class="selector-group">
-                                    <label><i class="fas fa-users"></i> Customer</label>
-                                    <select id="overviewCustomer" class="filter-dropdown">
-                                        <!-- Populated by JavaScript -->
-                                    </select>
-                                </div>
-                                <div class="selector-group">
-                                    <label><i class="fas fa-building"></i> Account</label>
-                                    <select id="overviewAccount" class="filter-dropdown">
-                                        <!-- Populated by JavaScript -->
-                                    </select>
-                                </div>
-                                <div class="selector-group">
-                                    <label><i class="fas fa-ticket-alt"></i> Ticket</label>
-                                    <select id="overviewTicket" class="filter-dropdown">
-                                        <!-- Populated by JavaScript -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="view-toggle-group">
+                            <div class="view-toggle-group" style="margin-left: auto;">
                                 <span class="toggle-label">View Mode:</span>
                                 <div class="toggle-switch">
-                                    <button class="toggle-btn active" data-view="sidebyside">
-                                        <i class="fas fa-columns"></i> Side by Side
-                                    </button>
-                                    <button class="toggle-btn" data-view="beforeafter">
-                                        <i class="fas fa-exchange-alt"></i> Before/After
-                                    </button>
-                                    <button class="toggle-btn" data-view="changes">
-                                        <i class="fas fa-list"></i> Changes Only
-                                    </button>
+                                    <button class="toggle-btn active" data-view="sidebyside"><i class="fas fa-columns"></i> Side by Side</button>
+                                    <button class="toggle-btn" data-view="changes"><i class="fas fa-list"></i> Changes Only</button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="overview-content" id="overviewContent">
-                            <!-- Content will be populated by JavaScript -->
-                        </div>
-                        
-                        <div class="overview-summary">
-                            <div class="summary-header">
-                                <h3><i class="fas fa-chart-bar"></i> Change Summary</h3>
-                                <div class="summary-stats">
-                                    <div class="stat-badge total">
-                                        <span class="stat-label">Total Changes</span>
-                                        <span class="stat-value" id="totalChanges">0</span>
-                                    </div>
-                                    <div class="stat-badge match">
-                                        <span class="stat-label">Matches</span>
-                                        <span class="stat-value" id="matchCount">0</span>
-                                    </div>
-                                    <div class="stat-badge conflict">
-                                        <span class="stat-label">Conflicts</span>
-                                        <span class="stat-value" id="conflictCount">0</span>
-                                    </div>
-                                    <div class="stat-badge new">
-                                        <span class="stat-label">New Fields</span>
-                                        <span class="stat-value" id="newCount">0</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="changes-list" id="changesList">
-                                <!-- Changes will be listed here -->
-                            </div>
-                        </div>
+                        <div class="overview-content" id="overviewContent"></div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-outline" onclick="rateCardApp.closeOverviewModal()">
-                            <i class="fas fa-times"></i> Close
-                        </button>
-                        <button class="btn btn-primary" onclick="rateCardApp.exportComparison()">
-                            <i class="fas fa-download"></i> Export Comparison
-                        </button>
-                        <button class="btn btn-success" onclick="rateCardApp.applyChanges()">
-                            <i class="fas fa-check"></i> Apply Changes
-                        </button>
+                        <button class="btn btn-outline" onclick="rateCardApp.closeOverviewModal()">Close</button>
+                        <button class="btn btn-success" id="modalAssignBtn">Assign Ticket</button>
                     </div>
                 </div>
             </div>
         `;
-        
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         return document.getElementById('overviewModal');
     }
 
     populateOverviewModal(ticket) {
-        // Set modal title
-        document.getElementById('overviewModalTitle').textContent = 
-            `Rate Card Overview - ${ticket.id}`;
-        
-        // Populate customer dropdown
-        const customerSelect = document.getElementById('overviewCustomer');
-        customerSelect.innerHTML = '';
-        const customers = [...new Set(this.tickets.map(t => t.customer))];
-        customers.forEach(customer => {
-            const option = document.createElement('option');
-            option.value = customer;
-            option.textContent = customer;
-            option.selected = customer === ticket.customer;
-            customerSelect.appendChild(option);
-        });
-        
-        // Populate account dropdown
-        this.updateOverviewAccounts(ticket.customer, ticket.account);
-        
-        // Populate ticket dropdown
-        this.updateOverviewTickets(ticket.customer, ticket.account, ticket.id);
-        
-        // Load comparison data
-        this.loadOverviewComparison(ticket);
-    }
+        const uniqueId = this.getUniqueId(ticket);
+        document.getElementById('overviewModalTitle').textContent = `Overview - ${uniqueId}`;
 
-    updateOverviewAccounts(customer, selectedAccount) {
-        const accountSelect = document.getElementById('overviewAccount');
-        accountSelect.innerHTML = '';
-        
-        const accounts = this.tickets
-            .filter(t => t.customer === customer)
-            .map(t => t.account);
-        const uniqueAccounts = [...new Set(accounts)];
-        
-        uniqueAccounts.forEach(account => {
-            const option = document.createElement('option');
-            option.value = account;
-            option.textContent = account;
-            option.selected = account === selectedAccount;
-            accountSelect.appendChild(option);
-        });
-    }
+        // Setup Assign Button inside Modal
+        const btn = document.getElementById('modalAssignBtn');
+        if (btn) {
+            // Remove old listeners to prevent stacking
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', () => this.manualAssignRateCard(uniqueId));
 
-    updateOverviewTickets(customer, account, selectedTicketId) {
-        const ticketSelect = document.getElementById('overviewTicket');
-        ticketSelect.innerHTML = '';
-        
-        const filteredTickets = this.tickets.filter(t => 
-            t.customer === customer && t.account === account
-        );
-        
-        filteredTickets.forEach(ticket => {
-            const option = document.createElement('option');
-            option.value = ticket.id;
-            option.textContent = `${ticket.id} - ${ticket.serviceType}`;
-            option.selected = ticket.id === selectedTicketId;
-            ticketSelect.appendChild(option);
-        });
-    }
-
-    loadOverviewComparison(ticket) {
-        const originalTicket = this.originalTickets.find(ot => ot.id === ticket.id);
-        const modifiedTicket = this.modifiedTickets.find(mt => mt.id === ticket.id) || ticket;
-        
-        // Calculate changes
-        const changes = this.calculateTicketChanges(originalTicket, modifiedTicket);
-        
-        // Update summary stats
-        this.updateOverviewSummary(changes);
-        
-        // Load comparison based on selected view mode
-        const viewMode = document.querySelector('.toggle-btn.active')?.dataset.view || 'sidebyside';
-        this.renderComparisonView(viewMode, originalTicket, modifiedTicket, changes);
-    }
-
-    calculateTicketChanges(original, modified) {
-        if (!original || !modified) return [];
-        
-        const changes = [];
-        
-        // Define fields to compare
-        const fieldsToCompare = [
-            'revenue', 'cost', 'profit', 'margin',
-            'rateCardAssigned', 'rateCardVersion',
-            'status', 'assignmentStatus'
-        ];
-        
-        fieldsToCompare.forEach(field => {
-            const originalValue = original[field];
-            const modifiedValue = modified[field];
-            
-            if (originalValue !== modifiedValue) {
-                changes.push({
-                    field: field,
-                    before: originalValue,
-                    after: modifiedValue,
-                    type: this.getChangeType(field, originalValue, modifiedValue)
-                });
+            if (ticket.assignmentStatus === 'assigned') {
+                newBtn.innerHTML = '<i class="fas fa-check"></i> Assigned';
+                newBtn.disabled = true;
+            } else {
+                newBtn.innerHTML = 'Assign Ticket';
+                newBtn.disabled = false;
             }
-        });
-        
-        return changes;
-    }
-
-    getChangeType(field, before, after) {
-        if (field === 'rateCardAssigned') {
-            return before === null ? 'new-assignment' : 'assignment-change';
         }
-        
-        if (typeof before === 'number' && typeof after === 'number') {
-            return after > before ? 'increase' : 'decrease';
-        }
-        
-        return 'modification';
-    }
 
-    updateOverviewSummary(changes) {
-        const totalChanges = document.getElementById('totalChanges');
-        const matchCount = document.getElementById('matchCount');
-        const conflictCount = document.getElementById('conflictCount');
-        const newCount = document.getElementById('newCount');
-        
-        if (totalChanges) totalChanges.textContent = changes.length;
-        if (matchCount) matchCount.textContent = changes.filter(c => c.type === 'match').length;
-        if (conflictCount) conflictCount.textContent = changes.filter(c => c.type === 'conflict').length;
-        if (newCount) newCount.textContent = changes.filter(c => c.type === 'new-assignment').length;
-        
-        // Update changes list
-        this.renderChangesList(changes);
-    }
-
-    renderChangesList(changes) {
-        const changesList = document.getElementById('changesList');
-        if (!changesList) return;
-        
-        if (changes.length === 0) {
-            changesList.innerHTML = `
-                <div class="no-changes">
-                    <i class="fas fa-check-circle"></i>
-                    <p>No changes detected. Original and modified data are identical.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        changesList.innerHTML = changes.map(change => `
-            <div class="change-item change-${change.type}">
-                <div class="change-field">
-                    <span class="field-name">${this.formatFieldName(change.field)}</span>
-                    <span class="change-type">${this.getChangeTypeLabel(change.type)}</span>
-                </div>
-                <div class="change-values">
-                    <span class="value-before">
-                        <i class="fas fa-arrow-left"></i>
-                        ${this.formatValue(change.field, change.before)}
-                    </span>
-                    <span class="change-arrow"><i class="fas fa-long-arrow-alt-right"></i></span>
-                    <span class="value-after">
-                        ${this.formatValue(change.field, change.after)}
-                        <i class="fas fa-arrow-right"></i>
-                    </span>
-                </div>
-                ${change.field.includes('revenue') || change.field.includes('cost') || change.field.includes('profit') ? `
-                    <div class="change-percentage">
-                        ${this.calculatePercentageChange(change.before, change.after)}
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-    }
-
-    renderComparisonView(viewMode, original, modified, changes) {
-        const overviewContent = document.getElementById('overviewContent');
-        if (!overviewContent) return;
-        
-        switch(viewMode) {
-            case 'sidebyside':
-                overviewContent.innerHTML = this.renderSideBySideView(original, modified, changes);
-                break;
-            case 'beforeafter':
-                overviewContent.innerHTML = this.renderBeforeAfterView(original, modified, changes);
-                break;
-            case 'changes':
-                overviewContent.innerHTML = this.renderChangesOnlyView(changes);
-                break;
-        }
+        this.renderSideBySideView(null, ticket, []);
     }
 
     renderSideBySideView(original, modified, changes) {
-        const rateCard = modified.rateCardAssigned ? 
-            this.rateCards.find(rc => rc.id === modified.rateCardAssigned) : null;
-        
-        return `
+        const container = document.getElementById('overviewContent');
+        const data = modified.data_table || {};
+
+        container.innerHTML = `
             <div class="comparison-container side-by-side">
                 <div class="comparison-panel">
-                    <div class="panel-header original">
-                        <h3><i class="fas fa-history"></i> Original Data</h3>
-                        <span class="panel-subtitle">Before Rate Card Assignment</span>
-                    </div>
+                    <div class="panel-header original"><h3><i class="fas fa-ticket-alt"></i> Ticket Data</h3></div>
                     <div class="panel-content">
-                        <div class="data-section">
-                            <h4><i class="fas fa-ticket-alt"></i> Final Ticket Data</h4>
-                            <table class="data-table">
-                                <tr><td>Revenue:</td><td>${original?.currency || 'SGD'} ${original?.originalRevenue || original?.revenue || 0}</td></tr>
-                                <tr><td>Cost:</td><td>${original?.currency || 'SGD'} ${original?.originalCost || original?.cost || 0}</td></tr>
-                                <tr><td>Profit:</td><td>${original?.currency || 'SGD'} ${original?.originalProfit || original?.profit || 0}</td></tr>
-                                <tr><td>Margin:</td><td>${original?.margin || '0%'}</td></tr>
-                                <tr><td>Rate Card:</td><td>${original?.rateCardAssigned || 'Not assigned'}</td></tr>
-                                <tr><td>Status:</td><td>${original?.status || 'VALIDATED'}</td></tr>
-                            </table>
-                        </div>
+                        <table class="data-table">
+                            <tr><td><strong>Subject:</strong></td><td>${data.subject || '-'}</td></tr>
+                            <tr><td><strong>Region:</strong></td><td>${data.region || '-'}</td></tr>
+                            <tr><td><strong>Service:</strong></td><td>${data.service_type || '-'}</td></tr>
+                            <tr><td><strong>Cost:</strong></td><td>${data.currency} ${data.total_cost}</td></tr>
+                        </table>
                     </div>
                 </div>
-                
                 <div class="comparison-panel">
-                    <div class="panel-header modified">
-                        <h3><i class="fas fa-sync-alt"></i> Modified Data</h3>
-                        <span class="panel-subtitle">After Rate Card Assignment</span>
-                    </div>
+                    <div class="panel-header modified"><h3><i class="fas fa-info-circle"></i> Status</h3></div>
                     <div class="panel-content">
-                        <div class="data-section">
-                            <h4><i class="fas fa-ticket-alt"></i> Final Ticket Data</h4>
-                            <table class="data-table">
-                                <tr><td>Revenue:</td><td>${modified.currency} ${modified.modifiedRevenue || modified.revenue}</td></tr>
-                                <tr><td>Cost:</td><td>${modified.currency} ${modified.modifiedCost || modified.cost}</td></tr>
-                                <tr><td>Profit:</td><td>${modified.currency} ${modified.modifiedProfit || modified.profit}</td></tr>
-                                <tr><td>Margin:</td><td>${modified.margin}</td></tr>
-                                <tr><td>Rate Card:</td><td>${modified.rateCardAssigned || 'Not assigned'}</td></tr>
-                                <tr><td>Status:</td><td>${modified.status}</td></tr>
-                            </table>
-                        </div>
-                        
-                        ${rateCard ? `
-                            <div class="data-section">
-                                <h4><i class="fas fa-file-invoice"></i> Service Rate Card</h4>
-                                <table class="data-table">
-                                    <tr><td>ID:</td><td>${rateCard.id}</td></tr>
-                                    <tr><td>Version:</td><td>${rateCard.version}</td></tr>
-                                    <tr><td>Category:</td><td>${rateCard.category}</td></tr>
-                                    <tr><td>Rate Value:</td><td>${rateCard.currency} ${rateCard.rateValue}</td></tr>
-                                    <tr><td>After Hours:</td><td>${rateCard.afterHours}x</td></tr>
-                                    <tr><td>Weekend:</td><td>${rateCard.weekend}x</td></tr>
-                                </table>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderBeforeAfterView(original, modified, changes) {
-        const rateCard = modified.rateCardAssigned ? 
-            this.rateCards.find(rc => rc.id === modified.rateCardAssigned) : null;
-            
-        return `
-            <div class="comparison-container before-after">
-                <div class="data-timeline">
-                    <div class="timeline-item original">
-                        <div class="timeline-marker">
-                            <i class="fas fa-calendar-times"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h4>Before Assignment</h4>
-                            <div class="data-card">
-                                <h5>Final Ticket Data</h5>
-                                <p><strong>Revenue:</strong> ${original?.currency || 'SGD'} ${original?.originalRevenue || original?.revenue || 0}</p>
-                                <p><strong>Cost:</strong> ${original?.currency || 'SGD'} ${original?.originalCost || original?.cost || 0}</p>
-                                <p><strong>Status:</strong> ${original?.status || 'VALIDATED'}</p>
-                                <p><strong>Rate Card:</strong> ${original?.rateCardAssigned || 'Not assigned'}</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="change-connector">
-                        <i class="fas fa-arrow-down"></i>
-                        <span>${changes.length} changes applied</span>
-                    </div>
-                    
-                    <div class="timeline-item current">
-                        <div class="timeline-marker">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h4>Current State</h4>
-                            <div class="data-card">
-                                <h5>Final Ticket Data</h5>
-                                <p><strong>Revenue:</strong> ${modified.currency} ${modified.modifiedRevenue || modified.revenue}</p>
-                                <p><strong>Cost:</strong> ${modified.currency} ${modified.modifiedCost || modified.cost}</p>
-                                <p><strong>Status:</strong> ${modified.status}</p>
-                                <p><strong>Rate Card:</strong> ${modified.rateCardAssigned || 'Not assigned'}</p>
-                                
-                                ${rateCard ? `
-                                    <h5>Service Rate Card</h5>
-                                    <p><strong>ID:</strong> ${rateCard.id}</p>
-                                    <p><strong>Rate:</strong> ${rateCard.currency} ${rateCard.rateValue}</p>
-                                    <p><strong>Category:</strong> ${rateCard.category}</p>
-                                ` : ''}
-                            </div>
+                        <div style="padding: 20px; text-align: center;">
+                            <h4>Current Status</h4>
+                            ${this.getStatusBadge(modified.assignmentStatus)}
+                             <p style="margin-top:10px;">${modified.rateCardAssigned ? 'Card: ' + modified.rateCardAssigned : 'No Card Assigned'}</p>
                         </div>
                     </div>
                 </div>
             </div>
         `;
-    }
-
-    renderChangesOnlyView(changes) {
-        return `
-            <div class="comparison-container changes-only">
-                <div class="changes-overview">
-                    <div class="overview-grid">
-                        <div class="overview-card affected">
-                            <div class="card-icon">
-                                <i class="fas fa-file-invoice-dollar"></i>
-                            </div>
-                            <div class="card-content">
-                                <h5>Financial Changes</h5>
-                                <div class="card-details">
-                                    ${changes.filter(c => ['revenue', 'cost', 'profit', 'margin'].includes(c.field))
-                                        .map(change => `
-                                            <div class="detail-item">
-                                                <span>${this.formatFieldName(change.field)}</span>
-                                                <span class="detail-value ${change.type}">
-                                                    ${this.formatValue(change.field, change.after)}
-                                                </span>
-                                            </div>
-                                        `).join('')}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="overview-card assignment">
-                            <div class="card-icon">
-                                <i class="fas fa-id-card"></i>
-                            </div>
-                            <div class="card-content">
-                                <h5>Assignment Status</h5>
-                                <div class="card-details">
-                                    ${changes.filter(c => c.field.includes('rateCard') || c.field.includes('assignment'))
-                                        .map(change => `
-                                            <div class="detail-item">
-                                                <span>${this.formatFieldName(change.field)}</span>
-                                                <span class="detail-value ${change.type}">
-                                                    ${change.after || 'Not assigned'}
-                                                </span>
-                                            </div>
-                                        `).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    formatFieldName(field) {
-        const fieldNames = {
-            'revenue': 'Revenue',
-            'cost': 'Cost',
-            'profit': 'Profit',
-            'margin': 'Margin',
-            'rateCardAssigned': 'Rate Card',
-            'rateCardVersion': 'Rate Card Version',
-            'status': 'Status',
-            'assignmentStatus': 'Assignment Status'
-        };
-        return fieldNames[field] || field;
-    }
-
-    formatValue(field, value) {
-        if (value === null || value === undefined) return 'Not set';
-        
-        if (field.includes('revenue') || field.includes('cost') || field.includes('profit')) {
-            return `${this.currentTicket?.currency || 'USD'} ${value}`;
-        }
-        
-        if (field.includes('margin')) {
-            return `${value}%`;
-        }
-        
-        return value;
-    }
-
-    calculatePercentageChange(before, after) {
-        if (typeof before !== 'number' || typeof after !== 'number') return '';
-        
-        const change = ((after - before) / before * 100);
-        const sign = change >= 0 ? '+' : '';
-        return `${sign}${change.toFixed(2)}%`;
-    }
-
-    getChangeTypeLabel(type) {
-        const labels = {
-            'increase': 'Increased',
-            'decrease': 'Decreased',
-            'new-assignment': 'New Assignment',
-            'assignment-change': 'Assignment Changed',
-            'modification': 'Modified'
-        };
-        return labels[type] || type;
     }
 
     setupOverviewModalEvents() {
-        // Customer dropdown change
-        const customerSelect = document.getElementById('overviewCustomer');
-        if (customerSelect) {
-            customerSelect.addEventListener('change', (e) => {
-                const customer = e.target.value;
-                this.updateOverviewAccounts(customer, '');
-                this.updateOverviewTickets(customer, '', '');
-            });
-        }
-        
-        // Account dropdown change
-        const accountSelect = document.getElementById('overviewAccount');
-        if (accountSelect) {
-            accountSelect.addEventListener('change', (e) => {
-                const customer = document.getElementById('overviewCustomer').value;
-                const account = e.target.value;
-                this.updateOverviewTickets(customer, account, '');
-            });
-        }
-        
-        // Ticket dropdown change
-        const ticketSelect = document.getElementById('overviewTicket');
-        if (ticketSelect) {
-            ticketSelect.addEventListener('change', (e) => {
-                const ticketId = e.target.value;
-                const ticket = this.tickets.find(t => t.id === ticketId);
-                if (ticket) {
-                    this.currentTicket = ticket;
-                    this.loadOverviewComparison(ticket);
-                }
-            });
-        }
-        
-        // View mode toggle buttons
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
+        document.querySelectorAll('#overviewModal .toggle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const viewMode = e.target.closest('.toggle-btn').dataset.view;
-                
-                // Update active state
-                document.querySelectorAll('.toggle-btn').forEach(b => {
-                    b.classList.remove('active');
-                });
-                e.target.closest('.toggle-btn').classList.add('active');
-                
-                // Reload comparison with new view mode
-                const ticket = this.currentTicket;
-                if (ticket) {
-                    const original = this.originalTickets.find(ot => ot.id === ticket.id);
-                    const modified = this.modifiedTickets.find(mt => mt.id === ticket.id) || ticket;
-                    const changes = this.calculateTicketChanges(original, modified);
-                    this.renderComparisonView(viewMode, original, modified, changes);
-                }
+                document.querySelectorAll('#overviewModal .toggle-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                // View switching logic inside modal (simplified)
             });
         });
     }
 
     closeOverviewModal() {
         const modal = document.getElementById('overviewModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        if (modal) modal.style.display = 'none';
         this.currentTicket = null;
     }
 
-    exportComparison() {
-        const ticket = this.currentTicket;
-        if (!ticket) return;
-        
-        const original = this.originalTickets.find(ot => ot.id === ticket.id);
-        const modified = this.modifiedTickets.find(mt => mt.id === ticket.id) || ticket;
-        const changes = this.calculateTicketChanges(original, modified);
-        
-        const data = {
-            exportDate: new Date().toISOString(),
-            ticketId: ticket.id,
-            customer: ticket.customer,
-            account: ticket.account,
-            originalData: original,
-            modifiedData: modified,
-            changes: changes,
-            summary: {
-                totalChanges: changes.length,
-                financialChanges: changes.filter(c => ['revenue', 'cost', 'profit', 'margin'].includes(c.field)).length,
-                assignmentChanges: changes.filter(c => c.field.includes('rateCard')).length
-            }
-        };
-        
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `comparison-${ticket.id}-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        this.showNotification('Comparison exported successfully', 'success');
-    }
+    // ==================== UTILS ====================
 
-    applyChanges() {
-        if (!this.currentTicket) return;
-        
-        if (confirm('Apply these changes to the ticket?')) {
-            // Update the main ticket with modified data
-            const modifiedTicket = this.modifiedTickets.find(mt => mt.id === this.currentTicket.id);
-            if (modifiedTicket) {
-                // Update financial values if they were modified
-                if (modifiedTicket.modifiedRevenue && modifiedTicket.modifiedRevenue !== this.currentTicket.revenue) {
-                    this.currentTicket.revenue = modifiedTicket.modifiedRevenue;
-                }
-                if (modifiedTicket.modifiedCost && modifiedTicket.modifiedCost !== this.currentTicket.cost) {
-                    this.currentTicket.cost = modifiedTicket.modifiedCost;
-                }
-                if (modifiedTicket.modifiedProfit && modifiedTicket.modifiedProfit !== this.currentTicket.profit) {
-                    this.currentTicket.profit = modifiedTicket.modifiedProfit;
-                }
-                
-                this.render();
-                this.showNotification('Changes applied successfully', 'success');
-            }
-        }
-    }
-
-    // ==================== EXISTING METHODS (keep as is) ====================
-
-    renderForm() {
-        // Keep your existing renderForm method exactly as it was
-        const filteredTickets = this.filterTickets();
-        const ticketForm = document.getElementById('ticketForm');
-        
-        if (!ticketForm) return;
-        
-        if (filteredTickets.length === 0) {
-            ticketForm.innerHTML = `
-                <div class="empty-state">
-                    <i>📭</i>
-                    <h4>No tickets found</h4>
-                    <p>Adjust your filters to see tickets</p>
-                </div>
-            `;
-            return;
-        }
-
-        if (this.currentFormIndex >= filteredTickets.length) {
-            this.currentFormIndex = 0;
-        }
-
-        const ticket = filteredTickets[this.currentFormIndex];
-        const currentPosition = document.getElementById('currentFormPosition');
-        if (currentPosition) {
-            currentPosition.textContent = `Ticket ${this.currentFormIndex + 1} of ${filteredTickets.length}`;
-        }
-        
-        // Check if this ticket has a rate card assigned
-        const hasRateCard = ticket.rateCardAssigned;
-        const rateCard = hasRateCard ? 
-            this.rateCards.find(rc => rc.id === ticket.rateCardAssigned) : null;
-
-        const formHtml = `
-            <div class="form-group">
-                <div class="form-label">Final Ticket ID</div>
-                <div class="form-value">${ticket.id}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Customer Reference</div>
-                <div class="form-value">${ticket.customerRef}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Requester</div>
-                <div class="form-value">${ticket.requester}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Subject</div>
-                <div class="form-value">${ticket.subject}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Site</div>
-                <div class="form-value">${ticket.site}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Priority</div>
-                <div class="form-value ${ticket.priority === 'High' ? 'conflict' : ''}">${ticket.priority}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Assigned Technician</div>
-                <div class="form-value">${ticket.technician}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Time Fields</div>
-                <div class="form-value">${ticket.timeFields}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Account</div>
-                <div class="form-value">${ticket.account}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Region/Country/City</div>
-                <div class="form-value">${ticket.region}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Engineer Details</div>
-                <div class="form-value">${ticket.engineerDetails}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">PO NUMBER</div>
-                <div class="form-value">${ticket.poNumber}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Revenue</div>
-                <div class="form-value ${hasRateCard ? 'assigned' : 'missing'}">
-                    ${ticket.currency} ${ticket.revenue}
-                    ${hasRateCard ? ' (Rate Card Applied)' : ' (No Rate Card)'}
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Cost</div>
-                <div class="form-value ${hasRateCard ? 'assigned' : 'missing'}">
-                    ${ticket.currency} ${ticket.cost}
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Profit/Margin</div>
-                <div class="form-value ${hasRateCard ? 'assigned' : 'missing'}">
-                    ${ticket.currency} ${ticket.profit} (${ticket.margin})
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Vendor PO</div>
-                <div class="form-value">${ticket.vendorPo}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">PRE/POST Visit</div>
-                <div class="form-value">${ticket.visitType}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Band</div>
-                <div class="form-value">${ticket.band}</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="form-label">Rate Card Assignment</div>
-                <div class="form-value ${hasRateCard ? 'assigned' : 'missing'}">
-                    ${hasRateCard ? 
-                        `${ticket.rateCardAssigned} (v${ticket.rateCardVersion}) - ${rateCard ? rateCard.category : 'N/A'}` : 
-                        'No rate card assigned'
-                    }
-                </div>
-            </div>
-            
-            <div class="form-actions">
-                <button class="btn btn-outline" onclick="rateCardApp.showOverview('${ticket.id}')">
-                    <i>👁️</i> Full Overview
-                </button>
-                <button class="btn btn-primary" onclick="rateCardApp.showComparisonForTicket('${ticket.id}')">
-                    <i>🔍</i> Compare with Rate Card
-                </button>
-                ${!hasRateCard ? 
-                    `<button class="btn btn-success" onclick="rateCardApp.manualAssignRateCard('${ticket.id}', '')">
-                        <i>➕</i> Assign Rate Card
-                    </button>` : 
-                    `<button class="btn btn-danger" onclick="rateCardApp.removeRateCardAssignment('${ticket.id}')">
-                        <i>🗑️</i> Remove Assignment
-                    </button>`
-                }
-            </div>
-        `;
-
-        ticketForm.innerHTML = formHtml;
-    }
-
-    renderComparison() {
-        // Keep your existing renderComparison method
-        const comparisonView = document.getElementById('comparisonView');
-        if (!comparisonView) return;
-        
-        comparisonView.innerHTML = `
-            <div class="comparison-view-header">
-                <h3><i class="fas fa-exchange-alt"></i> Rate Card Comparison Preview</h3>
-                <p>Select a ticket to compare data with assigned rate card</p>
-            </div>
-            
-            <div class="comparison-selector">
-                <label>Select Ticket:</label>
-                <select id="comparisonTicketSelect" class="filter-dropdown">
-                    <option value="">Select a ticket...</option>
-                    ${this.tickets.map(ticket => `
-                        <option value="${ticket.id}">${ticket.id} - ${ticket.customer} - ${ticket.serviceType}</option>
-                    `).join('')}
-                </select>
-            </div>
-            
-            <div class="comparison-container" id="comparisonContainer">
-                <div class="empty-state">
-                    <i>🔍</i>
-                    <h4>Select a ticket to compare</h4>
-                    <p>Choose a ticket from the dropdown above to view comparison</p>
-                </div>
-            </div>
-            
-            <div class="comparison-legend">
-                <div class="legend-item">
-                    <span class="legend-color original"></span>
-                    <span>Original Ticket Data</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color assigned"></span>
-                    <span>Assigned Rate Card Data</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color match"></span>
-                    <span>Perfect Match</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color conflict"></span>
-                    <span>Conflict/Mismatch</span>
-                </div>
-            </div>
-        `;
-
-        // Add event listener for ticket selection
-        const ticketSelect = document.getElementById('comparisonTicketSelect');
-        if (ticketSelect) {
-            ticketSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    this.showComparisonForTicket(e.target.value);
-                }
+    setupEventListeners() {
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const view = e.currentTarget.dataset.view;
+                this.switchView(view);
             });
-        }
-    }
+        });
 
-    // Keep all other existing methods exactly as they were
-    navigateForm(direction) {
-        const filteredTickets = this.filterTickets();
-        this.currentFormIndex += direction;
-        
-        if (this.currentFormIndex < 0) {
-            this.currentFormIndex = filteredTickets.length - 1;
-        } else if (this.currentFormIndex >= filteredTickets.length) {
-            this.currentFormIndex = 0;
-        }
-        
-        this.renderForm();
-    }
+        document.getElementById('searchTickets')?.addEventListener('input', (e) => {
+            this.filters.search = e.target.value;
+            if (this.currentView === 'table') this.renderTable();
+        });
 
-    filterTickets() {
-        return this.tickets.filter(ticket => {
-            // Status filter
-            if (this.filters.status !== 'all' && this.filters.status !== ticket.assignmentStatus) {
-                return false;
-            }
-            
-            // Customer filter
-            if (this.filters.customer !== 'All customers' && this.filters.customer !== ticket.customer) {
-                return false;
-            }
-            
-            // Account filter
-            if (this.filters.account !== 'all' && this.filters.account !== ticket.account) {
-                return false;
-            }
-            
-            // Search filter
-            if (this.filters.search) {
-                const searchLower = this.filters.search.toLowerCase();
-                return ticket.id.toLowerCase().includes(searchLower) ||
-                       ticket.ticketId.toLowerCase().includes(searchLower) ||
-                       ticket.customer.toLowerCase().includes(searchLower) ||
-                       ticket.account.toLowerCase().includes(searchLower) ||
-                       ticket.subject.toLowerCase().includes(searchLower);
-            }
-            
-            return true;
+        ['filterCustomer', 'filterAccount', 'filterStatus'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', (e) => {
+                const filterKey = id.replace('filter', '').toLowerCase();
+                this.filters[filterKey] = e.target.value;
+                if (this.currentView === 'table') this.renderTable();
+            });
         });
     }
 
-    getStatusBadge(status) {
-        const badges = {
-            'assigned': '<span class="status-badge status-assigned">Assigned</span>',
-            'pending': '<span class="status-badge status-pending">Pending</span>',
-            'missing': '<span class="status-badge status-missing">Missing</span>',
-            'conflict': '<span class="status-badge status-conflict">Conflict</span>'
-        };
-        return badges[status] || '<span class="status-badge status-pending">Pending</span>';
-    }
+    // ==================== MANUAL ASSIGNMENT MODAL LOGIC ====================
 
-    updateSummary() {
-        const counts = {
-            assigned: this.tickets.filter(t => t.assignmentStatus === 'assigned').length,
-            pending: this.tickets.filter(t => t.assignmentStatus === 'pending').length,
-            missing: this.tickets.filter(t => t.assignmentStatus === 'missing').length,
-            conflict: this.tickets.filter(t => t.assignmentStatus === 'conflict').length
-        };
+// ==================== MANUAL ASSIGNMENT MODAL LOGIC (UPDATED) ====================
 
-        // Update all count displays
-        const countIds = ['assignedCount', 'pendingCount', 'missingCount', 'conflictCount'];
-        const summaryIds = ['summaryAssigned', 'summaryPending', 'summaryMissing', 'summaryConflict'];
-        
-        const countValues = [counts.assigned, counts.pending, counts.missing, counts.conflict];
-        
-        countIds.forEach((id, index) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = countValues[index];
-            }
-        });
-        
-        summaryIds.forEach((id, index) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = countValues[index];
-            }
-        });
-
-        // Update progress
-        const totalTickets = this.tickets.length;
-        const progress = totalTickets > 0 ? Math.round((counts.assigned / totalTickets) * 100) : 0;
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        
-        if (progressFill) progressFill.style.width = `${progress}%`;
-        if (progressText) progressText.textContent = `${progress}% Complete`;
-    }
-
-    updateRateCardPreview() {
-        const previewDiv = document.getElementById('rateCardPreview');
-        if (!previewDiv) return;
-        
-        // Find first assigned rate card
-        const assignedTicket = this.tickets.find(t => t.rateCardAssigned);
-        
-        if (assignedTicket && assignedTicket.rateCardAssigned) {
-            const rateCard = this.rateCards.find(rc => rc.id === assignedTicket.rateCardAssigned);
-            
-            if (rateCard) {
-                previewDiv.innerHTML = `
-                    <div class="preview-header">
-                        <h3>Rate Card Preview</h3>
-                    </div>
-                    <div class="preview-content">
-                        <div class="preview-item">
-                            <div class="preview-label">Rate Card ID</div>
-                            <div class="preview-value">${rateCard.id}</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Version</div>
-                            <div class="preview-value">${rateCard.version}</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Service Type</div>
-                            <div class="preview-value">${rateCard.category}</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Band Level</div>
-                            <div class="preview-value">${rateCard.bandLevel}</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Base Rate</div>
-                            <div class="preview-value">${rateCard.currency} ${rateCard.rateValue}</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Validity</div>
-                            <div class="preview-value">${rateCard.validFrom} to ${rateCard.validTo}</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Applied to Ticket</div>
-                            <div class="preview-value">${assignedTicket.id}</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                previewDiv.innerHTML = this.getEmptyPreview();
-            }
-        } else {
-            previewDiv.innerHTML = this.getEmptyPreview();
-        }
-    }
-
-    getEmptyPreview() {
-        return `
-            <div class="preview-header">
-                <h3>Rate Card Preview</h3>
-            </div>
-            <div class="preview-content">
-                <div class="empty-state">
-                    <i>📄</i>
-                    <h4>No Rate Card Assigned</h4>
-                    <p>Select a ticket to preview rate card details</p>
-                </div>
-            </div>
-        `;
-    }
-
-    autoAssignRateCards() {
-        console.log('Auto-assigning rate cards...');
-        
-        let assignedCount = 0;
-        let conflictCount = 0;
-        let missingCount = 0;
-
-        this.tickets.forEach(ticket => {
-            if (ticket.rateCardAssigned) return; // Skip already assigned
-            
-            const matchingCards = this.findMatchingRateCards(ticket);
-            
-            if (matchingCards.length === 1) {
-                // Auto-assign single match
-                const rateCard = matchingCards[0];
-                
-                // Store original values before assignment
-                const originalTicket = this.originalTickets.find(ot => ot.id === ticket.id);
-                if (originalTicket) {
-                    originalTicket.originalRevenue = ticket.revenue;
-                    originalTicket.originalCost = ticket.cost;
-                    originalTicket.originalProfit = ticket.profit;
-                }
-                
-                // Assign rate card
-                this.assignRateCard(ticket, rateCard);
-                assignedCount++;
-                
-                // Update modified values with rate card calculations
-                const modifiedTicket = this.modifiedTickets.find(mt => mt.id === ticket.id);
-                if (modifiedTicket) {
-                    // Simulate price changes based on rate card
-                    modifiedTicket.modifiedRevenue = ticket.revenue * 1.1; // 10% increase
-                    modifiedTicket.modifiedCost = ticket.cost * 1.1; // 10% increase
-                    modifiedTicket.modifiedProfit = modifiedTicket.modifiedRevenue - modifiedTicket.modifiedCost;
-                    modifiedTicket.modifiedMargin = ((modifiedTicket.modifiedProfit / modifiedTicket.modifiedRevenue) * 100).toFixed(2) + '%';
-                    modifiedTicket.rateCardAssigned = rateCard.id;
-                    modifiedTicket.rateCardVersion = rateCard.version;
-                    modifiedTicket.assignmentStatus = 'assigned';
-                    modifiedTicket.status = 'READY FOR PRICING';
-                }
-            } else if (matchingCards.length > 1) {
-                // Multiple matches - flag as conflict
-                ticket.assignmentStatus = 'conflict';
-                conflictCount++;
-            } else {
-                // No match found
-                ticket.assignmentStatus = 'missing';
-                missingCount++;
-            }
-        });
-
-        this.render();
-        this.showNotification(`Auto-assigned: ${assignedCount} assigned, ${conflictCount} conflicts, ${missingCount} missing`, 'info');
-    }
-
-    findMatchingRateCards(ticket) {
-        return this.rateCards.filter(card => {
-            return card.customer === ticket.customer &&
-                   card.account === ticket.account &&
-                   card.category === ticket.serviceType &&
-                   card.bandLevel === ticket.band &&
-                   card.currency === ticket.currency &&
-                   card.status === 'Active';
-        });
-    }
-
-    assignRateCard(ticket, rateCard) {
-        ticket.rateCardAssigned = rateCard.id;
-        ticket.rateCardVersion = rateCard.version;
-        ticket.assignmentStatus = 'assigned';
-        ticket.status = 'READY FOR PRICING';
-        
-        this.showNotification(`Rate card ${rateCard.id} assigned to ${ticket.id}`, 'success');
-    }
-
-    manualAssignRateCard(ticketId, rateCardId) {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        
+    manualAssignRateCard(id) {
+        const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
         if (!ticket) {
-            this.showNotification('Ticket not found', 'error');
+            this.showNotification("Ticket not found", "error");
             return;
         }
-        
-        // Show manual assignment modal
-        this.showManualAssignmentModal(ticket);
+
+        // USER REQUEST: Show /band-data results. 
+        // USER REQUEST: Do not match for current company/account, show all.
+        const allBandRecords = this.bandRecords || [];
+
+        if (allBandRecords.length === 0) {
+            this.showNotification("No Band Data records loaded from API", "warning");
+        }
+
+        this.showManualAssignmentModal(ticket, allBandRecords);
     }
 
-    removeRateCardAssignment(ticketId) {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        if (!ticket) return;
+    showManualAssignmentModal(ticket, bandRecords) {
+        // Remove existing modal if any
+        const existing = document.getElementById('assignModal');
+        if (existing) existing.remove();
 
-        ticket.rateCardAssigned = null;
-        ticket.rateCardVersion = null;
-        ticket.assignmentStatus = 'pending';
-        ticket.status = 'VALIDATED';
+        const uniqueId = this.getUniqueId(ticket);
+        const data = ticket.data_table || {};
 
-        this.render();
-        this.showNotification(`Rate card assignment removed from ${ticketId}`, 'info');
-    }
-
-    showComparisonForTicket(ticketId) {
-        // This now redirects to the overview modal
-        this.showOverview(ticketId);
-    }
-
-    showNotification(message, type = 'info') {
-        console.log(`${type.toUpperCase()}: ${message}`);
-        // Simple alert for now
-        alert(`${type.toUpperCase()}: ${message}`);
-    }
-
-    exportReport() {
-        const data = {
-            timestamp: new Date().toISOString(),
-            tickets: this.tickets.length,
-            assigned: this.tickets.filter(t => t.assignmentStatus === 'assigned').length,
-            pending: this.tickets.filter(t => t.assignmentStatus === 'pending').length,
-            missing: this.tickets.filter(t => t.assignmentStatus === 'missing').length,
-            conflict: this.tickets.filter(t => t.assignmentStatus === 'conflict').length
-        };
-        
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `rate-card-report-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        this.showNotification('Report exported successfully', 'success');
-    }
-
-    showManualAssignmentModal(ticket) {
-        const matchingCards = this.findMatchingRateCards(ticket);
-        
         const modalHtml = `
-            <div class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-                <div class="modal-content" style="background: white; border-radius: 10px; width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
-                    <div class="modal-header" style="padding: 20px; background: #2c3e50; color: white; border-radius: 10px 10px 0 0;">
-                        <h2 style="margin: 0;">Assign Rate Card - ${ticket.id}</h2>
-                        <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            <div class="modal-overlay" id="assignModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">
+                <div class="modal-content" style="background:white; width:800px; max-width:95%; max-height:85vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                    
+                    <div class="modal-header" style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border-radius: 8px 8px 0 0;">
+                        <div>
+                            <h3 style="margin:0; color:#2c3e50;">Select Band Record</h3>
+                            <small style="color:#666;">Assigning to: <strong>${uniqueId}</strong></small>
+                        </div>
+                        <button onclick="document.getElementById('assignModal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
                     </div>
-                    <div class="modal-body" style="padding: 20px;">
-                        <p><strong>Ticket Details:</strong> ${ticket.customer} - ${ticket.account} - ${ticket.serviceType} - ${ticket.band}</p>
+
+                    <div class="modal-body" style="padding:20px; overflow-y:auto; background:#fff;">
                         
-                        ${matchingCards.length > 0 ? `
-                            <h3>Available Rate Cards:</h3>
-                            <div style="margin-top: 15px;">
-                                ${matchingCards.map(card => `
-                                    <div style="padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
-                                        <h4 style="margin: 0 0 10px 0;">${card.id} (${card.version})</h4>
-                                        <p style="margin: 5px 0;">Rate: ${card.currency} ${card.rateValue} (${card.rateType})</p>
-                                        <p style="margin: 5px 0;">Validity: ${card.validFrom} to ${card.validTo}</p>
-                                        <button onclick="rateCardApp.confirmAssignRateCard('${ticket.id}', '${card.id}'); this.closest('.modal-overlay').remove();" 
-                                                style="margin-top: 10px; padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                            Assign This Card
-                                        </button>
-                                    </div>
-                                `).join('')}
+                        <div style="background:#e3f2fd; padding:10px 15px; border-radius:6px; margin-bottom:20px; border-left:4px solid #2196f3; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="color:#1565c0;">Target:</strong> ${ticket.customer || 'N/A'} - ${ticket.account || 'N/A'}
                             </div>
-                        ` : `
-                            <div style="text-align: center; padding: 30px;">
-                                <p style="color: #e74c3c; font-size: 16px;">No matching rate cards found!</p>
-                                <p>No rate cards match this ticket's criteria.</p>
+                            <div style="font-size:0.9em; color:#1565c0;">
+                                Region: ${data.region || '-'} | Service: ${data.service_type || '-'}
                             </div>
-                        `}
+                        </div>
+
+                        <h5 style="margin:0 0 15px 0; padding-bottom:10px; border-bottom:1px solid #eee; color:#2c3e50;">
+                            Available Band Records (${bandRecords.length})
+                        </h5>
+
+                        <div class="band-list-container">
+                            ${bandRecords.length > 0 ? 
+                                bandRecords.map(record => this.renderBandSelectionItem(record, uniqueId)).join('') 
+                                : 
+                                `<div style="text-align:center; padding:40px; color:#95a5a6;">
+                                    <i class="fas fa-database" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+                                    No Band Data Records Available
+                                </div>`
+                            }
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="padding:15px 20px; border-top:1px solid #eee; text-align:right; background:#f8f9fa; border-radius: 0 0 8px 8px;">
+                        <button class="btn btn-outline" onclick="document.getElementById('assignModal').remove()">Cancel</button>
                     </div>
                 </div>
             </div>
         `;
-        
+
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
 
-    confirmAssignRateCard(ticketId, rateCardId) {
-        const ticket = this.tickets.find(t => t.id === ticketId);
-        const rateCard = this.rateCards.find(rc => rc.id === rateCardId);
-        
-        if (ticket && rateCard) {
-            this.assignRateCard(ticket, rateCard);
-            this.render();
+    renderBandSelectionItem(record, ticketId) {
+        // Safe access to nested properties
+        const customer = record.customer || 'Unknown Customer';
+        const account = record.account || 'Unknown Account';
+        const refTicket = record.ticket_number || 'N/A';
+        // Use a unique ID from the record, or fallback to ticket_number, or generate a random one if strictly necessary
+        const recordId = record.id || record._id || record.ticket_number; 
+
+        // Extract some summary data to show in the row (e.g., number of dispatch bands)
+        const dispatchCount = record.band_data?.dispatch ? Object.keys(record.band_data.dispatch).length : 0;
+        const dedicatedCount = record.band_data?.dedicated ? Object.keys(record.band_data.dedicated).length : 0;
+
+        return `
+            <div style="border:1px solid #e0e0e0; border-radius:6px; margin-bottom:10px; transition:all 0.2s; overflow:hidden;" onmouseover="this.style.borderColor='#3498db'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.05)'" onmouseout="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none'">
+                <div style="padding:12px 15px; display:flex; justify-content:space-between; align-items:center; background:white;">
+                    
+                    <div style="flex-grow:1;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                            <span style="font-weight:bold; color:#2c3e50; font-size:1.05em;">${customer}</span>
+                            <span style="color:#ccc;">|</span>
+                            <span style="color:#555;">${account}</span>
+                        </div>
+                        <div style="font-size:0.85em; color:#7f8c8d; display:flex; gap:15px;">
+                            <span><i class="fas fa-hashtag"></i> Ref Ticket: <strong>${refTicket}</strong></span>
+                            <span title="Dispatch Categories"><i class="fas fa-truck"></i> Dispatch: ${dispatchCount}</span>
+                            <span title="Dedicated Categories"><i class="fas fa-user-clock"></i> Dedicated: ${dedicatedCount}</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-left:15px;">
+                        <button class="btn btn-sm btn-primary" 
+                            style="padding:6px 15px; box-shadow:0 2px 4px rgba(52, 152, 219, 0.3);"
+                            onclick="rateCardApp.confirmAssignment('${ticketId}', '${recordId}')">
+                            Select Record
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="background:#fafafa; padding:5px 15px; font-size:0.75em; color:#aaa; border-top:1px solid #f0f0f0;">
+                    ID: ${recordId}
+                </div>
+            </div>
+        `;
+    }
+
+    confirmAssignment(ticketId, rateCardId) {
+        console.log(`Assigning ${rateCardId} to ${ticketId}`);
+
+        const ticket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+
+        if (ticket) {
+            // 1. Update Ticket State
+            ticket.assignmentStatus = 'assigned';
+            ticket.rateCardAssigned = rateCardId;
+
+            // 2. Persist to LocalStorage
+            this.saveAssignment(ticketId, rateCardId);
+
+            // 3. Close Modal & Notify
+            const modal = document.getElementById('assignModal');
+            if (modal) modal.remove();
+
+            this.showNotification(`Successfully assigned ${rateCardId}`, 'success');
+
+            // 4. Refresh View
+            this.switchView(this.currentView);
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            console.log(`[${type}] ${message}`);
         }
     }
 }
 
-// Initialize the application when DOM is loaded
+// Initialize when DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
     window.rateCardApp = new RateCardAssignmentEnhanced();
-    console.log('Rate Card Application initialized');
 });
