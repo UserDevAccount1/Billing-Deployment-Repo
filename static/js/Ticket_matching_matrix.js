@@ -611,14 +611,49 @@ function parseExcel(file) {
 }
 
 /**
- * EAGER NORMALIZER: Converts Raw Data to Master Matrix Data Immediately
- * Handles Append Mode vs Smart Mode mapping
+ * ROBUST NORMALIZER (FIXED WITH MAPPING)
+ * 1. Maps Dropdown Value to Actual Schema Key.
+ * 2. Matches headers case-insensitively against Synonyms.
+ * 3. Appends new fields to the Mapped Schema or ALL tables.
  */
 function normalizeBatch(rawData) {
   const contextCustomer = document.getElementById('tmm_customerSelect')?.selectedOptions[0]?.text || "";
   const contextAccount = document.getElementById('tmm_accountSelect')?.selectedOptions[0]?.text || "";
   const isImportAll = contextCustomer.toLowerCase().includes("all");
-  const importMode = document.getElementById('tmm_importMode')?.value || 'smart'; // 'smart' or 'append'
+
+  // [FIX 1] Get the raw dropdown value
+  const dropdown = document.getElementById('tmm_categorySelect');
+  const rawValue = dropdown ? dropdown.value : null;
+
+  // [FIX 2] Create a Map to translate HTML Value -> Schema Key
+  const schemaMap = {
+    'ticket': 'ticket_data',
+    'rate': 'rate_card',
+    'dispatch': 'dispatch',
+    'standby': 'standby',
+    'dedicated': 'dedicated',
+    'sv': 'sv_visit',
+    'project': 'project',
+    'final': 'final_ticket',
+    'all': 'all'
+  };
+
+  // Get the correct key used in TABLE_SCHEMAS
+  const selectedSchemaKey = schemaMap[rawValue] || rawValue;
+
+  // [FIX 3] Determine which tables should receive the new columns
+  let targetTables = [];
+
+  if (selectedSchemaKey === 'all') {
+    // If user selected "All", add new columns to EVERY table schema
+    targetTables = Object.keys(TABLE_SCHEMAS);
+  } else if (selectedSchemaKey && TABLE_SCHEMAS[selectedSchemaKey]) {
+    // If user selected specific table, add only to that specific schema
+    targetTables = [selectedSchemaKey];
+  }
+
+  console.log(`[Normalizer] Raw Select: ${rawValue} -> Mapped Key: ${selectedSchemaKey}`);
+  console.log(`[Normalizer] Targeting Tables:`, targetTables);
 
   return rawData.map(raw => {
     let normalized = {};
@@ -629,46 +664,74 @@ function normalizeBatch(rawData) {
       normalized['account'] = contextAccount;
     }
 
-    const matchedHeaders = new Set();
+    // 2. Iterate over EVERY column in the uploaded file
+    Object.keys(raw).forEach(fileHeader => {
+      const cleanHeader = String(fileHeader).trim();
+      const cleanHeaderLower = cleanHeader.toLowerCase();
+      const val = String(raw[fileHeader]).trim();
 
-    // 2. Smart Mapping (Synonyms)
-    for (const [systemField, synonyms] of Object.entries(FIELD_SYNONYMS)) {
-      let found = false;
-      if (raw[systemField] !== undefined) {
-        normalized[systemField] = String(raw[systemField]).trim();
-        matchedHeaders.add(systemField);
-        found = true;
-      } else {
-        for (const syn of synonyms) {
-          if (raw[syn] !== undefined && raw[syn] !== null && String(raw[syn]).trim() !== "") {
-            let val = String(raw[syn]).trim();
-            if (systemField === 'technician_name') val = val.replace(/[\r\n]+/g, ", ");
-            normalized[systemField] = val;
-            matchedHeaders.add(syn);
-            found = true;
-            break;
-          }
+      // Skip garbage columns
+      if (!cleanHeader || cleanHeader.startsWith('__EMPTY') || val === "") return;
+
+      let matchedSystemField = null;
+
+      // --- A. CHECK FOR SYNONYM MATCH (Case Insensitive) ---
+      for (const [sysField, synonyms] of Object.entries(FIELD_SYNONYMS)) {
+        if (sysField.toLowerCase() === cleanHeaderLower) {
+          matchedSystemField = sysField;
+          break;
+        }
+        if (synonyms.some(s => s.toLowerCase() === cleanHeaderLower)) {
+          matchedSystemField = sysField;
+          break;
         }
       }
-    }
 
-    // 3. Append Mode: Capture extra fields
-    if (importMode === 'append') {
-      Object.keys(raw).forEach(header => {
-        if (!matchedHeaders.has(header) && raw[header] !== undefined) {
-          const dynamicId = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          // Add definition if missing
-          if (!FIELD_DEFINITIONS[dynamicId]) {
-            FIELD_DEFINITIONS[dynamicId] = {
-              label: header, type: 'TEXT', group: 'IMPORTED', rag: 'GREY', required: false
-            };
-          }
-          normalized[dynamicId] = String(raw[header]).trim();
+      if (matchedSystemField) {
+        // MAPPED: Standardize data
+        let cleanVal = val;
+        if (matchedSystemField === 'technician_name') cleanVal = cleanVal.replace(/[\r\n]+/g, ", ");
+        normalized[matchedSystemField] = cleanVal;
+      }
+      else {
+        // --- B. APPEND MODE (New Field) ---
+        // Create a safe ID
+        const dynamicId = cleanHeaderLower.replace(/[^a-z0-9]/g, '_');
+
+        // 1. Create Field Definition if missing
+        if (!FIELD_DEFINITIONS[dynamicId]) {
+          FIELD_DEFINITIONS[dynamicId] = {
+            label: cleanHeader,
+            type: 'TEXT',
+            group: 'IMPORTED',
+            rag: 'GREY',
+            required: false,
+            // [FIX 4] Auto-populate to all targeted tables
+            autoPopTo: [...targetTables]
+          };
+        } else {
+          // Update existing definition to include these tables in autoPop if not present
+          targetTables.forEach(tbl => {
+            if (FIELD_DEFINITIONS[dynamicId].autoPopTo && !FIELD_DEFINITIONS[dynamicId].autoPopTo.includes(tbl)) {
+              FIELD_DEFINITIONS[dynamicId].autoPopTo.push(tbl);
+            }
+          });
         }
-      });
-    }
 
-    // 4. Fill defaults
+        // [FIX 5] Update the Table Schemas explicitly using the Mapped Key
+        targetTables.forEach(tbl => {
+          if (TABLE_SCHEMAS[tbl] && !TABLE_SCHEMAS[tbl].includes(dynamicId)) {
+            TABLE_SCHEMAS[tbl].push(dynamicId);
+            console.log(`[Schema Update] Added ${dynamicId} to ${tbl}`);
+          }
+        });
+
+        // 2. Map the Data
+        normalized[dynamicId] = val;
+      }
+    });
+
+    // 3. Fill defaults for missing standard fields
     Object.keys(FIELD_DEFINITIONS).forEach(field => {
       if (normalized[field] === undefined) normalized[field] = "";
     });
@@ -870,8 +933,6 @@ function confirmOverwrite() {
   loadRecord(window.currentImportIndex);
 }
 
-// ──── 6. MATRIX UI & NAVIGATION ────
-
 function loadRecord(index) {
   if (!window.MASTER_DATA || window.MASTER_DATA.length === 0) return;
 
@@ -881,13 +942,24 @@ function loadRecord(index) {
 
   const record = window.MASTER_DATA[index];
 
-  STATE.smartAddCount = 0;      // Reset trigger count
-  STATE.autoPopulatedCount = 0; // Reset field count
+  STATE.smartAddCount = 0;
+  STATE.autoPopulatedCount = 0;
 
-  // Clear Visual Stores
+  // 1. Reset Visual Stores
   Object.keys(DATA_STORE).forEach(key => DATA_STORE[key] = {});
 
-  // Populate Visual Stores
+  // 2. Populate Visual Stores based on TABLE_SCHEMAS
+  Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
+    const fieldsInTable = TABLE_SCHEMAS[tableKey];
+    fieldsInTable.forEach(field => {
+      // [CHECK] This grabs the value for the new dynamicId we just created
+      if (record[field] !== undefined) {
+        DATA_STORE[tableKey][field] = record[field];
+      }
+    });
+  });
+
+  // 3. Run Smart Add logic (Synchronize shared fields across other tables)
   Object.keys(FIELD_DEFINITIONS).forEach(field => {
     const val = record[field];
     if (val) smartAddToOtherTables(field, val);
@@ -895,15 +967,13 @@ function loadRecord(index) {
 
   document.getElementById('currentRecordDisplay').innerText = `${index + 1} / ${window.MASTER_DATA.length}`;
 
-  // 1. Render the HTML completely (resets classes/attributes)
+  // 4. Force Render
   renderMatrixBody();
 
-  // 2. CRITICAL: Re-Apply Filters Immediately
-  // Because rendering wipes the previous filter state from the DOM elements
+  // 5. Re-apply UI layers
   if (typeof window.applyFilters === 'function') window.applyFilters();
-  if (typeof window.applyColumnVisibility === 'function') window.applyColumnVisibility(); // Forces column hiding to re-run
+  if (typeof window.applyColumnVisibility === 'function') window.applyColumnVisibility();
 
-  // 3. Re-Apply Search Highlighting if active
   const searchVal = document.getElementById('searchInput')?.value;
   if (searchVal && typeof performSearchHighlight === 'function') performSearchHighlight(searchVal);
 

@@ -6,9 +6,9 @@ app_name = "billing"
 urlpatterns = [
     # Main billing run pages
     path("", views.billing_run_list, name="list"),
-    path("create/", views.create_billing_run, name="create"),
+    # path("create/", views.create_billing_run, name="create"),
     path("create-wizard/", views.create_billing_run_wizard, name="create_wizard"),
-    path("test/", views.test_page, name="test"),
+    path("create/", views.test_page, name="create"),
     # API endpoints for AJAX calls (Existing)
     path(
         "api/customers/<int:customer_id>/accounts/",
