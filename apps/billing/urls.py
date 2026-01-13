@@ -20,7 +20,7 @@ urlpatterns = [
         views.get_account_details_api,
         name="account_details_api",
     ),
-    # API endpoints for Batch Storage (From previous step)
+    # --- BATCH STORAGE ENDPOINTS ---
     path(
         "api/band-table/batch/",
         views.BatchStoreBandTableView.as_view(),
@@ -31,7 +31,12 @@ urlpatterns = [
         views.BatchStoreFinalTicketView.as_view(),
         name="final_ticket_batch",
     ),
-    # API endpoints for Retrieving Ticket Data (New)
+    path(
+        "api/initial-ticket/batch/",
+        views.BatchStoreInitialTicketView.as_view(),
+        name="initial_ticket_batch",
+    ),
+    # --- DATA RETRIEVAL ENDPOINTS ---
     path(
         "api/band-data/",
         views.get_all_band_data,
@@ -42,4 +47,21 @@ urlpatterns = [
         views.get_all_final_data,
         name="get_final_data",
     ),
+    path(
+        "api/initial-data/",
+        views.get_all_initial_data,
+        name="get_initial_data",
+    ),
+    # --- ASSIGNMENT ENDPOINTS ---
+    path(
+        "api/batch-assign-bands/",
+        views.BatchAssignBandView.as_view(),
+        name="batch_assign_bands",
+    ),
+    path(
+        "api/auto-assign-bands/",
+        views.AutoAssignBandView.as_view(),
+        name="auto_assign_bands",
+    ),
+    path("comparison/", views.comparison_tool, name="comparison_tool"),
 ]

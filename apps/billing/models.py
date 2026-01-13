@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from apps.customers.models import Customer, Account
 from apps.purchase_orders.models import PurchaseOrder
+import uuid
 
 
 class BillingRun(models.Model):
@@ -152,6 +153,8 @@ class BillingRunAttachment(models.Model):
 class BandTable(models.Model):
     """Stores intermediate band calculation data for tickets"""
 
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     account = models.ForeignKey(
         Account, on_delete=models.CASCADE, null=True, blank=True
@@ -170,11 +173,31 @@ class BandTable(models.Model):
         ]
 
     def __str__(self):
-        return f"BandData: {self.ticket_number}"
+        return f"BandData: {self.ticket_number} ({self.uuid})"
 
 
 class FinalTicket(models.Model):
     """Stores the final processed ticket data"""
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    # Link to the InitialTicket
+    initial_ticket = models.ForeignKey(
+        "InitialTicket",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="final_tickets",
+    )
+
+    # UPDATED: Link to BandTable instead of external RateCard
+    band = models.ForeignKey(
+        "BandTable", 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="assigned_tickets"
+    )
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     account = models.ForeignKey(
@@ -196,3 +219,30 @@ class FinalTicket(models.Model):
 
     def __str__(self):
         return f"FinalTicket: {self.ticket_number} ({self.request_id})"
+
+
+class InitialTicket(models.Model):
+    """Stores the initial raw ticket data (same schema as FinalTicket)"""
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, null=True, blank=True
+    )
+    ticket_number = models.CharField(max_length=100, db_index=True)
+    request_id = models.CharField(max_length=100, db_index=True)
+
+    # Stores the raw row/table data as JSON
+    data_table = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["request_id"]),
+            models.Index(fields=["ticket_number"]),
+        ]
+
+    def __str__(self):
+        return f"InitialTicket: {self.ticket_number} ({self.request_id})"

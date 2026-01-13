@@ -1580,7 +1580,6 @@
     max-height: 95vh;
     overflow: hidden;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.4s forwards;
 }
 
 @keyframes slideUp {

@@ -473,7 +473,12 @@ function initRecordValidationButton() {
         account: accountId, // Can be null
         ticket_number: record.ticket_number || "UNKNOWN",
         request_id: record.request_id || "UNKNOWN",
-        data_table: jsonStorage
+        data_table: jsonStorage,
+
+        // --- NEW: Attach Initial Ticket UUID ---
+        // This comes from the Step 1 execution. 
+        // If viewRulesBtn wasn't clicked, this will be null.
+        initial_ticket_uuid: record._initial_uuid || null
       };
     });
 
@@ -1170,17 +1175,108 @@ function showToast(message, type = 'info') {
 function initSaveButton() {
   const saveBtn = document.getElementById('viewRulesBtn');
   if (!saveBtn) return;
+
   saveBtn.addEventListener('click', function () {
-    if (window.MASTER_DATA.length === 0) {
-      showToast("No data to save.", "error");
+    // 1. Basic Checks
+    if (!window.MASTER_DATA || window.MASTER_DATA.length === 0) {
+      showToast("No data to process.", "error");
       return;
     }
-    console.group("💾 FULL DATA DUMP");
-    console.log(`Timestamp: ${new Date().toISOString()}`);
-    console.log(`Records: ${window.MASTER_DATA.length}`);
-    console.log("Master Data (Current State):", window.MASTER_DATA);
-    console.groupEnd();
-    showToast("Data dumped to Console", "success");
+
+    const customerSelect = document.getElementById('tmm_customerSelect');
+    const accountSelect = document.getElementById('tmm_accountSelect');
+    const customerId = (customerSelect && customerSelect.value !== 'all') ? parseInt(customerSelect.value) : null;
+    const accountId = (accountSelect && accountSelect.value !== 'all') ? parseInt(accountSelect.value) : null;
+
+    if (!customerId) {
+      showToast('Error: Please select a specific Customer before uploading Initial Data.', 'error');
+      return;
+    }
+
+    // 2. Prepare Payload & Sanitize Ticket Numbers
+    // We modify MASTER_DATA in place to ensure visual consistency
+    const payload = window.MASTER_DATA.map(record => {
+
+      // GENERATE UNIQUE TICKET NUMBER IF MISSING
+      let cleanTicketNum = record.ticket_number;
+      if (!cleanTicketNum || cleanTicketNum === 'N/A' || cleanTicketNum.trim() === '') {
+        // Generate: GEN-{Timestamp}-{Random4Digits}
+        cleanTicketNum = `GEN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        record.ticket_number = cleanTicketNum; // Update local state
+      }
+
+      // Ensure Request ID exists (fallback to ticket number)
+      const cleanRequestId = record.request_id || cleanTicketNum;
+      record.request_id = cleanRequestId; // Update local state
+
+      return {
+        customer: customerId,
+        account: accountId,
+        ticket_number: cleanTicketNum,
+        request_id: cleanRequestId,
+        data_table: record // Store the full raw object
+      };
+    });
+
+    console.group("🚀 UPLOADING INITIAL DATA");
+    console.log(`Sending ${payload.length} records...`);
+
+    // 3. Send to API
+    const csrftoken = getCookie('csrftoken'); // Ensure you have this helper function
+    const btnOriginalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading Initial...';
+    saveBtn.disabled = true;
+
+    fetch('/billing/api/initial-ticket/batch/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          showToast(`Initial Data Uploaded! Linked ${data.created_items.length} records.`, "success");
+
+          // 4. MAP UUIDS BACK TO MASTER DATA
+          // We assume the API returns items in the same order, or we match by ticket_number
+          if (data.created_items && Array.isArray(data.created_items)) {
+            data.created_items.forEach((item, index) => {
+              // Option A: Map by Index (Fastest if API preserves order)
+              if (window.MASTER_DATA[index]) {
+                window.MASTER_DATA[index]._initial_uuid = item.uuid;
+              }
+            });
+            console.log("UUIDs linked to Master Data:", window.MASTER_DATA.map(r => r._initial_uuid));
+          }
+
+          // Refresh View to show generated ticket numbers if any
+          if (window.loadRecord) loadRecord(window.currentImportIndex);
+
+          saveBtn.innerHTML = '<i class="fas fa-check"></i> Initial Linked';
+        } else {
+          throw new Error(data.message || 'Unknown Error');
+        }
+      })
+      .catch(error => {
+        console.error('Initial Upload Error:', error);
+        showToast(`Upload Failed: ${error.message}`, 'error');
+        saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Retry Initial';
+      })
+      .finally(() => {
+        saveBtn.disabled = false;
+        console.groupEnd();
+
+        // Optional: Restore button text after delay
+        setTimeout(() => {
+          if (saveBtn.innerHTML.includes('Check')) saveBtn.innerHTML = btnOriginalText;
+        }, 3000);
+      });
   });
 }
 

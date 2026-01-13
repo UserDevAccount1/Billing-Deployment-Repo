@@ -8,7 +8,6 @@ class RateCardAssignmentEnhanced {
         // Data Stores
         this.bandRecords = [];
         this.currentBandIndex = 0;
-        this.rateCards = [];
         this.tickets = [];
         this.originalTickets = [];
         this.modifiedTickets = [];
@@ -57,7 +56,6 @@ class RateCardAssignmentEnhanced {
 
             await Promise.all([
                 this.fetchFinalTickets(),
-                this.fetchRateCards(),
                 this.fetchBandData()
             ]);
 
@@ -92,18 +90,29 @@ class RateCardAssignmentEnhanced {
 
             if (jsonResponse.success && Array.isArray(jsonResponse.data)) {
                 this.tickets = jsonResponse.data;
-            } else if (Array.isArray(jsonResponse)) {
-                this.tickets = jsonResponse;
             } else {
                 this.tickets = [];
             }
 
+            // Process Tickets
             this.tickets.forEach(t => {
                 if (t.customer) t.customer = String(t.customer);
                 if (t.account) t.account = String(t.account);
-                if (!t.rateCardAssigned) t.rateCardAssigned = null;
-                if (!t.assignmentStatus) t.assignmentStatus = 'pending';
 
+                // --- NEW STATUS LOGIC (FIXED) ---
+                // If 'band' object is present and not null, it's assigned.
+                if (t.band) {
+                    t.assignmentStatus = 'assigned';
+                    // Safe access to nested properties just in case
+                    t.rateCardAssigned = t.band.ticket_number || 'Assigned Band';
+                    t.bandUuid = t.band.uuid;
+                } else {
+                    t.assignmentStatus = 'pending';
+                    t.rateCardAssigned = null;
+                }
+                // --------------------------------
+
+                // Sanitize Data Table HTML
                 if (t.data_table) {
                     Object.keys(t.data_table).forEach(key => {
                         let val = t.data_table[key];
@@ -116,24 +125,11 @@ class RateCardAssignmentEnhanced {
                 }
             });
 
+            this.updateSummary();
+
         } catch (error) {
             console.error("Error fetching tickets:", error);
             this.tickets = [];
-        }
-    }
-
-    async fetchRateCards() {
-        try {
-            const response = await fetch('/billing/api/rate-cards/');
-            if (!response.ok) {
-                this.rateCards = [];
-                return;
-            }
-            const data = await response.json();
-            this.rateCards = (data.data && Array.isArray(data.data)) ? data.data : (Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error("Error fetching rate cards:", error);
-            this.rateCards = [];
         }
     }
 
@@ -214,7 +210,7 @@ class RateCardAssignmentEnhanced {
     }
 
     getUniqueId(ticket) {
-        return (ticket.ticket_number && ticket.ticket_number !== 'NA') ? ticket.ticket_number : ticket.request_id;
+        return ticket.uuid || ticket.ticket_number || ticket.request_id;
     }
 
     // ==================== TABLE VIEW RENDER ====================
@@ -367,13 +363,13 @@ class RateCardAssignmentEnhanced {
         if (!ticket) return;
 
         // 1. Intelligent Filtering: Match Customer & Account
-        const matchingCards = this.rateCards.filter(rc =>
+        const matchingCards = this.bandRecords.filter(rc =>
             String(rc.customer) === String(ticket.customer) &&
             String(rc.account) === String(ticket.account)
         );
 
         // 2. Fallback: Match Customer only if no account specific cards
-        const allCustomerCards = matchingCards.length > 0 ? [] : this.rateCards.filter(rc =>
+        const allCustomerCards = matchingCards.length > 0 ? [] : this.bandRecords.filter(rc =>
             String(rc.customer) === String(ticket.customer)
         );
 
@@ -430,29 +426,79 @@ class RateCardAssignmentEnhanced {
                     </div>
                     <div style="font-weight:bold; margin-top:4px;">${card.currency} ${card.rateValue}</div>
                 </div>
-                <button class="btn btn-sm btn-primary" onclick="rateCardApp.confirmAssignment('${ticketId}', '${card.id}')">Select</button>
+                <button class="btn btn-sm btn-primary" onclick="rateCardApp.confirmAssignment('${ticketId}', '${card.uuid}')">Select</button>
             </div>
         `;
     }
 
-    confirmAssignment(id, rateCardId) {
-        console.log(`Assigning Ticket ${id} to Rate Card ${rateCardId}`);
+    // RateCardEnhanced.js
 
-        // 1. Update State
-        const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
-        if (ticket) {
-            ticket.assignmentStatus = 'assigned';
-            ticket.rateCardAssigned = rateCardId;
+    async confirmAssignment(ticketId, bandUuid) {
+        console.log(`Assigning Band ${bandUuid} to Ticket ${ticketId}`);
 
-            // 2. Persist
-            this.saveAssignment(id, rateCardId);
+        // 1. Find Ticket
+        // We look for the ticket where the unique ID matches (which we set to uuid in getUniqueId)
+        // OR fallback to matching by ticket_number if uuid matching fails (legacy support)
+        let ticket = this.tickets.find(t => t.uuid === ticketId);
 
-            // 3. UI Feedback
-            this.showNotification(`Successfully assigned rate card to ${id}`, 'success');
-            document.getElementById('assignModal')?.remove();
+        if (!ticket) {
+            // Fallback: Check if ticketId is actually a ticket number or request ID
+            ticket = this.tickets.find(t => t.ticket_number === ticketId || t.request_id === ticketId);
+        }
 
-            // 4. Refresh View
-            this.switchView(this.currentView);
+        if (!ticket) {
+            this.showNotification("Ticket not found in local store.", "error");
+            return;
+        }
+
+        if (!bandUuid || bandUuid === 'undefined') {
+            this.showNotification("Invalid Band UUID.", "error");
+            return;
+        }
+
+        const payload = [{
+            "final_ticket": ticket.uuid, // Ensure we send the backend UUID
+            "band": bandUuid
+        }];
+
+        // 2. Call API
+        try {
+            const response = await fetch('/billing/api/batch-assign-bands/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // 3. Update Local State
+                ticket.assignmentStatus = 'assigned';
+                // Find band info to update display text
+                const bandRec = this.bandRecords.find(b => b.uuid === bandUuid);
+
+                // Update the ticket object to match what fetchFinalTickets does
+                ticket.band = {
+                    uuid: bandUuid,
+                    ticket_number: bandRec ? bandRec.ticket_number : 'Assigned'
+                };
+
+                ticket.rateCardAssigned = bandRec ? bandRec.ticket_number : 'Assigned Band';
+                ticket.bandUuid = bandUuid;
+
+                this.showNotification(`Successfully assigned band to ${ticket.ticket_number}`, 'success');
+
+                document.getElementById('assignModal')?.remove();
+                this.switchView(this.currentView);
+            } else {
+                this.showNotification(`Assignment failed: ${result.error}`, 'error');
+            }
+        } catch (err) {
+            console.error("Assignment Error:", err);
+            this.showNotification("Server error during assignment.", "error");
         }
     }
 
@@ -757,11 +803,24 @@ class RateCardAssignmentEnhanced {
                 if (this.currentView === 'table') this.renderTable();
             });
         });
+
+        document.getElementById('prevTicket')?.addEventListener('click', () => {
+            if (this.currentFormIndex > 0) {
+                this.currentFormIndex--;
+                this.renderForm();
+            }
+        });
+
+        document.getElementById('nextTicket')?.addEventListener('click', () => {
+            const total = this.filterTickets().length;
+            if (this.currentFormIndex < total - 1) {
+                this.currentFormIndex++;
+                this.renderForm();
+            }
+        });
     }
 
     // ==================== MANUAL ASSIGNMENT MODAL LOGIC ====================
-
-// ==================== MANUAL ASSIGNMENT MODAL LOGIC (UPDATED) ====================
 
     manualAssignRateCard(id) {
         const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
@@ -769,15 +828,13 @@ class RateCardAssignmentEnhanced {
             this.showNotification("Ticket not found", "error");
             return;
         }
-
-        // USER REQUEST: Show /band-data results. 
-        // USER REQUEST: Do not match for current company/account, show all.
         const allBandRecords = this.bandRecords || [];
 
         if (allBandRecords.length === 0) {
             this.showNotification("No Band Data records loaded from API", "warning");
         }
-
+        this.modalBandPage = 0;
+        this.modalBandPageSize = 5;
         this.showManualAssignmentModal(ticket, allBandRecords);
     }
 
@@ -789,19 +846,24 @@ class RateCardAssignmentEnhanced {
         const uniqueId = this.getUniqueId(ticket);
         const data = ticket.data_table || {};
 
+        // Calculate Pagination
+        const totalPages = Math.ceil(bandRecords.length / this.modalBandPageSize);
+        const startIdx = this.modalBandPage * this.modalBandPageSize;
+        const currentRecords = bandRecords.slice(startIdx, startIdx + this.modalBandPageSize);
+
         const modalHtml = `
-            <div class="modal-overlay" id="assignModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">
-                <div class="modal-content" style="background:white; width:800px; max-width:95%; max-height:85vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <div class="" id="assignModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">
+                <div style="background:white; width:900px; max-width:95%; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
                     
-                    <div class="modal-header" style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border-radius: 8px 8px 0 0;">
+                    <div class="" style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border-radius: 8px 8px 0 0;">
                         <div>
-                            <h3 style="margin:0; color:#2c3e50;">Select Band Record</h3>
-                            <small style="color:#666;">Assigning to: <strong>${uniqueId}</strong></small>
+                            <h3 style="margin:0; color:#2c3e50;">Assign Band Record</h3>
+                            <small style="color:#666;">Ticket: <strong>${uniqueId}</strong></small>
                         </div>
                         <button onclick="document.getElementById('assignModal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
                     </div>
 
-                    <div class="modal-body" style="padding:20px; overflow-y:auto; background:#fff;">
+                    <div class="" style="padding:20px; overflow-y:auto; background:#fff; flex: 1;">
                         
                         <div style="background:#e3f2fd; padding:10px 15px; border-radius:6px; margin-bottom:20px; border-left:4px solid #2196f3; display:flex; justify-content:space-between; align-items:center;">
                             <div>
@@ -812,19 +874,28 @@ class RateCardAssignmentEnhanced {
                             </div>
                         </div>
 
-                        <h5 style="margin:0 0 15px 0; padding-bottom:10px; border-bottom:1px solid #eee; color:#2c3e50;">
-                            Available Band Records (${bandRecords.length})
-                        </h5>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h5 style="margin:0; color:#2c3e50;">Available Band Records (${bandRecords.length})</h5>
+                            <div class="modal-pagination">
+                                <button class="btn btn-sm btn-outline" onclick="rateCardApp.changeModalPage(-1, '${uniqueId}')" ${this.modalBandPage === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span style="font-size:0.85em; margin:0 10px;">Page ${this.modalBandPage + 1} of ${totalPages || 1}</span>
+                                <button class="btn btn-sm btn-outline" onclick="rateCardApp.changeModalPage(1, '${uniqueId}')" ${this.modalBandPage >= totalPages - 1 ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
 
                         <div class="band-list-container">
-                            ${bandRecords.length > 0 ? 
-                                bandRecords.map(record => this.renderBandSelectionItem(record, uniqueId)).join('') 
-                                : 
-                                `<div style="text-align:center; padding:40px; color:#95a5a6;">
+                            ${currentRecords.length > 0 ?
+                currentRecords.map(record => this.renderBandSelectionItem(record, uniqueId)).join('')
+                :
+                `<div style="text-align:center; padding:40px; color:#95a5a6;">
                                     <i class="fas fa-database" style="font-size:24px; margin-bottom:10px; display:block;"></i>
                                     No Band Data Records Available
                                 </div>`
-                            }
+            }
                         </div>
                     </div>
 
@@ -838,73 +909,113 @@ class RateCardAssignmentEnhanced {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
 
+    changeModalPage(direction, ticketId) {
+        const totalPages = Math.ceil((this.bandRecords || []).length / this.modalBandPageSize);
+        const newPage = this.modalBandPage + direction;
+
+        if (newPage >= 0 && newPage < totalPages) {
+            this.modalBandPage = newPage;
+            const ticket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+            this.showManualAssignmentModal(ticket, this.bandRecords);
+        }
+    }
+
     renderBandSelectionItem(record, ticketId) {
         // Safe access to nested properties
         const customer = record.customer || 'Unknown Customer';
         const account = record.account || 'Unknown Account';
         const refTicket = record.ticket_number || 'N/A';
-        // Use a unique ID from the record, or fallback to ticket_number, or generate a random one if strictly necessary
-        const recordId = record.id || record._id || record.ticket_number; 
 
-        // Extract some summary data to show in the row (e.g., number of dispatch bands)
+        // --- FIX: Ensure we get the correct UUID from the band record ---
+        const recordUuid = record.uuid;
+        // ----------------------------------------------------------------
+
+        const uniqueKey = `band-${recordUuid}`; // For collapse ID
+
+        // Extract some summary data to show in the row
         const dispatchCount = record.band_data?.dispatch ? Object.keys(record.band_data.dispatch).length : 0;
         const dedicatedCount = record.band_data?.dedicated ? Object.keys(record.band_data.dedicated).length : 0;
 
+        // Generate Collapsible Detail HTML
+        const detailsHtml = this.generateBandDetailsHtml(record.band_data);
+
         return `
-            <div style="border:1px solid #e0e0e0; border-radius:6px; margin-bottom:10px; transition:all 0.2s; overflow:hidden;" onmouseover="this.style.borderColor='#3498db'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.05)'" onmouseout="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none'">
-                <div style="padding:12px 15px; display:flex; justify-content:space-between; align-items:center; background:white;">
+            <div class="band-selection-card" style="border:1px solid #e0e0e0; border-radius:6px; margin-bottom:10px; background:white; overflow:hidden;">
+                <div style="padding:12px 15px; display:flex; justify-content:space-between; align-items:center; background:#fff; cursor:pointer;" 
+                     onclick="document.getElementById('${uniqueKey}').style.display = document.getElementById('${uniqueKey}').style.display === 'none' ? 'block' : 'none'">
                     
                     <div style="flex-grow:1;">
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                            <i class="fas fa-chevron-down" style="color:#aaa; font-size:0.8em;"></i>
                             <span style="font-weight:bold; color:#2c3e50; font-size:1.05em;">${customer}</span>
                             <span style="color:#ccc;">|</span>
                             <span style="color:#555;">${account}</span>
                         </div>
-                        <div style="font-size:0.85em; color:#7f8c8d; display:flex; gap:15px;">
-                            <span><i class="fas fa-hashtag"></i> Ref Ticket: <strong>${refTicket}</strong></span>
-                            <span title="Dispatch Categories"><i class="fas fa-truck"></i> Dispatch: ${dispatchCount}</span>
-                            <span title="Dedicated Categories"><i class="fas fa-user-clock"></i> Dedicated: ${dedicatedCount}</span>
+                        <div style="font-size:0.85em; color:#7f8c8d; display:flex; gap:15px; margin-left: 18px;">
+                            <span><i class="fas fa-hashtag"></i> Ref: <strong>${refTicket}</strong></span>
+                            <span title="Dispatch Categories"><i class="fas fa-truck"></i> Disp: ${dispatchCount}</span>
+                            <span title="Dedicated Categories"><i class="fas fa-user-clock"></i> Ded: ${dedicatedCount}</span>
                         </div>
                     </div>
 
-                    <div style="margin-left:15px;">
+                    <div style="margin-left:15px;" onclick="event.stopPropagation()">
                         <button class="btn btn-sm btn-primary" 
                             style="padding:6px 15px; box-shadow:0 2px 4px rgba(52, 152, 219, 0.3);"
-                            onclick="rateCardApp.confirmAssignment('${ticketId}', '${recordId}')">
-                            Select Record
+                            onclick="rateCardApp.confirmAssignment('${ticketId}', '${recordUuid}')">
+                            Assign
                         </button>
                     </div>
                 </div>
                 
-                <div style="background:#fafafa; padding:5px 15px; font-size:0.75em; color:#aaa; border-top:1px solid #f0f0f0;">
-                    ID: ${recordId}
+                <div id="${uniqueKey}" style="display:none; border-top:1px solid #f0f0f0; background:#fafafa; padding:15px;">
+                    <div class="band-tables" style="max-height: 300px; overflow-y: auto; font-size: 0.85em;">
+                        ${detailsHtml || '<p style="color:#999; text-align:center;">No detailed band data available.</p>'}
+                    </div>
+                    <div style="font-size:0.7em; color:#ccc; margin-top:5px;">UUID: ${recordUuid}</div>
                 </div>
             </div>
         `;
     }
 
-    confirmAssignment(ticketId, rateCardId) {
-        console.log(`Assigning ${rateCardId} to ${ticketId}`);
+    // Helper to generate the inner table HTML (Shared logic)
+    generateBandDetailsHtml(bandData) {
+        if (!bandData) return '';
+        let html = '';
 
-        const ticket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+        const renderTable = (title, dataObj) => {
+            if (!dataObj || Object.keys(dataObj).length === 0) return '';
 
-        if (ticket) {
-            // 1. Update Ticket State
-            ticket.assignmentStatus = 'assigned';
-            ticket.rateCardAssigned = rateCardId;
+            // Check if nested groups exist
+            const isGrouped = Object.values(dataObj).some(val => !Array.isArray(val) && typeof val === 'object');
+            let section = '';
 
-            // 2. Persist to LocalStorage
-            this.saveAssignment(ticketId, rateCardId);
+            if (isGrouped) {
+                Object.entries(dataObj).forEach(([groupName, groupData]) => {
+                    section += renderTable(`${title} - ${groupName}`, groupData);
+                });
+            } else {
+                section += `
+                    <div style="margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; background:white;">
+                        <div style="background: #eee; padding: 4px 8px; font-weight: 600; font-size: 0.9em; color:#555;">${title}</div>
+                        <table style="width: 100%; border-collapse: collapse;"><tbody>`;
 
-            // 3. Close Modal & Notify
-            const modal = document.getElementById('assignModal');
-            if (modal) modal.remove();
+                Object.entries(dataObj).forEach(([band, values]) => {
+                    if (Array.isArray(values) && values.some(v => v && v.trim() !== '')) {
+                        section += `<tr style="border-bottom: 1px solid #f9f9f9;">
+                            <td style="padding:3px 8px; font-weight:500; width:40%;">${band}</td>
+                            <td style="padding:3px 8px; color:#666;">${values.join(' | ')}</td>
+                        </tr>`;
+                    }
+                });
+                section += `</tbody></table></div>`;
+            }
+            return section;
+        };
 
-            this.showNotification(`Successfully assigned ${rateCardId}`, 'success');
-
-            // 4. Refresh View
-            this.switchView(this.currentView);
-        }
+        html += renderTable('Dispatch', bandData.dispatch);
+        html += renderTable('Dedicated', bandData.dedicated);
+        html += renderTable('SV Visit', bandData.sv_visit);
+        return html;
     }
 
     showNotification(message, type = 'info') {

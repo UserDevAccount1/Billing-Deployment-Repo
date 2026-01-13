@@ -12,7 +12,7 @@ from django.db.models.functions import Lower
 from django.utils.dateformat import format
 from django.views import View
 
-from .models import BillingRun
+from .models import BillingRun, InitialTicket
 from apps.customers.models import Customer, Account, BillingCycle, Currency, Country
 from apps.customers.forms import AccountForm
 from apps.purchase_orders.models import PurchaseOrder
@@ -398,6 +398,9 @@ def get_all_band_data(request):
     """API to retrieve all BandTable JSON data"""
     try:
         band_entries = BandTable.objects.all().order_by("-created_at")
+
+        # Check removed to allow returning empty list instead of 404 if preferred,
+        # but keeping your logic:
         if not band_entries.exists():
             return JsonResponse(
                 {"success": False, "error": "No band data found"},
@@ -408,6 +411,7 @@ def get_all_band_data(request):
         for entry in band_entries:
             data.append(
                 {
+                    "uuid": str(entry.uuid),  # <--- Added UUID here
                     "ticket_number": entry.ticket_number,
                     "customer": entry.customer.name,
                     "account": entry.account.name if entry.account else None,
@@ -426,7 +430,15 @@ def get_all_band_data(request):
 def get_all_final_data(request):
     """API to retrieve all FinalTicket JSON data"""
     try:
-        final_entries = FinalTicket.objects.all().order_by("-created_at")
+        # Optimized query
+        final_entries = (
+            FinalTicket.objects.select_related(
+                "customer", "account", "initial_ticket", "band"
+            )
+            .all()
+            .order_by("-created_at")
+        )
+
         if not final_entries.exists():
             return JsonResponse(
                 {"success": False, "error": "No final ticket data found"},
@@ -435,8 +447,25 @@ def get_all_final_data(request):
 
         data = []
         for entry in final_entries:
+            # Safe access for nullable fields
+            initial_uuid = (
+                str(entry.initial_ticket.uuid) if entry.initial_ticket else None
+            )
+
+            # Band details
+            band_info = None
+            if entry.band:
+                band_info = {
+                    "uuid": str(entry.band.uuid),
+                    "ticket_number": entry.band.ticket_number,
+                    "band_data": entry.band.band_data,
+                }
+
             data.append(
                 {
+                    "uuid": str(entry.uuid),
+                    "initial_ticket_uuid": initial_uuid,
+                    "band": band_info,  # <--- Changed from rate_card to band
                     "ticket_number": entry.ticket_number,
                     "request_id": entry.request_id,
                     "customer": entry.customer.name,
@@ -457,6 +486,7 @@ class BatchStoreBandTableView(View):
     """
     Standard Django View to batch store BandTable records.
     Expects a JSON array of objects.
+    Returns UUIDs for created records.
     """
 
     def post(self, request):
@@ -469,6 +499,7 @@ class BatchStoreBandTableView(View):
 
             saved_count = 0
             errors = []
+            created_items = []  # List to store successfully created items with UUIDs
 
             for index, item in enumerate(payload):
                 try:
@@ -477,7 +508,6 @@ class BatchStoreBandTableView(View):
                         raise ValueError(f"Missing required fields in item {index}")
 
                     # Resolve Customer and Account instances
-                    # Assumes payload sends IDs. If sending names, logic needs adjustment.
                     customer_instance = get_object_or_404(Customer, pk=item["customer"])
 
                     account_instance = None
@@ -486,14 +516,23 @@ class BatchStoreBandTableView(View):
                             Account, pk=item["account"]
                         )
 
-                    # Create Record
-                    BandTable.objects.create(
+                    # Create Record and capture the instance
+                    instance = BandTable.objects.create(
                         customer=customer_instance,
                         account=account_instance,
                         ticket_number=item["ticket_number"],
                         band_data=item.get("band_data", {}),
                     )
+
                     saved_count += 1
+
+                    # Append the ticket details + new UUID to the response list
+                    created_items.append(
+                        {
+                            "ticket_number": item["ticket_number"],
+                            "uuid": str(instance.uuid),
+                        }
+                    )
 
                 except Exception as row_error:
                     errors.append(f"Row {index}: {str(row_error)}")
@@ -501,6 +540,7 @@ class BatchStoreBandTableView(View):
             response_data = {
                 "success": True,
                 "message": f"Successfully saved {saved_count} BandTable records.",
+                "created_items": created_items,  # <--- Now sending back UUIDs
                 "errors": errors if errors else None,
             }
             return JsonResponse(response_data, status=201)
@@ -515,9 +555,123 @@ class BatchStoreBandTableView(View):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class BatchStoreFinalTicketView(View):
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            if not isinstance(payload, list):
+                payload = [payload]
+
+            saved_count = 0
+            errors = []
+            created_items = []
+
+            for index, item in enumerate(payload):
+                try:
+                    # ... (Validation and Customer/Account logic same as before) ...
+
+                    if "customer" not in item or "ticket_number" not in item:
+                        raise ValueError(f"Missing required fields")
+
+                    customer_instance = get_object_or_404(Customer, pk=item["customer"])
+                    account_instance = None
+                    if item.get("account"):
+                        account_instance = get_object_or_404(
+                            Account, pk=item["account"]
+                        )
+
+                    # Resolve InitialTicket
+                    initial_ticket_instance = None
+                    if item.get("initial_ticket_uuid"):
+                        try:
+                            initial_ticket_instance = InitialTicket.objects.get(
+                                uuid=item["initial_ticket_uuid"]
+                            )
+                        except InitialTicket.DoesNotExist:
+                            pass
+
+                    # Resolve Band (Manually passed UUID)
+                    band_instance = None
+                    if item.get("band_uuid"):
+                        try:
+                            band_instance = BandTable.objects.get(
+                                uuid=item["band_uuid"]
+                            )
+                        except BandTable.DoesNotExist:
+                            pass
+
+                    # Create Record
+                    instance = FinalTicket.objects.create(
+                        customer=customer_instance,
+                        account=account_instance,
+                        ticket_number=item["ticket_number"],
+                        request_id=item["request_id"],
+                        data_table=item.get("data_table", {}),
+                        initial_ticket=initial_ticket_instance,
+                        band=band_instance,  # <--- Saving Band
+                    )
+
+                    saved_count += 1
+                    created_items.append(
+                        {
+                            "ticket_number": item["ticket_number"],
+                            "uuid": str(instance.uuid),
+                        }
+                    )
+
+                except Exception as row_error:
+                    errors.append(f"Row {index}: {str(row_error)}")
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": f"Saved {saved_count} records.",
+                    "created_items": created_items,
+                },
+                status=201,
+            )
+
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+# @login_required
+def get_all_initial_data(request):
+    """API to retrieve all InitialTicket JSON data"""
+    try:
+        initial_entries = InitialTicket.objects.all().order_by("-created_at")
+
+        if not initial_entries.exists():
+            return JsonResponse(
+                {"success": False, "error": "No initial ticket data found"},
+                status=404,
+            )
+
+        data = []
+        for entry in initial_entries:
+            data.append(
+                {
+                    "uuid": str(entry.uuid),
+                    "ticket_number": entry.ticket_number,
+                    "request_id": entry.request_id,
+                    "customer": entry.customer.name,
+                    "account": entry.account.name if entry.account else None,
+                    "data_table": entry.data_table,
+                    "created_at": entry.created_at,
+                }
+            )
+
+        return JsonResponse({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Error fetching initial ticket data: {e}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class BatchStoreInitialTicketView(View):
     """
-    Standard Django View to batch store FinalTicket records.
+    Standard Django View to batch store InitialTicket records.
     Expects a JSON array of objects.
+    Returns UUIDs for created records.
     """
 
     def post(self, request):
@@ -530,6 +684,7 @@ class BatchStoreFinalTicketView(View):
 
             saved_count = 0
             errors = []
+            created_items = []  # List to store successfully created items with UUIDs
 
             for index, item in enumerate(payload):
                 try:
@@ -550,22 +705,33 @@ class BatchStoreFinalTicketView(View):
                             Account, pk=item["account"]
                         )
 
-                    # Create Record
-                    FinalTicket.objects.create(
+                    # Create Record and capture instance
+                    instance = InitialTicket.objects.create(
                         customer=customer_instance,
                         account=account_instance,
                         ticket_number=item["ticket_number"],
                         request_id=item["request_id"],
                         data_table=item.get("data_table", {}),
                     )
+
                     saved_count += 1
+
+                    # Append the ticket details + new UUID to the response list
+                    created_items.append(
+                        {
+                            "ticket_number": item["ticket_number"],
+                            "request_id": item["request_id"],
+                            "uuid": str(instance.uuid),
+                        }
+                    )
 
                 except Exception as row_error:
                     errors.append(f"Row {index}: {str(row_error)}")
 
             response_data = {
                 "success": True,
-                "message": f"Successfully saved {saved_count} FinalTicket records.",
+                "message": f"Successfully saved {saved_count} InitialTicket records.",
+                "created_items": created_items,
                 "errors": errors if errors else None,
             }
             return JsonResponse(response_data, status=201)
@@ -576,3 +742,83 @@ class BatchStoreFinalTicketView(View):
             )
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class BatchAssignBandView(View):
+    """
+    Manually assigns a BandTable entry to a FinalTicket via UUID.
+    Payload: [{"final_ticket": "uuid", "band": "uuid"}, ...]
+    """
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            updated_count = 0
+
+            for item in payload:
+                try:
+                    ticket = FinalTicket.objects.get(uuid=item.get("final_ticket"))
+                    band = BandTable.objects.get(uuid=item.get("band"))
+
+                    ticket.band = band
+                    ticket.save()
+                    updated_count += 1
+                except Exception:
+                    continue
+
+            return JsonResponse({"success": True, "updated": updated_count})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class AutoAssignBandView(View):
+    """
+    Auto-assigns BandTable entries to FinalTickets based on matching 'ticket_number'.
+    """
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            ticket_uuids = payload.get("final_ticket_uuids", [])
+
+            assigned_count = 0
+            results = []
+
+            final_tickets = FinalTicket.objects.filter(uuid__in=ticket_uuids)
+
+            for ticket in final_tickets:
+                # Find matching BandTable by ticket_number and customer
+                match = (
+                    BandTable.objects.filter(
+                        ticket_number=ticket.ticket_number, customer=ticket.customer
+                    )
+                    .order_by("-created_at")
+                    .first()
+                )  # Get most recent
+
+                if match:
+                    ticket.band = match
+                    ticket.save(update_fields=["band"])
+                    assigned_count += 1
+                    results.append(
+                        {
+                            "ticket": str(ticket.uuid),
+                            "status": "Assigned",
+                            "band": str(match.uuid),
+                        }
+                    )
+                else:
+                    results.append({"ticket": str(ticket.uuid), "status": "No Match"})
+
+            return JsonResponse(
+                {"success": True, "assigned_count": assigned_count, "results": results}
+            )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+# views.py
+def comparison_tool(request):
+    return render(request, "billing/comparison.html")
