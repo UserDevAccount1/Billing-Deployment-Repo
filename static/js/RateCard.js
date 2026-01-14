@@ -55,6 +55,7 @@ class RateCardAssignmentEnhanced {
             if (tableBody) tableBody.innerHTML = '<tr><td colspan="100%" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading Data...</td></tr>';
 
             await Promise.all([
+                this.fetchInitialData(),
                 this.fetchFinalTickets(),
                 this.fetchBandData()
             ]);
@@ -66,7 +67,6 @@ class RateCardAssignmentEnhanced {
 
             this.setupEventListeners();
             this.setupBandNavigation();
-            this.setupOverviewModalEvents();
             this.setupColumnFilter();
 
             this.switchView('table');
@@ -123,6 +123,10 @@ class RateCardAssignmentEnhanced {
                         }
                     });
                 }
+
+                if (t.initial_ticket_uuid && this.initialDataMap) {
+                    t.initial_data_cache = this.initialDataMap.get(t.initial_ticket_uuid);
+                }
             });
 
             this.updateSummary();
@@ -131,6 +135,19 @@ class RateCardAssignmentEnhanced {
             console.error("Error fetching tickets:", error);
             this.tickets = [];
         }
+    }
+
+    async fetchInitialData() {
+        try {
+            const response = await fetch('/billing/api/initial-data/');
+            if (response.ok) {
+                const json = await response.json();
+                this.initialDataMap = new Map();
+                if (json.success && json.data) {
+                    json.data.forEach(item => this.initialDataMap.set(item.uuid, item.data_table));
+                }
+            }
+        } catch (e) { console.error("Initial data fetch failed", e); }
     }
 
     async fetchBandData() {
@@ -199,12 +216,7 @@ class RateCardAssignmentEnhanced {
         } else if (view === 'form') {
             this.renderForm();
         } else if (view === 'comparison') {
-            const ticketToCompare = this.currentTicket || this.filterTickets()[0];
-            if (ticketToCompare) {
-                this.showOverview(this.getUniqueId(ticketToCompare));
-            } else {
-                this.showNotification("No ticket available to compare.", "warning");
-            }
+            
         }
         this.updateSummary();
     }
@@ -286,7 +298,7 @@ class RateCardAssignmentEnhanced {
                 rowHtml += `
                     <td>
                         <div class="table-actions" style="display: flex; gap: 5px;">
-                            <button class="btn btn-sm btn-outline" style="display: inline-flex; align-items: center; gap: 5px;" onclick="rateCardApp.showOverview('${uniqueId}')" title="View Overview">
+                            <button class="btn btn-sm btn-outline" style="display: inline-flex; align-items: center; gap: 5px;" title="View Overview">
                                 <i class="fas fa-eye"></i> Overview
                             </button>
                             ${ticket.assignmentStatus !== 'assigned' ?
@@ -347,7 +359,7 @@ class RateCardAssignmentEnhanced {
             </div>
 
             <div class="form-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-                <button class="btn btn-outline" onclick="rateCardApp.showOverview('${uniqueId}')"><i class="fas fa-eye"></i> Full Overview</button>
+                <button class="btn btn-outline" title="View Overview"><i class="fas fa-eye"></i> Full Overview</button>
                 ${ticket.assignmentStatus !== 'assigned' ?
                 `<button class="btn btn-primary" onclick="rateCardApp.manualAssignRateCard('${uniqueId}')">Assign Rate Card</button>` :
                 `<span class="badge badge-success">Assigned</span>`
@@ -377,7 +389,6 @@ class RateCardAssignmentEnhanced {
     }
 
     showManualAssignmentModal(ticket, exactMatches = [], otherMatches = []) {
-        this.closeOverviewModal(); // Ensure other modals close
         const uniqueId = this.getUniqueId(ticket);
 
         const modalHtml = `
@@ -665,121 +676,7 @@ class RateCardAssignmentEnhanced {
 
     // ==================== MODAL OVERVIEW ====================
 
-    showOverview(id) {
-        const ticket = this.tickets.find(t => this.getUniqueId(t) === id);
-        if (!ticket) return;
-        this.currentTicket = ticket;
-        this.showOverviewModal(ticket);
-    }
 
-    showOverviewModal(ticket) {
-        let modal = document.getElementById('overviewModal');
-        if (!modal) modal = this.createOverviewModal();
-        this.populateOverviewModal(ticket);
-        modal.style.display = 'flex';
-    }
-
-    createOverviewModal() {
-        const modalHtml = `
-            <div id="overviewModal" class="modal-overlay" style="display: none;">
-                <div class="modal-content" style="width: 90%; max-width: 1200px; max-height: 90vh;">
-                    <div class="modal-header">
-                        <h2 id="overviewModalTitle">Rate Card Overview</h2>
-                        <button class="modal-close" onclick="rateCardApp.closeOverviewModal()">&times;</button>
-                    </div>
-                    <div class="modal-body" style="overflow-y: auto;">
-                        <div class="overview-controls">
-                            <div class="view-toggle-group" style="margin-left: auto;">
-                                <span class="toggle-label">View Mode:</span>
-                                <div class="toggle-switch">
-                                    <button class="toggle-btn active" data-view="sidebyside"><i class="fas fa-columns"></i> Side by Side</button>
-                                    <button class="toggle-btn" data-view="changes"><i class="fas fa-list"></i> Changes Only</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="overview-content" id="overviewContent"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-outline" onclick="rateCardApp.closeOverviewModal()">Close</button>
-                        <button class="btn btn-success" id="modalAssignBtn">Assign Ticket</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        return document.getElementById('overviewModal');
-    }
-
-    populateOverviewModal(ticket) {
-        const uniqueId = this.getUniqueId(ticket);
-        document.getElementById('overviewModalTitle').textContent = `Overview - ${uniqueId}`;
-
-        // Setup Assign Button inside Modal
-        const btn = document.getElementById('modalAssignBtn');
-        if (btn) {
-            // Remove old listeners to prevent stacking
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            newBtn.addEventListener('click', () => this.manualAssignRateCard(uniqueId));
-
-            if (ticket.assignmentStatus === 'assigned') {
-                newBtn.innerHTML = '<i class="fas fa-check"></i> Assigned';
-                newBtn.disabled = true;
-            } else {
-                newBtn.innerHTML = 'Assign Ticket';
-                newBtn.disabled = false;
-            }
-        }
-
-        this.renderSideBySideView(null, ticket, []);
-    }
-
-    renderSideBySideView(original, modified, changes) {
-        const container = document.getElementById('overviewContent');
-        const data = modified.data_table || {};
-
-        container.innerHTML = `
-            <div class="comparison-container side-by-side">
-                <div class="comparison-panel">
-                    <div class="panel-header original"><h3><i class="fas fa-ticket-alt"></i> Ticket Data</h3></div>
-                    <div class="panel-content">
-                        <table class="data-table">
-                            <tr><td><strong>Subject:</strong></td><td>${data.subject || '-'}</td></tr>
-                            <tr><td><strong>Region:</strong></td><td>${data.region || '-'}</td></tr>
-                            <tr><td><strong>Service:</strong></td><td>${data.service_type || '-'}</td></tr>
-                            <tr><td><strong>Cost:</strong></td><td>${data.currency} ${data.total_cost}</td></tr>
-                        </table>
-                    </div>
-                </div>
-                <div class="comparison-panel">
-                    <div class="panel-header modified"><h3><i class="fas fa-info-circle"></i> Status</h3></div>
-                    <div class="panel-content">
-                        <div style="padding: 20px; text-align: center;">
-                            <h4>Current Status</h4>
-                            ${this.getStatusBadge(modified.assignmentStatus)}
-                             <p style="margin-top:10px;">${modified.rateCardAssigned ? 'Card: ' + modified.rateCardAssigned : 'No Card Assigned'}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    setupOverviewModalEvents() {
-        document.querySelectorAll('#overviewModal .toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('#overviewModal .toggle-btn').forEach(b => b.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-                // View switching logic inside modal (simplified)
-            });
-        });
-    }
-
-    closeOverviewModal() {
-        const modal = document.getElementById('overviewModal');
-        if (modal) modal.style.display = 'none';
-        this.currentTicket = null;
-    }
 
     // ==================== UTILS ====================
 
