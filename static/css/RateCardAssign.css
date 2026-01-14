@@ -52,10 +52,21 @@
     border-radius: 50%;
 }
 
-.indicator-dot.assigned { background-color: #2ecc71; }
-.indicator-dot.pending { background-color: #f39c12; }
-.indicator-dot.missing { background-color: #e74c3c; }
-.indicator-dot.conflict { background-color: #9b59b6; }
+.indicator-dot.assigned {
+    background-color: #2ecc71;
+}
+
+.indicator-dot.pending {
+    background-color: #f39c12;
+}
+
+.indicator-dot.missing {
+    background-color: #e74c3c;
+}
+
+.indicator-dot.conflict {
+    background-color: #9b59b6;
+}
 
 /* Main Content Layout */
 .assign-content {
@@ -226,6 +237,7 @@
     font-weight: 600;
     border-bottom: 2px solid #34495e;
     white-space: nowrap;
+    background: #272738;
 }
 
 .rate-card-table tbody tr {
@@ -426,7 +438,9 @@
 }
 
 @keyframes fadeIn {
-    to { opacity: 1; }
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-content {
@@ -441,8 +455,15 @@
 }
 
 @keyframes slideIn {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .modal-header {
@@ -663,8 +684,13 @@
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsive Design */
@@ -680,23 +706,24 @@
         gap: 15px;
         align-items: stretch;
     }
-    
-    .control-left, .control-right {
+
+    .control-left,
+    .control-right {
         width: 100%;
     }
-    
+
     .search-box {
         width: 100%;
     }
-    
+
     .data-comparison {
         grid-template-columns: 1fr;
     }
-    
+
     .overview-tabs {
         flex-wrap: wrap;
     }
-    
+
     .tab-btn {
         flex: 1;
         min-width: 120px;
@@ -766,9 +793,17 @@
 
 /* Animation for status changes */
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .status-updated {
@@ -795,7 +830,7 @@
     white-space: nowrap;
     z-index: 100;
     margin-bottom: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .tooltip:hover::before {
@@ -1186,7 +1221,7 @@
     margin-bottom: 5px;
     max-width: 300px;
     text-align: left;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive Adjustments */
@@ -1194,7 +1229,7 @@
     .comparison-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .ticket-form {
         grid-template-columns: 1fr;
     }
@@ -1204,18 +1239,18 @@
     .view-toggle {
         flex-wrap: wrap;
     }
-    
+
     .view-btn {
         flex: 1;
         min-width: 100px;
         justify-content: center;
     }
-    
+
     .comparison-legend {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .legend-item {
         justify-content: center;
     }
@@ -1305,7 +1340,7 @@
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     display: none;
 }
 
@@ -1327,7 +1362,7 @@
 
 .panel-badge {
     padding: 4px 10px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     font-size: 12px;
     font-weight: 600;
@@ -1406,7 +1441,7 @@
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .changes-header {
@@ -1497,7 +1532,8 @@
     font-size: 14px;
 }
 
-.change-before, .change-after {
+.change-before,
+.change-after {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -1521,11 +1557,11 @@
     .comparison-controls {
         grid-template-columns: 1fr;
     }
-    
+
     .comparison-selectors {
         flex-direction: column;
     }
-    
+
     .comparison-selector {
         min-width: 100%;
     }
@@ -1536,7 +1572,7 @@
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .toggle-switch {
         justify-content: center;
     }
@@ -1567,8 +1603,13 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* Modal Content */
@@ -1583,8 +1624,15 @@
 }
 
 @keyframes slideUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Modal Header */
@@ -2047,7 +2095,8 @@
     margin-bottom: 10px;
 }
 
-.value-before, .value-after {
+.value-before,
+.value-after {
     flex: 1;
     padding: 10px 12px;
     border-radius: 6px;
@@ -2104,24 +2153,24 @@
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .overview-controls {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .overview-selectors {
         flex-direction: column;
     }
-    
+
     .selector-group {
         min-width: 100%;
     }
-    
+
     .view-toggle-group {
         min-width: 100%;
     }
-    
+
     .summary-stats {
         flex-wrap: wrap;
     }
@@ -2132,28 +2181,28 @@
         width: 98%;
         max-height: 98vh;
     }
-    
+
     .toggle-switch {
         flex-direction: column;
     }
-    
+
     .toggle-btn {
         border-right: none;
         border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .toggle-btn:last-child {
         border-bottom: none;
     }
-    
+
     .modal-body {
         height: 50vh;
     }
-    
+
     .modal-footer {
         flex-direction: column;
     }
-    
+
     .modal-footer .btn {
         width: 100%;
         justify-content: center;
@@ -2189,15 +2238,301 @@
 
 /* Animation for Changes */
 @keyframes highlightChange {
-    0% { background-color: transparent; }
-    50% { background-color: #fef3c7; }
-    100% { background-color: transparent; }
+    0% {
+        background-color: transparent;
+    }
+
+    50% {
+        background-color: #fef3c7;
+    }
+
+    100% {
+        background-color: transparent;
+    }
 }
 
 .highlight-change {
     animation: highlightChange 2s ease;
 }
 
-.column-filter { position: relative; }
-.column-filter-dropdown { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ddd; z-index: 1000; min-width: 200px; padding: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 4px; }
-.column-filter-options { max-height: 300px; overflow-y: auto; }
+.column-filter {
+    position: relative;
+}
+
+.column-filter-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #ddd;
+    z-index: 1000;
+    min-width: 200px;
+    padding: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.column-filter-options {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Modal Specific Styles */
+.overview-modal-container {
+    background: #f8f9fa;
+    width: 90%;
+    max-width: 1200px;
+    height: 85vh;
+    padding: 25px;
+    border-radius: 8px;
+    position: relative;
+    overflow-y: auto;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #666;
+}
+
+/* Stats */
+.change-stats {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    flex: 1;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.8em;
+    font-weight: bold;
+}
+
+.added-stat {
+    background: #e6fffa;
+    border-color: #b2f5ea;
+    color: #28a745;
+}
+
+.modified-stat {
+    background: #fffaf0;
+    border-color: #fce8b2;
+    color: #f39c12;
+}
+
+.removed-stat {
+    background: #fff5f5;
+    border-color: #feb2b2;
+    color: #e74c3c;
+}
+
+/* Tables */
+.overview-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.overview-table th {
+    background: #f1f5f9;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    position: sticky;
+    top: 0;
+}
+
+.overview-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+}
+
+/* Diffs */
+.diff-added {
+    background-color: #e6fffa;
+}
+
+.diff-modified {
+    background-color: #fffaf0;
+}
+
+.diff-removed {
+    background-color: #fff5f5;
+    text-decoration: line-through;
+    color: #999;
+}
+
+/* Change Cards */
+.change-card {
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #ccc;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.change-card.added {
+    border-left-color: #28a745;
+}
+
+.change-card.modified {
+    border-left-color: #f39c12;
+}
+
+.change-card.removed {
+    border-left-color: #e74c3c;
+}
+
+/* Toggle Switch */
+.toggle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    background: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.toggle-switch-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: #2563eb;
+}
+
+input:checked+.slider:before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.toggle-label.active {
+    color: #2563eb;
+}
+
+/* 1. The Tab Container */
+.overview-modal-container .tabs {
+    display: flex;
+    background: #ffffff;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 20px;
+    border-radius: 8px 8px 0 0;
+}
+
+/* 2. Individual Tabs */
+.overview-modal-container .tab {
+    padding: 15px 20px;
+    cursor: pointer;
+    color: #64748b; /* Slate Gray */
+    font-weight: 500;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+    border-bottom: 3px solid transparent; /* Invisible border for transition */
+    transition: all 0.2s ease-in-out;
+}
+
+/* 3. Hover State */
+.overview-modal-container .tab:hover {
+    color: #334155;
+    background-color: #f8fafc;
+}
+
+/* 4. Active State (The clicked tab) */
+.overview-modal-container .tab.active {
+    color: #2563eb; /* Primary Blue */
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+    background-color: transparent;
+}
+
+/* 5. Icons inside tabs */
+.overview-modal-container .tab-icon {
+    font-size: 1.1em;
+}
+
+/* =========================================
+   TAB CONTENT VISIBILITY
+   ========================================= */
+
+/* Hide all tab contents by default */
+.overview-modal-container .tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Only show the one with the 'active' class */
+.overview-modal-container .tab-content.active {
+    display: block;
+}
+
+/* Optional: Smooth fade in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

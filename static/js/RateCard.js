@@ -216,7 +216,7 @@ class RateCardAssignmentEnhanced {
         } else if (view === 'form') {
             this.renderForm();
         } else if (view === 'comparison') {
-            
+
         }
         this.updateSummary();
     }
@@ -298,9 +298,10 @@ class RateCardAssignmentEnhanced {
                 rowHtml += `
                     <td>
                         <div class="table-actions" style="display: flex; gap: 5px;">
-                            <button class="btn btn-sm btn-outline" style="display: inline-flex; align-items: center; gap: 5px;" title="View Overview">
-                                <i class="fas fa-eye"></i> Overview
-                            </button>
+                            <button class="btn btn-sm btn-outline" style="display: inline-flex; align-items: center; gap: 5px;" 
+    onclick="rateCardApp.openOverviewModal('${uniqueId}')" title="View Overview">
+    <i class="fas fa-eye"></i> Overview
+</button>
                             ${ticket.assignmentStatus !== 'assigned' ?
                         `<button class="btn btn-sm btn-success" style="display: inline-flex; align-items: center; gap: 5px;" onclick="rateCardApp.manualAssignRateCard('${uniqueId}')" title="Assign">
                                     <i class="fas fa-plus"></i> Assign
@@ -921,6 +922,208 @@ class RateCardAssignmentEnhanced {
         } else {
             console.log(`[${type}] ${message}`);
         }
+    }
+    // ==================== OVERVIEW MODAL LOGIC ====================
+
+    /**
+     * Entry point to open the comparison modal
+     * @param {string} ticketId - Unique identifier of the ticket (usually uuid)
+     */
+    openOverviewModal(ticketId) {
+        // 1. Get Final Ticket Data
+        const finalTicket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+
+        if (!finalTicket) {
+            this.showNotification("Ticket data not found.", "error");
+            return;
+        }
+
+        // 2. Get Initial Data from Cache
+        // Note: The API returns initial_ticket_uuid in the final ticket object
+        const initialUuid = finalTicket.initial_ticket_uuid;
+        const initialData = (initialUuid && this.initialDataMap)
+            ? (this.initialDataMap.get(initialUuid) || {})
+            : {};
+
+        const finalData = finalTicket.data_table || {};
+
+        // 3. Generate Diff Data
+        this.currentComparison = this.generateComparisonData(initialData, finalData);
+        this.currentComparison.meta = {
+            ticketNumber: finalTicket.ticket_number,
+            requestId: finalTicket.request_id,
+            isLinked: !!initialUuid
+        };
+
+        // 4. Render UI
+        this.renderOverviewHeader();
+        this.renderTab1Data(); // Summary
+        this.renderOverviewTab2(); // Full Table
+        this.renderTab3Data(); // Changes
+
+        // 5. Reset to Tab 1 & Show Modal
+        this.switchOverviewTab('ov-tab1', document.querySelector('[data-tab="ov-tab1"]'));
+        document.getElementById('overviewModal').style.display = 'flex';
+    }
+
+    closeOverviewModal() {
+        document.getElementById('overviewModal').style.display = 'none';
+    }
+
+    /**
+     * Compares two objects and returns a flat list of changes
+     */
+    generateComparisonData(initial, final) {
+        const allKeys = new Set([...Object.keys(initial), ...Object.keys(final)]);
+        const sortedKeys = Array.from(allKeys).filter(k => !k.startsWith('_')).sort(); // Filter internal keys if any
+
+        const diffs = [];
+        let added = 0, modified = 0, removed = 0;
+
+        sortedKeys.forEach(key => {
+            const initVal = initial[key] !== undefined && initial[key] !== null ? String(initial[key]).trim() : null;
+            const finalVal = final[key] !== undefined && final[key] !== null ? String(final[key]).trim() : null;
+
+            let status = 'unchanged';
+
+            if (initVal === null && finalVal !== null) {
+                status = 'added';
+                added++;
+            } else if (initVal !== null && finalVal === null) {
+                status = 'removed';
+                removed++;
+            } else if (initVal !== finalVal) {
+                status = 'modified';
+                modified++;
+            }
+
+            diffs.push({
+                key: key,
+                initial: initVal,
+                final: finalVal,
+                status: status
+            });
+        });
+
+        return { diffs, counts: { added, modified, removed } };
+    }
+
+    // --- RENDERERS ---
+
+    renderOverviewHeader() {
+        const meta = this.currentComparison.meta;
+        document.getElementById('overview-ticket-id').innerText = `${meta.ticketNumber} | ${meta.requestId}`;
+
+        const badgesContainer = document.getElementById('overview-meta-badges');
+        badgesContainer.innerHTML = meta.isLinked
+            ? `<span class="badge badge-success" style="background:#dcfce7; color:#15803d; padding:5px 10px; border-radius:15px;">Linked to Initial</span>`
+            : `<span class="badge badge-warning" style="background:#fff7ed; color:#c2410c; padding:5px 10px; border-radius:15px;">Unlinked (New)</span>`;
+    }
+
+    switchOverviewTab(tabId, tabElement) {
+        // Hide all contents
+        document.querySelectorAll('.overview-modal-container .tab-content').forEach(el => el.classList.remove('active'));
+        // Deactivate all tabs
+        document.querySelectorAll('.overview-modal-container .tab').forEach(el => el.classList.remove('active'));
+
+        // Activate selected
+        document.getElementById(tabId).classList.add('active');
+        if (tabElement) tabElement.classList.add('active');
+    }
+
+    renderTab1Data() {
+        const counts = this.currentComparison.counts;
+        const diffs = this.currentComparison.diffs;
+
+        // Update Counts
+        document.getElementById('ov-stat-added').innerText = counts.added;
+        document.getElementById('ov-stat-modified').innerText = counts.modified;
+        document.getElementById('ov-stat-removed').innerText = counts.removed;
+
+        // Update Summary Table (Only show changed items)
+        const tbody = document.getElementById('ov-summary-body');
+        const changedItems = diffs.filter(d => d.status !== 'unchanged');
+
+        if (changedItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No discrepancies found between initial and final data.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = changedItems.map(item => {
+            let statusBadge = '';
+            if (item.status === 'added') statusBadge = `<span style="color:#28a745; font-weight:bold;">Added</span>`;
+            if (item.status === 'modified') statusBadge = `<span style="color:#f39c12; font-weight:bold;">Modified</span>`;
+            if (item.status === 'removed') statusBadge = `<span style="color:#e74c3c; font-weight:bold;">Removed</span>`;
+
+            return `
+                <tr>
+                    <td style="font-weight:600;">${item.key}</td>
+                    <td>${statusBadge}</td>
+                    <td style="color:#666;">${item.initial || '-'}</td>
+                    <td>${item.final || '-'}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderOverviewTab2() {
+        const isFinal = document.getElementById('overviewViewToggle').checked;
+        const diffs = this.currentComparison.diffs;
+
+        // Toggle Labels UI
+        document.getElementById('ov-toggle-before').classList.toggle('active', !isFinal);
+        document.getElementById('ov-toggle-after').classList.toggle('active', isFinal);
+
+        const tbody = document.getElementById('ov-full-body');
+
+        tbody.innerHTML = diffs.map(item => {
+            const displayValue = isFinal ? item.final : item.initial;
+
+            // Determine row highlight
+            let rowClass = '';
+            if (item.status === 'added' && isFinal) rowClass = 'diff-added';
+            if (item.status === 'removed' && !isFinal) rowClass = 'diff-removed';
+            if (item.status === 'modified') rowClass = 'diff-modified';
+
+            return `
+                <tr class="${rowClass}">
+                    <td style="font-weight:500;">${item.key}</td>
+                    <td>${displayValue !== null ? displayValue : '<em style="color:#ccc">null</em>'}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderTab3Data() {
+        const container = document.getElementById('ov-changes-list');
+        const changedItems = this.currentComparison.diffs.filter(d => d.status !== 'unchanged');
+
+        if (changedItems.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:30px; color:#999;">No changes detected.</div>`;
+            return;
+        }
+
+        container.innerHTML = changedItems.map(item => {
+            let content = '';
+            if (item.status === 'modified') {
+                content = `Changed from <span style="background:#fee2e2; padding:2px 5px; border-radius:3px; text-decoration:line-through;">${item.initial}</span> 
+                           to <span style="background:#dcfce7; padding:2px 5px; border-radius:3px; font-weight:bold;">${item.final}</span>`;
+            } else if (item.status === 'added') {
+                content = `New Value: <strong>${item.final}</strong>`;
+            } else {
+                content = `Removed Value: <span style="text-decoration:line-through;">${item.initial}</span>`;
+            }
+
+            return `
+                <div class="change-card ${item.status}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <strong style="color:#2c3e50;">${item.key}</strong>
+                        <span style="text-transform:uppercase; font-size:0.75em; font-weight:700; opacity:0.7;">${item.status}</span>
+                    </div>
+                    <div style="font-size:0.9rem; color:#444;">${content}</div>
+                </div>
+            `;
+        }).join('');
     }
 }
 

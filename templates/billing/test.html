@@ -1522,7 +1522,6 @@
         </div>
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 1 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
 
-
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
         <div class="step-content" id="step-content-2">
             <div class="rate-card-assign-container">
@@ -1647,7 +1646,7 @@
                             <div class="rate-card-table-container">
                                 <table class="rate-card-table" id="finalTicketTable">
                                     <thead>
-                                        <tr id="tableHeaders-ratecard">
+                                        <tr id="tableHeaders-ratecard" style="background-color: var(--dark);">
                                             <!-- Headers will be populated by JavaScript -->
                                         </tr>
                                     </thead>
@@ -1779,77 +1778,132 @@
             </div>
         </div>
 
-        <!-- Comparison Modal Templates (add these at the bottom of step 2) -->
-        <div id="overviewModal" class="modal-overlay" style="display: none;">
-            <div class="modal-content" style="width: 90%; max-width: 1200px;">
-                <div class="modal-header">
-                    <h2 id="overviewModalTitle">Rate Card Overview</h2>
-                    <button class="modal-close" onclick="rateCardApp.closeOverviewModal()">&times;</button>
+        <div id="overviewModal" class="modal-overlay" style="display: none; z-index: 10000;">
+            <div class="modal-content overview-modal-container">
+                <button class="modal-close-btn" onclick="rateCardApp.closeOverviewModal()">&times;</button>
+
+                <header style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h2 style="margin: 0; color: #2c3e50;"><i class="fas fa-ticket-alt"></i> Ticket Overview &
+                                Comparison</h2>
+                            <div id="overview-ticket-id" style="color: #7f8c8d; margin-top: 5px; font-weight: 600;">
+                            </div>
+                        </div>
+                        <div class="ticket-meta-badges" id="overview-meta-badges">
+                        </div>
+                    </div>
+                </header>
+
+                <div class="tabs">
+                    <div class="tab active" data-tab="ov-tab1" onclick="rateCardApp.switchOverviewTab('ov-tab1', this)">
+                        <i class="fas fa-exchange-alt tab-icon"></i> <span>Summary Stats</span>
+                    </div>
+                    <div class="tab" data-tab="ov-tab2" onclick="rateCardApp.switchOverviewTab('ov-tab2', this)">
+                        <i class="fas fa-table tab-icon"></i> <span>Full Data Comparison</span>
+                    </div>
+                    <div class="tab" data-tab="ov-tab3" onclick="rateCardApp.switchOverviewTab('ov-tab3', this)">
+                        <i class="fas fa-list-ul tab-icon"></i> <span>Detailed Changes</span>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <div class="overview-controls">
-                        <div class="view-toggle-group">
-                            <span class="toggle-label">View Mode:</span>
-                            <div class="toggle-switch">
-                                <button class="toggle-btn active" data-view="sidebyside">
-                                    <i class="fas fa-columns"></i> Side by Side
-                                </button>
-                                <button class="toggle-btn" data-view="beforeafter">
-                                    <i class="fas fa-exchange-alt"></i> Before/After
-                                </button>
-                                <button class="toggle-btn" data-view="changes">
-                                    <i class="fas fa-list"></i> Changes Only
-                                </button>
+
+                <div class="tab-content active" id="ov-tab1">
+                    <div class="comparison-overview">
+                        <div class="comparison-card" style="width: 100%;">
+                            <h3><i class="fas fa-history"></i> Initial vs Final Data Changes</h3>
+
+                            <div class="change-stats">
+                                <div class="stat added-stat">
+                                    <span class="stat-value" id="ov-stat-added">0</span>
+                                    <span class="stat-label">Added Fields</span>
+                                </div>
+                                <div class="stat modified-stat">
+                                    <span class="stat-value" id="ov-stat-modified">0</span>
+                                    <span class="stat-label">Modified Fields</span>
+                                </div>
+                                <div class="stat removed-stat">
+                                    <span class="stat-value" id="ov-stat-removed">0</span>
+                                    <span class="stat-label">Removed Fields</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px;">
+                                <h4>Processing Summary</h4>
+                                <table class="overview-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Field Name</th>
+                                            <th>Status</th>
+                                            <th>Initial Value</th>
+                                            <th>Final Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ov-summary-body">
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="overview-content" id="overviewContent">
-                        <!-- Content will be populated by JavaScript -->
+                <div class="tab-content" id="ov-tab2">
+                    <div class="toggle-container">
+                        <div class="toggle-switch-section">
+                            <span class="toggle-label active" id="ov-toggle-before">Initial Data</span>
+                            <label class="switch">
+                                <input type="checkbox" id="overviewViewToggle"
+                                    onchange="rateCardApp.renderOverviewTab2()">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="toggle-label" id="ov-toggle-after">Final Data</span>
+                        </div>
+
+                        <button class="btn btn-sm btn-primary" onclick="rateCardApp.openBandStructureModal()">
+                            <i class="fas fa-layer-group"></i> View Band Structure
+                        </button>
                     </div>
 
-                    <div class="overview-summary">
-                        <div class="summary-header">
-                            <h3><i class="fas fa-chart-bar"></i> Change Summary</h3>
-                            <div class="summary-stats">
-                                <div class="stat-badge total">
-                                    <span class="stat-label">Total Changes</span>
-                                    <span class="stat-value" id="totalChanges">0</span>
-                                </div>
-                                <div class="stat-badge match">
-                                    <span class="stat-label">Matches</span>
-                                    <span class="stat-value" id="matchCount">0</span>
-                                </div>
-                                <div class="stat-badge conflict">
-                                    <span class="stat-label">Conflicts</span>
-                                    <span class="stat-value" id="conflictCount">0</span>
-                                </div>
-                                <div class="stat-badge new">
-                                    <span class="stat-label">New Fields</span>
-                                    <span class="stat-value" id="newCount">0</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="changes-list" id="changesList">
-                            <!-- Changes will be listed here -->
-                        </div>
+                    <div class="table-wrapper">
+                        <table class="overview-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%">Field Name</th>
+                                    <th>Data Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ov-full-body">
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline" onclick="rateCardApp.closeOverviewModal()">
-                        <i class="fas fa-times"></i> Close
-                    </button>
-                    <button class="btn btn-primary" onclick="rateCardApp.exportComparison()">
-                        <i class="fas fa-download"></i> Export Comparison
-                    </button>
-                    <button class="btn btn-success" onclick="rateCardApp.applyChanges()">
-                        <i class="fas fa-check"></i> Apply Changes
-                    </button>
+
+                <div class="tab-content" id="ov-tab3">
+                    <div class="changes-content" id="ov-changes-list">
+                    </div>
                 </div>
             </div>
         </div>
 
-
+        <div class="band-modal-overlay" id="band-modal-overlay">
+            <div class="band-modal">
+                <div class="band-modal-header">
+                    <div class="band-modal-title"><i class="fas fa-layer-group"></i> Band Structure Details</div>
+                    <button class="band-modal-close"
+                        onclick="document.getElementById('band-modal-overlay').classList.remove('active')"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div class="band-modal-content">
+                    <div class="band-info-box">
+                        <h4><i class="fas fa-info-circle"></i> Band Data Loaded</h4>
+                        <p>This view reflects the band structure for the currently selected ticket's customer/account.
+                        </p>
+                    </div>
+                    <div id="nested-band-content-placeholder">
+                        <p>Band details...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
 
