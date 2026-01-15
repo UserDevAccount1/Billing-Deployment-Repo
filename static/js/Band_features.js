@@ -468,35 +468,142 @@ function tmmRenderBandDetailsContent() {
 }
 
 function tmmRenderBandTable(tableKey, table) {
-  const data = TMM_BAND_STATE.bandData[tableKey] || {};
+  // 1. Ensure the main data object for this table exists in Global State
+  if (!TMM_BAND_STATE.bandData[tableKey]) {
+    TMM_BAND_STATE.bandData[tableKey] = {};
+  }
+  const tableData = TMM_BAND_STATE.bandData[tableKey];
+
+  // 2. Helper: Initialize Defaults if data is missing
+  // [FIX] Added 'columnsRef' parameter to handle cases where columns are defined in groups, not parent table
+  const getKeysWithDefaults = (groupName, defaultBands, columnsRef) => {
+    let targetStorage = groupName ? tableData[groupName] : tableData;
+
+    // A. Initialize the object if it doesn't exist
+    if (!targetStorage) {
+      targetStorage = {};
+      if (groupName) tableData[groupName] = targetStorage;
+    }
+
+    // B. Check if empty. If yes, populate from Config (TMM_BAND_TABLES)
+    const currentKeys = Object.keys(targetStorage);
+    if (currentKeys.length === 0 && defaultBands && defaultBands.length > 0) {
+      defaultBands.forEach(bandName => {
+        // [FIX] Use passed columnsRef instead of table.columns
+        targetStorage[bandName] = Array(columnsRef.length).fill('');
+      });
+      // Return the new default keys
+      return defaultBands;
+    }
+
+    // C. Return existing keys (including any user-added ones)
+    return Object.keys(targetStorage);
+  };
+
+  // --- RENDER LOGIC ---
+
   if (table.groups) {
-    return table.groups.map(group => `
-          <div class="tmm-band-section">
-            <div class="tmm-band-section-header"><div class="tmm-band-section-title"><span>${group.title}</span></div></div>
-            <div class="tmm-band-table-wrapper">
-              <table class="tmm-band-table">
-                <thead><tr><th>Band</th>${group.columns.map(col => `<th>${col}</th>`).join('')}<th>Actions</th></tr></thead>
-                <tbody>${group.bands.map(band => {
-      const bandData = data[group.title]?.[band] || Array(group.columns.length).fill('');
-      return `<tr><td><strong>${band}</strong></td>${group.columns.map((col, idx) => `<td><input type="text" class="tmm-band-table-input" value="${bandData[idx] || ''}" onchange="tmmUpdateBandData('${tableKey}', '${group.title}', '${band}', ${idx}, this.value)"></td>`).join('')}<td><button class="tmm-btn-band-danger" onclick="tmmDeleteBandRow('${tableKey}', '${group.title}', '${band}')"><i class="fas fa-trash"></i></button></td></tr>`;
-    }).join('')}</tbody>
-              </table>
-            </div>
-          </div>`).join('');
+    // === SCENARIO A: GROUPED TABLES (Dispatch, SV Visit, Project) ===
+    return table.groups.map(group => {
+      // [FIX] Pass group.columns as the 3rd argument
+      const rowKeys = getKeysWithDefaults(group.title, group.bands, group.columns);
+
+      return `
+      <div class="tmm-band-section">
+        <div class="tmm-band-section-header">
+            <div class="tmm-band-section-title"><span>${group.title}</span></div>
+        </div>
+        <div class="tmm-band-table-wrapper">
+          <table class="tmm-band-table">
+            <thead>
+                <tr>
+                    <th style="width: 150px;">Band / Service</th>
+                    ${group.columns.map(col => `<th>${col}</th>`).join('')}
+                    <th style="width:50px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowKeys.map(band => {
+        // Safe Access to Data
+        const rowValues = (tableData[group.title] && tableData[group.title][band])
+          ? tableData[group.title][band]
+          : Array(group.columns.length).fill('');
+
+        return `<tr>
+                      <td>
+                        <input type="text" class="tmm-band-name-input" value="${band}" 
+                               onchange="tmmRenameBandRow('${tableKey}', '${group.title}', '${band}', this.value)" />
+                      </td>
+                      ${group.columns.map((col, idx) => `
+                        <td>
+                            <input type="text" class="tmm-band-table-input" value="${rowValues[idx] || ''}" 
+                                   onchange="tmmUpdateBandData('${tableKey}', '${group.title}', '${band}', ${idx}, this.value)">
+                        </td>
+                      `).join('')}
+                      <td style="text-align:center;">
+                        <button class="tmm-btn-band-danger" title="Delete Row" 
+                                onclick="tmmDeleteBandRow('${tableKey}', '${group.title}', '${band}')">
+                                <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                  </tr>`;
+      }).join('')}
+            </tbody>
+          </table>
+          <button class="tmm-btn-band-add" onclick="tmmAddBandRow('${tableKey}', '${group.title}', ${group.columns.length})">
+            <i class="fas fa-plus"></i> Add Row
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
   } else {
+    // === SCENARIO B: FLAT TABLES (Dedicated, Standby) ===
+    // [FIX] Pass table.columns as the 3rd argument
+    const rowKeys = getKeysWithDefaults(null, table.bands, table.columns);
+
     return `
-          <div class="tmm-band-table-wrapper">
-            <table class="tmm-band-table">
-              <thead><tr><th>${table.hasBandLevels ? 'Band' : 'Service Type'}</th>${table.columns.map(col => `<th>${col}</th>`).join('')}<th>Actions</th></tr></thead>
-              <tbody>${table.bands.map(band => {
-      const bandData = data[band] || Array(table.columns.length).fill('');
-      return `<tr><td><strong>${band}</strong></td>${table.columns.map((col, idx) => `<td><input type="text" class="tmm-band-table-input" value="${bandData[idx] || ''}" onchange="tmmUpdateBandData('${tableKey}', null, '${band}', ${idx}, this.value)"></td>`).join('')}<td><button class="tmm-btn-band-danger" onclick="tmmDeleteBandRow('${tableKey}', null, '${band}')"><i class="fas fa-trash"></i></button></td></tr>`;
-    }).join('')}</tbody>
-            </table>
-          </div>`;
+      <div class="tmm-band-table-wrapper">
+        <table class="tmm-band-table">
+          <thead>
+            <tr>
+                <th style="width: 150px;">${table.hasBandLevels ? 'Band' : 'Service Type'}</th>
+                ${table.columns.map(col => `<th>${col}</th>`).join('')}
+                <th style="width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowKeys.map(band => {
+      // Safe Access to Data
+      const rowValues = tableData[band] || Array(table.columns.length).fill('');
+
+      return `<tr>
+                  <td>
+                    <input type="text" class="tmm-band-name-input" value="${band}" 
+                           onchange="tmmRenameBandRow('${tableKey}', null, '${band}', this.value)" />
+                  </td>
+                  ${table.columns.map((col, idx) => `
+                    <td>
+                        <input type="text" class="tmm-band-table-input" value="${rowValues[idx] || ''}" 
+                               onchange="tmmUpdateBandData('${tableKey}', null, '${band}', ${idx}, this.value)">
+                    </td>
+                  `).join('')}
+                  <td style="text-align:center;">
+                    <button class="tmm-btn-band-danger" title="Delete Row" 
+                            onclick="tmmDeleteBandRow('${tableKey}', null, '${band}')">
+                            <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+              </tr>`;
+    }).join('')}
+          </tbody>
+        </table>
+        <button class="tmm-btn-band-add" onclick="tmmAddBandRow('${tableKey}', null, ${table.columns.length})">
+            <i class="fas fa-plus"></i> Add Row
+        </button>
+      </div>`;
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA & EVENT UTILS (UNCHANGED)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -719,10 +826,20 @@ function tmmCloseBandDetailsPanel() {
 }
 
 function tmmDeleteBandRow(key, group, band) {
-  if (!confirm("Delete?")) return;
-  if (group) delete TMM_BAND_STATE.bandData[key][group][band];
-  else delete TMM_BAND_STATE.bandData[key][band];
+  if (!confirm(`Are you sure you want to delete the row "${band}"?`)) return;
+
+  if (group) {
+    if (TMM_BAND_STATE.bandData[key] && TMM_BAND_STATE.bandData[key][group]) {
+      delete TMM_BAND_STATE.bandData[key][group][band];
+    }
+  } else {
+    if (TMM_BAND_STATE.bandData[key]) {
+      delete TMM_BAND_STATE.bandData[key][band];
+    }
+  }
+
   TMM_BAND_STATE.isModified = true;
+  // Re-render the panel to reflect the deleted row
   tmmLoadBandDetailsContent();
 }
 
@@ -792,4 +909,62 @@ function getCookie(name) {
     }
   }
   return cookieValue;
+}
+
+function tmmAddBandRow(key, group, colCount) {
+  const newName = prompt("Enter Name for new Band/Service:");
+  if (!newName || newName.trim() === "") return;
+
+  const cleanName = newName.trim();
+
+  // Helper to check existence
+  const exists = (group)
+    ? (TMM_BAND_STATE.bandData[key][group] && TMM_BAND_STATE.bandData[key][group][cleanName])
+    : (TMM_BAND_STATE.bandData[key] && TMM_BAND_STATE.bandData[key][cleanName]);
+
+  if (exists) {
+    alert("A row with this name already exists.");
+    return;
+  }
+
+  // Create empty data array
+  const emptyRow = Array(colCount).fill('');
+
+  if (group) {
+    if (!TMM_BAND_STATE.bandData[key][group]) TMM_BAND_STATE.bandData[key][group] = {};
+    TMM_BAND_STATE.bandData[key][group][cleanName] = emptyRow;
+  } else {
+    if (!TMM_BAND_STATE.bandData[key]) TMM_BAND_STATE.bandData[key] = {};
+    TMM_BAND_STATE.bandData[key][cleanName] = emptyRow;
+  }
+
+  TMM_BAND_STATE.isModified = true;
+  tmmLoadBandDetailsContent();
+}
+
+function tmmRenameBandRow(key, group, oldName, newName) {
+  if (!newName || newName.trim() === "" || oldName === newName) return;
+  const cleanNewName = newName.trim();
+
+  let targetObj;
+  if (group) {
+    targetObj = TMM_BAND_STATE.bandData[key][group];
+  } else {
+    targetObj = TMM_BAND_STATE.bandData[key];
+  }
+
+  if (targetObj[cleanNewName]) {
+    alert("Name already exists!");
+    // Force re-render to revert input value
+    tmmLoadBandDetailsContent();
+    return;
+  }
+
+  // Preserve data, create new key, delete old key
+  const data = targetObj[oldName];
+  targetObj[cleanNewName] = data;
+  delete targetObj[oldName];
+
+  TMM_BAND_STATE.isModified = true;
+  tmmLoadBandDetailsContent();
 }

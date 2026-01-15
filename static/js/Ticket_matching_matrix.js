@@ -359,13 +359,14 @@ window.smartAddToOtherTables = smartAddToOtherTables;
 document.addEventListener('DOMContentLoaded', function () {
   initFileUpload();
   initMatrix();
-  initColumnVisibility(); // From Control JS
+  initColumnVisibility();
   initSaveButton();
   updateStatistics();
   updateFinalTablePreview();
   initRecordValidationButton();
   initBandPreviewListeners();
   initValidationViewToggles();
+  initValidationPaginationListeners();
 
   const navBar = document.getElementById('recordNavigation');
   if (navBar) navBar.style.display = 'none';
@@ -1294,6 +1295,24 @@ function initSaveButton() {
 // 8. VALIDATION MODE (READ-ONLY COMPARISON)
 // ════════════════════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════════════════════════
+// 8.1 PAGINATION LOGIC FOR VALIDATION RESULTS
+// ════════════════════════════════════════════════════════════════════════════
+
+let VAL_TABLE_PAGE = 1;
+let VAL_ROWS_PER_PAGE = 25; // Default matches your HTML selected option
+
+function initValidationPaginationListeners() {
+  const rowsSelect = document.getElementById('rowsPerPage');
+  if (rowsSelect) {
+    rowsSelect.addEventListener('change', function (e) {
+      VAL_ROWS_PER_PAGE = e.target.value === 'all' ? Infinity : parseInt(e.target.value);
+      VAL_TABLE_PAGE = 1; // Reset to first page on size change
+      renderValidationTableUI();
+    });
+  }
+}
+
 // Global Flag to distinguish between regular Import and Validation Check
 window.IS_VALIDATION_MODE = false;
 window.VALIDATION_LOG = [];
@@ -1494,115 +1513,52 @@ function runFinalTicketValidation() {
   // 1. Reset Global Object and Counters
   window.VALIDATION_RESULTS = [];
   let validCount = 0;
-  let warningCount = 0;
   let errorCount = 0;
 
   const finalTicketFields = TABLE_SCHEMAS['final_ticket'];
 
-  // --- PREPARE HTML ACCUMULATORS ---
-  let tableHtml = `<table class="val-table">
-    <thead>
-        <tr>
-            <th style="width: 50px;">#</th>
-            <th style="width: 80px;">Action</th> <th class="col-status">Validation Status </th>`;
-
-  finalTicketFields.forEach(key => {
-    const label = FIELD_DEFINITIONS[key]?.label || key;
-    tableHtml += `<th>${label}</th>`;
-  });
-  tableHtml += `</tr></thead><tbody>`;
-
-  // B. Card HTML Accumulator
-  let cardsHtml = '';
-
-  // --- ITERATE DATA ---
+  // --- ITERATE DATA & CALCULATE STATUS ---
   window.MASTER_DATA.forEach((record, index) => {
     let status = 'SUCCESS';
     let missingFields = [];
 
-    // --- 1. VALIDATION LOGIC ---
-    // We generate the Table Cells (td) and check validation at the same time
-    let tableCellsHtml = '';
-
     finalTicketFields.forEach(fieldKey => {
       const fieldConfig = FIELD_DEFINITIONS[fieldKey];
       const value = record[fieldKey] || '';
-      let cellClass = '';
 
       // Check Required
       if (fieldConfig && fieldConfig.required) {
         if (value === undefined || value === null || String(value).trim() === '') {
           status = 'ERROR';
           missingFields.push(fieldConfig.label || fieldKey);
-          cellClass = 'cell-error'; // Highlight cell in table
         }
       }
-
-      tableCellsHtml += `<td class="${cellClass}">${value}</td>`;
     });
 
     // Update Counters
     if (status === 'SUCCESS') validCount++;
     else errorCount++;
 
-    // --- 2. BUILD TABLE ROW ---
-    let statusDisplay = '';
-    if (status === 'SUCCESS') {
-      statusDisplay = `<span class="text-success"><i class="fas fa-check-circle"></i> Valid</span>`;
-    } else {
-      statusDisplay = `<span class="text-error"><i class="fas fa-times-circle"></i> Invalid</span>`;
-    }
-
-    tableHtml += `<tr>
-        <td>${index + 1}</td>
-        <td style="text-align:center;">
-            <button class="btn btn-sm btn-danger" onclick="deleteValidationRecord(${index})" title="Delete Record">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>
-        <td>${statusDisplay}</td>
-        ${tableCellsHtml}
-    </tr>`;
-
-    // --- 3. BUILD CARD ITEM ---
-    // (Re-using the logic from previous step for cards)
-    cardsHtml += generateValidationCard({
-      rowIndex: index,
-      ticketNumber: record.ticket_number || 'N/A',
-      status: status,
-      missing: missingFields,
-      data: record
-    });
-
     // Store result
     window.VALIDATION_RESULTS.push({
       rowIndex: index,
       ticketNumber: record.ticket_number,
       status: status,
-      missing: missingFields
+      missing: missingFields,
+      data: record // Reference to original data for Card View
     });
   });
 
-  tableHtml += `</tbody></table>`;
-
-  // --- INJECT CONTENT ---
-
-  // Inject Table
-  const tableContainer = document.getElementById('validationTableContent');
-  if (tableContainer) tableContainer.innerHTML = tableHtml;
-
-  // Inject Cards
-  const cardContainer = document.getElementById('validationCardContent');
-  if (cardContainer) cardContainer.innerHTML = cardsHtml;
-
-  // --- UPDATE COUNTERS ---
+  // --- UPDATE DASHBOARD COUNTERS ---
   if (document.getElementById('validCount')) document.getElementById('validCount').innerText = validCount;
   if (document.getElementById('errorCount')) document.getElementById('errorCount').innerText = errorCount;
   if (document.getElementById('totalCount')) document.getElementById('totalCount').innerText = window.MASTER_DATA.length;
 
-  console.log("Validation Complete. Views Updated.");
-}
+  // --- RENDER UI ---
+  renderValidationTableUI();
 
+  console.log("Validation Analysis Complete. UI Rendered.");
+}
 // Helper for Card View (Same as before)
 function generateValidationCard(valObj) {
   let borderClass = 'border-success';
@@ -1763,4 +1719,107 @@ function updateBandTablePreview() {
   html += `</div>`;
 
   container.innerHTML = html;
+}
+
+function renderValidationTableUI() {
+  const finalTicketFields = TABLE_SCHEMAS['final_ticket'];
+
+  // 1. Calculate Slice
+  const totalRecords = window.VALIDATION_RESULTS.length;
+  const startIndex = (VAL_TABLE_PAGE - 1) * VAL_ROWS_PER_PAGE;
+  const endIndex = (VAL_ROWS_PER_PAGE === Infinity) ? totalRecords : Math.min(startIndex + VAL_ROWS_PER_PAGE, totalRecords);
+
+  const displayData = window.VALIDATION_RESULTS.slice(startIndex, endIndex);
+
+  // 2. Build Table HTML
+  let tableHtml = `<table class="val-table">
+        <thead>
+            <tr>
+                <th style="width: 50px;">#</th>
+                <th style="width: 80px;">Action</th> 
+                <th class="col-status">Validation Status</th>`;
+
+  finalTicketFields.forEach(key => {
+    const label = FIELD_DEFINITIONS[key]?.label || key;
+    tableHtml += `<th>${label}</th>`;
+  });
+  tableHtml += `</tr></thead><tbody>`;
+
+  // 3. Generate Rows
+  if (displayData.length === 0) {
+    tableHtml += `<tr><td colspan="${finalTicketFields.length + 3}" style="text-align:center; padding:20px;">No records found</td></tr>`;
+  } else {
+    displayData.forEach((res) => {
+      const record = window.MASTER_DATA[res.rowIndex]; // Access original data via index
+
+      let statusDisplay = res.status === 'SUCCESS'
+        ? `<span class="text-success"><i class="fas fa-check-circle"></i> Valid</span>`
+        : `<span class="text-error"><i class="fas fa-times-circle"></i> Invalid</span>`;
+
+      let tableCellsHtml = '';
+      finalTicketFields.forEach(fieldKey => {
+        const value = record[fieldKey] || '';
+        // Highlight cell if it caused an error (part of missing fields)
+        const fieldLabel = FIELD_DEFINITIONS[fieldKey]?.label || fieldKey;
+        const isMissing = res.missing.includes(fieldLabel);
+        const cellClass = isMissing ? 'cell-error' : '';
+
+        tableCellsHtml += `<td class="${cellClass}">${value}</td>`;
+      });
+
+      tableHtml += `<tr>
+                <td>${res.rowIndex + 1}</td>
+                <td style="text-align:center;">
+                    <button class="btn btn-sm btn-danger" onclick="deleteValidationRecord(${res.rowIndex})" title="Delete Record">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+                <td>${statusDisplay}</td>
+                ${tableCellsHtml}
+            </tr>`;
+    });
+  }
+  tableHtml += `</tbody></table>`;
+
+  // 4. Inject Pagination Controls (Dynamic)
+  const totalPages = (VAL_ROWS_PER_PAGE === Infinity) ? 1 : Math.ceil(totalRecords / VAL_ROWS_PER_PAGE);
+
+  tableHtml += `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:#f8f9fa; border-top:1px solid #ddd;">
+        <div>
+            Showing ${startIndex + 1} to ${endIndex} of ${totalRecords} records
+        </div>
+        <div style="display:flex; gap:5px;">
+            <button class="btn btn-sm" onclick="changeValTablePage(-1)" ${VAL_TABLE_PAGE === 1 ? 'disabled' : ''}>Previous</button>
+            <span style="padding:5px 10px; font-weight:bold;">Page ${VAL_TABLE_PAGE} of ${totalPages}</span>
+            <button class="btn btn-sm" onclick="changeValTablePage(1)" ${VAL_TABLE_PAGE >= totalPages ? 'disabled' : ''}>Next</button>
+        </div>
+    </div>`;
+
+  // 5. Inject Table
+  const tableContainer = document.getElementById('validationTableContent');
+  if (tableContainer) tableContainer.innerHTML = tableHtml;
+
+  // 6. Generate Cards (Optional: Cards usually don't strictly follow table pagination, 
+  // but usually user expects them to sync. Here we just render the same slice)
+  let cardsHtml = '';
+  displayData.forEach(res => {
+    cardsHtml += generateValidationCard(res);
+  });
+  const cardContainer = document.getElementById('validationCardContent');
+  if (cardContainer) cardContainer.innerHTML = cardsHtml;
+}
+
+function changeValTablePage(dir) {
+  const totalRecords = window.VALIDATION_RESULTS.length;
+  const totalPages = Math.ceil(totalRecords / VAL_ROWS_PER_PAGE);
+
+  let newPage = VAL_TABLE_PAGE + dir;
+  if (newPage < 1) newPage = 1;
+  if (newPage > totalPages) newPage = totalPages;
+
+  if (newPage !== VAL_TABLE_PAGE) {
+    VAL_TABLE_PAGE = newPage;
+    renderValidationTableUI();
+  }
 }
