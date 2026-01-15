@@ -187,12 +187,12 @@ function applyFilters() {
   let ignoreRequiredTableFilter = false;
 
   if (ragFilter === 'REQUIRED_TABLE') {
-      if (visibleTables.length !== 1) {
-          // If the user tries to use this filter with multiple tables visible, show a warning
-          // We use a small timeout to ensure the toast renders after any previous UI updates
-          setTimeout(() => showToast("Select exactly one table to use 'Required in table'", "warning"), 100);
-          ignoreRequiredTableFilter = true;
-      }
+    if (visibleTables.length !== 1) {
+      // If the user tries to use this filter with multiple tables visible, show a warning
+      // We use a small timeout to ensure the toast renders after any previous UI updates
+      setTimeout(() => showToast("Select exactly one table to use 'Required in table'", "warning"), 100);
+      ignoreRequiredTableFilter = true;
+    }
   }
   // ---------------------------------------------------------------------------
 
@@ -213,14 +213,14 @@ function applyFilters() {
     if (ragFilter !== 'ALL') {
       // --- NEW LOGIC: REQUIRED_TABLE ---
       if (ragFilter === 'REQUIRED_TABLE') {
-          if (!ignoreRequiredTableFilter) {
-              const activeTable = visibleTables[0];
-              // Check if the field exists in the schema of the single visible table
-              if (!TABLE_SCHEMAS[activeTable].includes(field)) {
-                  visible = false;
-              }
+        if (!ignoreRequiredTableFilter) {
+          const activeTable = visibleTables[0];
+          // Check if the field exists in the schema of the single visible table
+          if (!TABLE_SCHEMAS[activeTable].includes(field)) {
+            visible = false;
           }
-      } 
+        }
+      }
       // ---------------------------------
       else if (ragFilter === 'REQUIRED' && !def.required) visible = false;
       else if (ragFilter === 'OPTIONAL' && def.required) visible = false;
@@ -249,6 +249,11 @@ function applyFilters() {
 function applySortOrder(sortOrder) {
   const tbody = document.getElementById('matrixBody');
   if (!tbody) return;
+
+  const displayMode = document.getElementById('displayMode')?.value || 'FLAT';
+  if (displayMode === 'GROUPED' || displayMode === 'TABLE_WISE') {
+    return;
+  }
 
   const rows = Array.from(tbody.querySelectorAll('.matrix-row'));
 
@@ -419,64 +424,169 @@ function handleInputMode() {
 /**
  * Apply highlighting based on selected mode
  */
+/**
+ * Apply highlighting based on selected mode
+ */
 function applyHighlighting() {
   const mode = document.getElementById('highlightMode')?.value || 'NONE';
   const rows = document.querySelectorAll('#matrixBody .matrix-row');
 
-  console.log('[applyHighlighting] Mode:', mode);
+  // Get Filter values
+  const typeFilterVal = document.getElementById('dataTypeFilter')?.value || 'ALL';
+  const ragFilterVal = document.getElementById('ragFilter')?.value || 'ALL';
 
-  // Remove all highlight classes first
+  // Get Source Table Selection
+  const sourceSelect = document.getElementById('tmm_categorySelect');
+  const sourceValue = sourceSelect ? sourceSelect.value : 'all';
+
+  // 1. CLEAR: Remove all previous highlight classes
   rows.forEach(row => {
-    row.classList.remove(
-      'highlight-source',
-      'highlight-type',
-      'highlight-required',
-      'highlight-rag',
-      'highlight-auto',
-      'highlight-validation',
-      'highlight-empty',
-      'highlight-nonexistent',
-      'highlight-rag-green',
-      'highlight-rag-amber',
-      'highlight-rag-red'
-    );
+    row.className = 'matrix-row';
+    row.querySelectorAll('td').forEach(td => {
+      td.classList.remove('highlight-source-cell');
+      td.classList.remove('highlight-validation-error');
+      td.classList.remove('highlight-empty'); // Clear empty highlights
+    });
   });
 
   if (mode === 'NONE') return;
 
-  // Apply new highlighting
+  // 2. APPLY: Iterate rows
   rows.forEach(row => {
     const field = row.dataset.field;
     const def = FIELD_DEFINITIONS[field] || {};
 
+    if (!def) return;
+
     switch (mode) {
-      case 'REQUIRED_STATUS':
-        if (def.required) row.classList.add('highlight-required');
+      // ----------------------------------------------------------------
+      // CASE: EMPTY FIELDS (Cell-Level)
+      // Highlights specific cells that have inputs but no value
+      // ----------------------------------------------------------------
+      case 'EMPTY':
+        // Find all data cells in this row (exclude the label cell)
+        const dataCells = row.querySelectorAll('td.data-cell');
+
+        dataCells.forEach(cell => {
+          const input = cell.querySelector('input');
+          // If input exists and value is empty string
+          if (input && input.value.trim() === '') {
+            cell.classList.add('highlight-empty');
+          }
+        });
         break;
 
-      case 'RAG_STATUS':
-        const ragColor = (def.rag || 'green').toLowerCase();
-        row.classList.add(`highlight-rag-${ragColor}`);
-        break;
+      // ----------------------------------------------------------------
+      // CASE: VALIDATION STATUS (Cell-Level)
+      // Highlights ONLY the Final Ticket cell if it is Mandatory + Empty
+      // ----------------------------------------------------------------
+      case 'VALIDATION':
+        // Only proceed if the field is actually required
+        if (def.required) {
+          // Find the specific cell for 'final_ticket'
+          const finalCell = row.querySelector('td[data-table="final_ticket"]');
 
-      case 'AUTO_POP':
-        if (def.autoPopTo && def.autoPopTo.length > 1) {
-          row.classList.add('highlight-auto');
+          if (finalCell) {
+            const input = finalCell.querySelector('input');
+            // Check if input is empty
+            if (input && input.value.trim() === '') {
+              finalCell.classList.add('highlight-validation-error');
+            }
+          }
         }
         break;
 
-      case 'EMPTY':
-        const hasData = Object.values(DATA_STORE).some(store => store[field]);
-        if (!hasData) row.classList.add('highlight-empty');
+      // ----------------------------------------------------------------
+      // CASE: RAG STATUS (Row-Level)
+      // ----------------------------------------------------------------
+      case 'RAG_STATUS':
+        const rowRag = (def.rag || 'GREEN').toUpperCase();
+        const selectedRag = ragFilterVal.toUpperCase();
+        const validRagValues = ['GREEN', 'AMBER', 'RED', 'ALL'];
+        const isRagMatch = (selectedRag === 'ALL') || (selectedRag === rowRag);
+
+        if (validRagValues.includes(selectedRag) && isRagMatch) {
+          row.classList.add('highlight-dynamic-row');
+        } else if (!validRagValues.includes(selectedRag)) {
+          row.classList.add('highlight-dynamic-row');
+        }
         break;
 
+      // ----------------------------------------------------------------
+      // CASE: REQUIRED STATUS (Row-Level)
+      // ----------------------------------------------------------------
+      case 'REQUIRED_STATUS':
+        const isRequired = def.required === true;
+        const selectedReqOption = ragFilterVal.toUpperCase();
+
+        if (selectedReqOption === 'REQUIRED') {
+          if (isRequired) row.classList.add('highlight-dynamic-row');
+        }
+        else if (selectedReqOption === 'OPTIONAL') {
+          if (!isRequired) row.classList.add('highlight-dynamic-row');
+        }
+        else if (selectedReqOption === 'REQUIRED_TABLE') {
+          if (row.style.display !== 'none') row.classList.add('highlight-dynamic-row');
+        }
+        else {
+          if (isRequired) row.classList.add('highlight-dynamic-row');
+        }
+        break;
+
+      // ----------------------------------------------------------------
+      // CASE: DATA TYPE (Row-Level)
+      // ----------------------------------------------------------------
       case 'DATA_TYPE':
-        row.classList.add('highlight-type');
+        const rowType = (row.dataset.type || 'TEXT').toUpperCase();
+        const selectedType = typeFilterVal.toUpperCase();
+        if (selectedType === 'ALL' || selectedType === rowType) {
+          row.classList.add('highlight-dynamic-row');
+        }
+        break;
+
+      // ----------------------------------------------------------------
+      // CASE: SOURCE TABLE (Cell-Level)
+      // ----------------------------------------------------------------
+      case 'SOURCE_TABLE':
+        const schemaMap = {
+          'ticket': 'ticket_data',
+          'rate': 'rate_card',
+          'dispatch': 'dispatch',
+          'standby': 'standby',
+          'dedicated': 'dedicated',
+          'sv': 'sv_visit',
+          'project': 'project',
+          'final': 'final_ticket'
+        };
+
+        let targetKeys = [];
+        if (sourceValue === 'all') {
+          targetKeys = Object.keys(TABLE_SCHEMAS);
+        } else {
+          const mappedKey = schemaMap[sourceValue] || sourceValue;
+          if (mappedKey) targetKeys.push(mappedKey);
+        }
+
+        targetKeys.forEach(key => {
+          const cell = row.querySelector(`td[data-table="${key}"]`);
+          if (cell) {
+            cell.classList.add('highlight-source-cell');
+          }
+        });
+        break;
+
+      // ----------------------------------------------------------------
+      // CASE: AUTO POPULATED (Row-Level)
+      // ----------------------------------------------------------------
+      case 'AUTO_POP':
+        if (def.autoPopTo && def.autoPopTo.length > 0) {
+          row.classList.add('highlight-type-dropdown');
+        }
         break;
     }
   });
 
-  showToast(`Highlighting: ${mode}`, 'info');
+  console.log(`Highlighting applied: ${mode}`);
 }
 
 /**
@@ -487,22 +597,27 @@ function applyDisplayOptions() {
   applyHighlighting();
 }
 
-/**
- * Apply display mode
- */
 function applyDisplayMode() {
-  const mode = document.getElementById('displayMode')?.value || 'COMPACT';
+  const mode = document.getElementById('displayMode')?.value || 'FLAT';
   const matrixTable = document.querySelector('.matrix-table');
 
   if (!matrixTable) return;
 
-  // Remove existing mode classes
-  matrixTable.classList.remove('display-compact', 'display-comfortable', 'display-spacious');
+  console.log('[applyDisplayMode] Switching to:', mode);
 
-  // Add new mode class
-  matrixTable.classList.add(`display-${mode.toLowerCase()}`);
+  // 1. Remove existing display classes
+  matrixTable.classList.remove('display-compact', 'display-expanded', 'display-flat');
 
-  console.log('[applyDisplayMode] Mode:', mode);
+  // 2. Apply CSS Class based on mode
+  if (mode === 'COMPACT') {
+    matrixTable.classList.add('display-compact');
+  } else {
+    matrixTable.classList.add('display-expanded');
+  }
+
+  // 3. Re-render the body (This handles the Grouping structure)
+  renderMatrixBody();
+
   showToast(`Display mode: ${mode}`, 'info');
 }
 
@@ -580,8 +695,8 @@ function initSearchHighlight() {
     el.dataset.hasSearchListener = 'true';
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        e.preventDefault(); 
-        e.stopImmediatePropagation();      
+        e.preventDefault();
+        e.stopImmediatePropagation();
         performSearchHighlight(el.value);
       }
     });
@@ -597,7 +712,11 @@ function initSearchHighlight() {
 
 function performSearchHighlight(query) {
   const lowerQuery = query.toLowerCase().trim();
-  if (!lowerQuery) return;
+
+  if (!lowerQuery) {
+    clearSearchHighlight();
+    return;
+  }
 
   const sameQuery = lowerQuery === lastQuery;
   lastQuery = lowerQuery;
@@ -638,7 +757,13 @@ function performSearchHighlight(query) {
   }
 
   currentMatchIndex = (currentMatchIndex + 1) % matches.length;
-  matches[currentMatchIndex].scrollIntoView({
+
+  document.querySelectorAll('.search-match-active').forEach(el => el.classList.remove('search-match-active'));
+
+  const currentRow = matches[currentMatchIndex];
+  currentRow.classList.add('search-match-active');
+
+  currentRow.scrollIntoView({
     behavior: 'smooth',
     block: 'center'
   });
@@ -646,27 +771,62 @@ function performSearchHighlight(query) {
   showToast(`Match ${currentMatchIndex + 1} of ${matches.length}`, 'info');
 }
 
-
 function clearSearchHighlight() {
   document.querySelectorAll('.search-match-row').forEach(el => el.classList.remove('search-match-row'));
   document.querySelectorAll('.search-match-cell').forEach(el => el.classList.remove('search-match-cell'));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initSearchHighlight();
-});
 
 function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
     }
-    return cookieValue;
+  }
+  return cookieValue;
 }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// COLOR PICKER CONTROLS
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Updates the Global Highlight Color (Used for Search & Source Table)
+ */
+function updateMatchHighlightColor(color) {
+  // 1. Set CSS Variable on Root
+  document.documentElement.style.setProperty('--tmm-highlight-color', color);
+
+  // 2. Update the text label next to the picker
+  const label = document.getElementById('matchColorValue');
+  if (label) label.textContent = color;
+
+  // 3. Optional: Persist to localStorage
+  // localStorage.setItem('tmm_highlight_color', color);
+}
+
+/**
+ * Updates the "Current" Match Color (Used for the active search result)
+ */
+function updateCurrentMatchColor(color) {
+  document.documentElement.style.setProperty('--tmm-current-match-color', color);
+  const label = document.getElementById('currentColorValue');
+  if (label) label.textContent = color;
+}
+
+// Initialize colors on load
+document.addEventListener('DOMContentLoaded', () => {
+  initSearchHighlight();
+  const matchPicker = document.getElementById('matchHighlightColor');
+  const currentPicker = document.getElementById('currentMatchColor');
+
+  if (matchPicker) updateMatchHighlightColor(matchPicker.value);
+  if (currentPicker) updateCurrentMatchColor(currentPicker.value);
+});

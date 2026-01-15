@@ -1050,43 +1050,135 @@ function renderMatrixHeader() {
   header.innerHTML = html;
 }
 
+/**
+ * Renders the Matrix Body based on Data, Filters, and Display Mode
+ */
 function renderMatrixBody() {
   const body = document.getElementById('matrixBody');
   if (!body) return;
+
+  const displayMode = document.getElementById('displayMode')?.value || 'FLAT';
+
+  // 1. Get all unique fields
   const allFields = Array.from(new Set([
     ...Object.values(TABLE_SCHEMAS).flat(),
     ...Object.keys(FIELD_DEFINITIONS)
   ])).sort();
 
   let html = '';
-  allFields.forEach(field => {
+
+  // --- HELPER: Generate HTML for a single row ---
+  const generateRowHtml = (field) => {
     const def = FIELD_DEFINITIONS[field] || { label: field, type: 'TEXT', group: 'SYSTEM', rag: 'RED' };
 
-    // CRITICAL: Added data attributes (field, group, type, rag) so filters can work
-    html += `<tr class="matrix-row" data-field="${field}" data-group="${def.group}" data-type="${def.type}" data-rag="${def.rag}">
+    // We add data-attributes for filters and highlighting
+    let row = `<tr class="matrix-row" data-field="${field}" data-group="${def.group}" data-type="${def.type}" data-rag="${def.rag}">
       <td class="field-cell">
-        <span class="field-name">${def.label || ''}</span>
+        <span class="field-name">${def.label || field}</span>
+        
         <span class="field-meta">${def.type || ''} | ${def.group || ''}</span>
         ${def.required ? '<span class="required-badge">Required</span>' : ''}
-        <span class="rag-indicator rag-${def.rag ? def.rag.toLowerCase() : ''}">●</span>
+        <span class="rag-indicator rag-${(def.rag || '').toLowerCase()}">●</span>
       </td>`;
 
+    // Render cells for each table column
     Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
       const exists = TABLE_SCHEMAS[tableKey].includes(field);
       const value = DATA_STORE[tableKey][field] || '';
 
-      // CRITICAL: Ensure data-table attribute matches header for column hiding
       if (STATE.matrixMode === 'structural') {
-        html += `<td class="matrix-cell ${exists ? 'exists' : 'not-exists'}" data-table="${tableKey}" data-field="${field}">${exists ? '✔' : '✖'}</td>`;
+        row += `<td class="matrix-cell ${exists ? 'exists' : 'not-exists'}" data-table="${tableKey}" data-field="${field}">
+                  ${exists ? '<i class="fas fa-check"></i>' : ''}
+                </td>`;
       } else {
-        html += `<td class="matrix-cell data-cell ${exists ? '' : 'pending-data'}" data-table="${tableKey}" data-field="${field}">
-          <input type="text" class="cell-input" value="${value}" onchange="handleCellChange('${tableKey}', '${field}', this.value)" placeholder="${exists ? 'Value' : 'Pending'}">
+        // Data Input Mode
+        row += `<td class="matrix-cell data-cell ${exists ? '' : 'pending-data'}" data-table="${tableKey}" data-field="${field}">
+          <input type="text" class="cell-input" value="${value}" 
+                 onchange="handleCellChange('${tableKey}', '${field}', this.value)" 
+                 placeholder="${exists ? 'Value' : 'Pending'}">
         </td>`;
       }
     });
-    html += '</tr>';
-  });
+    row += '</tr>';
+    return row;
+  };
+
+  // --- LOGIC A: FLAT / COMPACT / EXPANDED (No Grouping headers) ---
+  if (displayMode === 'FLAT' || displayMode === 'COMPACT' || displayMode === 'EXPANDED') {
+    allFields.forEach(field => {
+      html += generateRowHtml(field);
+    });
+  }
+
+  // --- LOGIC B: GROUPED BY CATEGORY ---
+  else if (displayMode === 'GROUPED') {
+    // 1. Group fields by their definition group (e.g., BASIC_INFO, FINANCIAL)
+    const groups = {};
+    allFields.forEach(field => {
+      const def = FIELD_DEFINITIONS[field] || { group: 'OTHER' };
+      const gName = def.group || 'OTHER';
+      if (!groups[gName]) groups[gName] = [];
+      groups[gName].push(field);
+    });
+
+    // 2. Sort group keys (optional: specific order logic can be added here)
+    const sortedKeys = Object.keys(groups).sort();
+
+    // 3. Render Groups
+    sortedKeys.forEach(groupName => {
+      // Header Row
+      const colSpan = Object.keys(TABLE_SCHEMAS).length + 1;
+      html += `<tr class="group-header-row"><td colspan="${colSpan}">${groupName.replace(/_/g, ' ')}</td></tr>`;
+
+      // Field Rows
+      groups[groupName].forEach(field => {
+        html += generateRowHtml(field);
+      });
+    });
+  }
+
+  // --- LOGIC C: TABLE WISE (Group by "Primary" Table) ---
+  else if (displayMode === 'TABLE_WISE') {
+    // Strategy: Assign field to the *first* table in the schema list that contains it.
+    // If common, it goes to the first one defined in TABLE_SCHEMAS order.
+    const tableGroups = {};
+    const tableKeys = Object.keys(TABLE_SCHEMAS);
+
+    // Initialize groups
+    tableKeys.forEach(k => tableGroups[k] = []);
+    tableGroups['OTHER'] = []; // Fallback
+
+    allFields.forEach(field => {
+      // Find first table containing this field
+      const foundTable = tableKeys.find(key => TABLE_SCHEMAS[key].includes(field));
+      if (foundTable) {
+        tableGroups[foundTable].push(field);
+      } else {
+        tableGroups['OTHER'].push(field);
+      }
+    });
+
+    // Render
+    [...tableKeys, 'OTHER'].forEach(tblKey => {
+      const fields = tableGroups[tblKey];
+      if (fields && fields.length > 0) {
+        const colSpan = tableKeys.length + 1;
+        const displayName = TABLE_NAMES[tblKey] || "Imported / Other";
+        html += `<tr class="group-header-row"><td colspan="${colSpan}">${displayName}</td></tr>`;
+
+        fields.forEach(f => html += generateRowHtml(f));
+      }
+    });
+  }
+
   body.innerHTML = html;
+
+  // Re-apply post-render effects
+  applyHighlighting();
+  // We re-apply filters because grouping might have reset the visibility of rows
+  // Note: Filtering usually hides rows. In Grouped mode, if all rows in a group are hidden,
+  // the header will typically remain visible unless we add extra logic to hide empty headers.
+  if (typeof window.applyFilters === 'function') window.applyFilters();
 }
 
 function updateStatistics() {
