@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════
-// TICKET MATCHING MATRIX - COMPLETE CONTROLLER (v3.2 - Fixes Applied)
+// TICKET MATCHING MATRIX - COMPLETE CONTROLLER 
 // ════════════════════════════════════════════════════════════════════════════
 
 // ──── 1. GLOBAL STATE & CONFIGURATION ────
@@ -103,7 +103,7 @@ const TABLE_SCHEMAS = {
     'request_id', 'ticket_number', 'customer_reference', 'requester', 'subject',
     'site_name', 'priority', 'technician_name', 'status', 'worklog_type',
     'completed_date', 'account', 'region', 'country', 'city', 'contact_email',
-    'band_type', 'total_hours', 'hourly_rate', 'revenue', 'currency',
+    'band', 'total_hours', 'hourly_rate', 'revenue', 'currency',
     'labor_cost', 'profit', 'margin', 'vendor_po', 'pre_visit', 'post_visit', 'notes'
   ]
 };
@@ -187,7 +187,7 @@ const FIELD_DEFINITIONS = {
   travel_extra_cost: { label: 'Travel/Extra Cost', type: 'CURRENCY', group: 'FINANCIAL', required: false, rag: 'AMBER', autoPopTo: ['dispatch', 'dedicated', 'sv_visit', 'project'] },
 
   // --- Dedicated / Project Specifics ---
-  band: { label: 'Band', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
+  band: { label: 'Band', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project', 'final_ticket'] },
   variant: { label: 'Variant', type: 'TEXT', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
   working_days: { label: 'Number of Working Days', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
   worked_days: { label: 'Number of Worked Days', type: 'NUMBER', group: 'TECHNICIAN', required: false, rag: 'GREEN', autoPopTo: ['dedicated', 'project'] },
@@ -272,7 +272,6 @@ const FIELD_SYNONYMS = {
   subject: ["Subject", "Short Description", "Summary", "Activity Details"],
   service_type: ["Service Type", "Dispatch Category"],
   currency: ["Currency", "Currency ", "currency", "currency-cost"],
-  band_type: ["Band Type"],
   vendor_po: ["Vendor PO", "PO number", "External PO NUMBER", "PO Number"],
   pre_visit: ["PRE Visit"],
   post_visit: ["POST Visit"],
@@ -322,7 +321,7 @@ const FIELD_SYNONYMS = {
   service_month: ["Service Month (MM/YYYY)"],
   site_support: ["Site support"],
   standby_monthly_cost: ["Stand by Monthly cost"],
-  band: ["Band"],
+  band: ["Band", "Band Type"],
   variant: ["Variant"],
   working_days: ["Number of working days"],
   worked_days: ["Number of worked days"],
@@ -365,6 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatistics();
   updateFinalTablePreview();
   initRecordValidationButton();
+  initBandPreviewListeners();
   initValidationViewToggles();
 
   const navBar = document.getElementById('recordNavigation');
@@ -424,7 +424,7 @@ function initValidationViewToggles() {
 
       // Update Views
       tableView.style.display = 'none';
-      cardView.style.display = 'block'; // Or 'grid' if you use grid css
+      cardView.style.display = 'block';
     });
   }
 }
@@ -616,21 +616,25 @@ function parseExcel(file) {
 }
 
 /**
- * ROBUST NORMALIZER (FIXED WITH MAPPING)
+ * ROBUST NORMALIZER
  * 1. Maps Dropdown Value to Actual Schema Key.
  * 2. Matches headers case-insensitively against Synonyms.
- * 3. Appends new fields to the Mapped Schema or ALL tables.
+ * 3. Appends new fields ONLY IF 'append' mode is selected.
  */
 function normalizeBatch(rawData) {
   const contextCustomer = document.getElementById('tmm_customerSelect')?.selectedOptions[0]?.text || "";
   const contextAccount = document.getElementById('tmm_accountSelect')?.selectedOptions[0]?.text || "";
   const isImportAll = contextCustomer.toLowerCase().includes("all");
 
-  // [FIX 1] Get the raw dropdown value
+  // Get the raw dropdown value
   const dropdown = document.getElementById('tmm_categorySelect');
   const rawValue = dropdown ? dropdown.value : null;
 
-  // [FIX 2] Create a Map to translate HTML Value -> Schema Key
+  // Check the Import Mode (Smart vs Append)
+  const importModeEl = document.getElementById('tmm_importMode');
+  const isAppendMode = importModeEl && importModeEl.value === 'append';
+
+  // Create a Map to translate HTML Value -> Schema Key
   const schemaMap = {
     'ticket': 'ticket_data',
     'rate': 'rate_card',
@@ -646,19 +650,16 @@ function normalizeBatch(rawData) {
   // Get the correct key used in TABLE_SCHEMAS
   const selectedSchemaKey = schemaMap[rawValue] || rawValue;
 
-  // [FIX 3] Determine which tables should receive the new columns
+  // Determine which tables should receive the new columns
   let targetTables = [];
 
   if (selectedSchemaKey === 'all') {
-    // If user selected "All", add new columns to EVERY table schema
     targetTables = Object.keys(TABLE_SCHEMAS);
   } else if (selectedSchemaKey && TABLE_SCHEMAS[selectedSchemaKey]) {
-    // If user selected specific table, add only to that specific schema
     targetTables = [selectedSchemaKey];
   }
 
-  console.log(`[Normalizer] Raw Select: ${rawValue} -> Mapped Key: ${selectedSchemaKey}`);
-  console.log(`[Normalizer] Targeting Tables:`, targetTables);
+  console.log(`[Normalizer] Mode: ${isAppendMode ? 'APPEND' : 'SMART (Strict)'}`);
 
   return rawData.map(raw => {
     let normalized = {};
@@ -699,7 +700,13 @@ function normalizeBatch(rawData) {
         normalized[matchedSystemField] = cleanVal;
       }
       else {
-        // --- B. APPEND MODE (New Field) ---
+        // --- B. APPEND MODE CHECK ---
+        // If we are NOT in append mode, ignore this unknown column entirely.
+        if (!isAppendMode) {
+          return;
+        }
+
+        // --- C. APPEND MODE (New Field Logic) ---
         // Create a safe ID
         const dynamicId = cleanHeaderLower.replace(/[^a-z0-9]/g, '_');
 
@@ -711,7 +718,7 @@ function normalizeBatch(rawData) {
             group: 'IMPORTED',
             rag: 'GREY',
             required: false,
-            // [FIX 4] Auto-populate to all targeted tables
+            // Auto-populate to all targeted tables
             autoPopTo: [...targetTables]
           };
         } else {
@@ -723,7 +730,7 @@ function normalizeBatch(rawData) {
           });
         }
 
-        // [FIX 5] Update the Table Schemas explicitly using the Mapped Key
+        // Update the Table Schemas explicitly using the Mapped Key
         targetTables.forEach(tbl => {
           if (TABLE_SCHEMAS[tbl] && !TABLE_SCHEMAS[tbl].includes(dynamicId)) {
             TABLE_SCHEMAS[tbl].push(dynamicId);
@@ -993,7 +1000,9 @@ function handleCellChange(tableKey, field, value) {
   if (window.MASTER_DATA[window.currentImportIndex]) {
     window.MASTER_DATA[window.currentImportIndex][field] = value;
   }
-
+  if (field === 'band') {
+    updateBandTablePreview();
+  }
   if (STATE.smartAddEnabled) smartAddToOtherTables(field, value);
   updateStatistics();
   updateFinalTablePreview();
@@ -1641,3 +1650,117 @@ window.deleteValidationRecord = function (index) {
   runFinalTicketValidation();
   window.showToast("Record deleted", "success");
 };
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 9. BAND SPECIFIC PREVIEW LOGIC (NEW)
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Extracts just the number from a string. 
+ * Handles: "Band 1", "band 1", "b1", "1" -> Returns "1"
+ */
+function getNormalizedBand(val) {
+  if (!val) return "";
+  // Convert to string, lowercase, and remove anything that isn't a digit
+  return String(val).toLowerCase().replace(/[^0-9]/g, '');
+}
+
+function initBandPreviewListeners() {
+  const bandSelect = document.getElementById('tmm_bandSelect');
+  if (bandSelect) {
+    bandSelect.addEventListener('change', updateBandTablePreview);
+  }
+
+  // Dynamically create the container if it doesn't exist
+  const finalPreview = document.getElementById('finalTablePreview');
+  let bandContainer = document.getElementById('bandTablePreview');
+
+  if (!bandContainer && finalPreview) {
+    bandContainer = document.createElement('div');
+    bandContainer.id = 'bandTablePreview';
+    bandContainer.style.marginTop = "20px";
+    bandContainer.style.borderTop = "2px dashed #ccc";
+    bandContainer.style.paddingTop = "10px";
+    // Insert immediately after the Final Table Preview
+    finalPreview.parentNode.insertBefore(bandContainer, finalPreview.nextSibling);
+  }
+}
+
+function updateBandTablePreview() {
+  const container = document.getElementById('bandTablePreview');
+  const bandSelect = document.getElementById('tmm_bandSelect');
+
+  if (!container || !bandSelect) return;
+
+  // 1. Get Target Band (Normalized)
+  // If value is "" (All Bands), targetBand becomes ""
+  const rawSelectValue = bandSelect.value;
+  const targetBand = getNormalizedBand(rawSelectValue);
+
+  // 2. Filter Master Data
+  const columns = TABLE_SCHEMAS.final_ticket;
+
+  // Filter logic: 
+  // If "All Bands" (targetBand is empty) -> Show everything (or limit to first 100)
+  // Else -> Show only matches
+  const filteredData = window.MASTER_DATA.filter((record) => {
+    if (!targetBand) return true; // Show all if dropdown is "All Bands"
+
+    const recordBand = getNormalizedBand(record.band || "");
+    return recordBand === targetBand;
+  });
+
+  // 3. Render Table
+  if (filteredData.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:#999;padding:10px;">
+            No records found for Band ${targetBand || "Selection"}
+        </div>`;
+    return;
+  }
+
+  const countLabel = targetBand ? `Band ${targetBand}` : "All Bands";
+
+  let html = `
+    <h4 style="margin-bottom:10px; color:#333;">
+        ${countLabel} Preview <span class="badge" style="background:#6c757d">${filteredData.length} Records</span>
+    </h4>
+    <div class="final-table-scroll" style="max-height: 300px; overflow-y: auto;">
+        <table class="final-preview-table" style="font-size: 0.85em; width:100%;">
+            <thead>
+                <tr>
+                    <th style="position:sticky; top:0; background:#eee;">#</th>`;
+
+  columns.forEach(k => {
+    html += `<th style="position:sticky; top:0; background:#eee;">${FIELD_DEFINITIONS[k]?.label || k}</th>`;
+  });
+
+  html += `   </tr>
+            </thead>
+            <tbody>`;
+
+  // Limit render to 100 rows for performance if showing "All"
+  const renderLimit = 100;
+  const dataToRender = filteredData.slice(0, renderLimit);
+
+  dataToRender.forEach((row, index) => {
+    html += `<tr>
+            <td>${index + 1}</td>`;
+    columns.forEach(k => {
+      html += `<td>${row[k] || ''}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  if (filteredData.length > renderLimit) {
+    html += `<div style="text-align:center; padding:5px; font-style:italic; color:#666;">
+            (Showing first ${renderLimit} of ${filteredData.length} matches)
+        </div>`;
+  }
+
+  html += `</div>`;
+
+  container.innerHTML = html;
+}

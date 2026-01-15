@@ -624,13 +624,20 @@ class RateCardAssignmentEnhanced {
     }
 
     filterTickets() {
+        const statusSelect = document.getElementById('filterStatus');
         const customerSelect = document.getElementById('filterCustomer');
         const accountSelect = document.getElementById('filterAccount');
-        const statusSelect = document.getElementById('filterStatus');
 
-        const selectedCust = customerSelect ? customerSelect.value : 'all';
-        const selectedAcc = accountSelect ? accountSelect.value : 'all';
+        const selectedCust = customerSelect
+            ? customerSelect.options[customerSelect.selectedIndex].text
+            : 'All customers';
+
+        const selectedAcc = accountSelect
+            ? accountSelect.options[accountSelect.selectedIndex].text
+            : 'All Accounts';
         const selectedStatus = statusSelect ? statusSelect.value : 'all';
+
+        console.log(selectedAcc, selectedCust);
 
         return this.tickets.filter(ticket => {
             const data = ticket.data_table || {};
@@ -640,8 +647,8 @@ class RateCardAssignmentEnhanced {
                 const currentStatus = ticket.assignmentStatus || 'pending';
                 if (currentStatus !== selectedStatus) return false;
             }
-            if (selectedCust !== 'all' && String(ticket.customer) !== String(selectedCust)) return false;
-            if (selectedAcc !== 'all' && String(ticket.account) !== String(selectedAcc)) return false;
+            if (selectedCust !== 'All customers' && String(ticket.customer) !== String(selectedCust)) return false;
+            if (selectedAcc !== 'All Accounts' && String(ticket.account) !== String(selectedAcc)) return false;
 
             if (this.filters.search) {
                 const term = this.filters.search.toLowerCase();
