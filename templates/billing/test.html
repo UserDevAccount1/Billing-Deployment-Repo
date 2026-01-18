@@ -1594,7 +1594,7 @@
                 </div>
             </div>
         </div>
-
+<!-- 
         <div class="band-modal-overlay" id="band-modal-overlay">
             <div class="band-modal">
                 <div class="band-modal-header">
@@ -1614,7 +1614,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!---- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  END STEP 2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -->
 
@@ -1774,5 +1774,8 @@
 <script defer src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
 <script src="{% static 'js/Band_features.js' %}" defer></script>
 <script src="{% static 'js/RateCard.js' %}"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
 {% endblock %}

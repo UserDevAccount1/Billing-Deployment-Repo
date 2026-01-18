@@ -2,7 +2,7 @@ from datetime import date, timedelta
 import uuid
 import logging
 import json
-
+import openai
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -11,6 +11,8 @@ from django.http import JsonResponse
 from django.db.models.functions import Lower
 from django.utils.dateformat import format
 from django.views import View
+
+from excis_billing import settings
 
 from .models import BillingRun, InitialTicket
 from apps.customers.models import Customer, Account, BillingCycle, Currency, Country
@@ -484,9 +486,8 @@ def get_all_final_data(request):
 @method_decorator(csrf_exempt, name="dispatch")
 class BatchStoreBandTableView(View):
     """
-    Standard Django View to batch store BandTable records.
-    Expects a JSON array of objects.
-    Returns UUIDs for created records.
+    Batch store BandTable records.
+    Logic: If 'uuid' is present and exists, Update. Otherwise, Insert.
     """
 
     def post(self, request):
@@ -498,8 +499,9 @@ class BatchStoreBandTableView(View):
                 payload = [payload]
 
             saved_count = 0
+            updated_count = 0
             errors = []
-            created_items = []  # List to store successfully created items with UUIDs
+            created_items = []
 
             for index, item in enumerate(payload):
                 try:
@@ -516,17 +518,35 @@ class BatchStoreBandTableView(View):
                             Account, pk=item["account"]
                         )
 
-                    # Create Record and capture the instance
-                    instance = BandTable.objects.create(
-                        customer=customer_instance,
-                        account=account_instance,
-                        ticket_number=item["ticket_number"],
-                        band_data=item.get("band_data", {}),
-                    )
+                    # --- UPDATE VS INSERT LOGIC ---
+                    instance = None
+                    uuid_str = item.get("uuid")
 
-                    saved_count += 1
+                    # 1. Try to find existing record if UUID is provided
+                    if uuid_str:
+                        try:
+                            instance = BandTable.objects.get(uuid=uuid_str)
+                            # Update existing instance
+                            instance.customer = customer_instance
+                            instance.account = account_instance
+                            instance.ticket_number = item["ticket_number"]
+                            instance.band_data = item.get("band_data", {})
+                            instance.save()
+                            updated_count += 1
+                        except BandTable.DoesNotExist:
+                            instance = None  # Proceed to create
 
-                    # Append the ticket details + new UUID to the response list
+                    # 2. Create new if not found or no UUID provided
+                    if not instance:
+                        instance = BandTable.objects.create(
+                            customer=customer_instance,
+                            account=account_instance,
+                            ticket_number=item["ticket_number"],
+                            band_data=item.get("band_data", {}),
+                        )
+                        saved_count += 1
+
+                    # Append the ticket details + UUID to the response list
                     created_items.append(
                         {
                             "ticket_number": item["ticket_number"],
@@ -539,8 +559,8 @@ class BatchStoreBandTableView(View):
 
             response_data = {
                 "success": True,
-                "message": f"Successfully saved {saved_count} BandTable records.",
-                "created_items": created_items,  # <--- Now sending back UUIDs
+                "message": f"Processed {len(payload)} items. Created: {saved_count}, Updated: {updated_count}.",
+                "created_items": created_items,
                 "errors": errors if errors else None,
             }
             return JsonResponse(response_data, status=201)
@@ -555,6 +575,11 @@ class BatchStoreBandTableView(View):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class BatchStoreFinalTicketView(View):
+    """
+    Batch store FinalTicket records.
+    Logic: If 'uuid' is present and exists, Update. Otherwise, Insert.
+    """
+
     def post(self, request):
         try:
             payload = json.loads(request.body)
@@ -562,17 +587,17 @@ class BatchStoreFinalTicketView(View):
                 payload = [payload]
 
             saved_count = 0
+            updated_count = 0
             errors = []
             created_items = []
 
             for index, item in enumerate(payload):
                 try:
-                    # ... (Validation and Customer/Account logic same as before) ...
-
                     if "customer" not in item or "ticket_number" not in item:
                         raise ValueError(f"Missing required fields")
 
                     customer_instance = get_object_or_404(Customer, pk=item["customer"])
+
                     account_instance = None
                     if item.get("account"):
                         account_instance = get_object_or_404(
@@ -599,18 +624,40 @@ class BatchStoreFinalTicketView(View):
                         except BandTable.DoesNotExist:
                             pass
 
-                    # Create Record
-                    instance = FinalTicket.objects.create(
-                        customer=customer_instance,
-                        account=account_instance,
-                        ticket_number=item["ticket_number"],
-                        request_id=item["request_id"],
-                        data_table=item.get("data_table", {}),
-                        initial_ticket=initial_ticket_instance,
-                        band=band_instance,  # <--- Saving Band
-                    )
+                    # --- UPDATE VS INSERT LOGIC ---
+                    instance = None
+                    uuid_str = item.get("uuid")
 
-                    saved_count += 1
+                    # 1. Try to find existing record if UUID is provided
+                    if uuid_str:
+                        try:
+                            instance = FinalTicket.objects.get(uuid=uuid_str)
+                            # Update existing instance
+                            instance.customer = customer_instance
+                            instance.account = account_instance
+                            instance.ticket_number = item["ticket_number"]
+                            instance.request_id = item.get("request_id")
+                            instance.data_table = item.get("data_table", {})
+                            instance.initial_ticket = initial_ticket_instance
+                            instance.band = band_instance
+                            instance.save()
+                            updated_count += 1
+                        except FinalTicket.DoesNotExist:
+                            instance = None
+
+                    # 2. Create new if not found
+                    if not instance:
+                        instance = FinalTicket.objects.create(
+                            customer=customer_instance,
+                            account=account_instance,
+                            ticket_number=item["ticket_number"],
+                            request_id=item.get("request_id"),
+                            data_table=item.get("data_table", {}),
+                            initial_ticket=initial_ticket_instance,
+                            band=band_instance,
+                        )
+                        saved_count += 1
+
                     created_items.append(
                         {
                             "ticket_number": item["ticket_number"],
@@ -624,8 +671,9 @@ class BatchStoreFinalTicketView(View):
             return JsonResponse(
                 {
                     "success": True,
-                    "message": f"Saved {saved_count} records.",
+                    "message": f"Processed {len(payload)} items. Created: {saved_count}, Updated: {updated_count}.",
                     "created_items": created_items,
+                    "errors": errors if errors else None,
                 },
                 status=201,
             )
@@ -669,22 +717,21 @@ def get_all_initial_data(request):
 @method_decorator(csrf_exempt, name="dispatch")
 class BatchStoreInitialTicketView(View):
     """
-    Standard Django View to batch store InitialTicket records.
-    Expects a JSON array of objects.
-    Returns UUIDs for created records.
+    Batch store InitialTicket records.
+    Logic: If 'uuid' is present and exists, Update. Otherwise, Insert.
     """
 
     def post(self, request):
         try:
             payload = json.loads(request.body)
 
-            # Ensure payload is a list
             if not isinstance(payload, list):
                 payload = [payload]
 
             saved_count = 0
+            updated_count = 0
             errors = []
-            created_items = []  # List to store successfully created items with UUIDs
+            created_items = []
 
             for index, item in enumerate(payload):
                 try:
@@ -705,18 +752,36 @@ class BatchStoreInitialTicketView(View):
                             Account, pk=item["account"]
                         )
 
-                    # Create Record and capture instance
-                    instance = InitialTicket.objects.create(
-                        customer=customer_instance,
-                        account=account_instance,
-                        ticket_number=item["ticket_number"],
-                        request_id=item["request_id"],
-                        data_table=item.get("data_table", {}),
-                    )
+                    # --- UPDATE VS INSERT LOGIC ---
+                    instance = None
+                    uuid_str = item.get("uuid")
 
-                    saved_count += 1
+                    # 1. Try to find existing record if UUID is provided
+                    if uuid_str:
+                        try:
+                            instance = InitialTicket.objects.get(uuid=uuid_str)
+                            # Update existing instance
+                            instance.customer = customer_instance
+                            instance.account = account_instance
+                            instance.ticket_number = item["ticket_number"]
+                            instance.request_id = item["request_id"]
+                            instance.data_table = item.get("data_table", {})
+                            instance.save()
+                            updated_count += 1
+                        except InitialTicket.DoesNotExist:
+                            instance = None
 
-                    # Append the ticket details + new UUID to the response list
+                    # 2. Create new if not found
+                    if not instance:
+                        instance = InitialTicket.objects.create(
+                            customer=customer_instance,
+                            account=account_instance,
+                            ticket_number=item["ticket_number"],
+                            request_id=item["request_id"],
+                            data_table=item.get("data_table", {}),
+                        )
+                        saved_count += 1
+
                     created_items.append(
                         {
                             "ticket_number": item["ticket_number"],
@@ -730,7 +795,7 @@ class BatchStoreInitialTicketView(View):
 
             response_data = {
                 "success": True,
-                "message": f"Successfully saved {saved_count} InitialTicket records.",
+                "message": f"Processed {len(payload)} items. Created: {saved_count}, Updated: {updated_count}.",
                 "created_items": created_items,
                 "errors": errors if errors else None,
             }
@@ -822,3 +887,85 @@ class AutoAssignBandView(View):
 # views.py
 def comparison_tool(request):
     return render(request, "billing/comparison.html")
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ExtractPdfDataView(View):
+    """
+    API to extract structured data from PDF text using OpenAI GPT.
+    Expects JSON payload: { "pdf_content": "...", "table_schema": {...} }
+    Returns: { "success": True, "extracted_data": [ {...}, {...} ] }
+    """
+
+    def post(self, request):
+        try:
+            # 1. Parse Request
+            payload = json.loads(request.body)
+            pdf_content = payload.get("pdf_content", "")
+            table_schema = payload.get("table_schema", {})
+
+            if not pdf_content:
+                return JsonResponse(
+                    {"success": False, "error": "pdf_content is required"}, status=400
+                )
+
+            # 2. Configure OpenAI (Ensure settings.OPENAI_API_KEY is set)
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+
+            # 3. Construct the System Prompt
+            system_instruction = (
+                "You are a precise data extraction engine. "
+                "Your task is to extract data from the provided PDF text content based EXACTLY on the provided schema.\n"
+                "Rules:\n"
+                "1. Extract all fields defined in the schema that exist in the text.\n"
+                "2. If a field from the schema is not found in the text, exclude it or set it to null.\n"
+                "3. If the text contains multiple distinct records (e.g., multiple tickets), extract them all.\n"
+                "4. CRITICAL: Your output must strictly be a JSON object containing a single key 'results' which is an ARRAY of objects.\n"
+                "5. Even if only one record is found, return it inside the array."
+            )
+
+            # 4. Construct the User Prompt
+            user_content = (
+                f"Schema to populate:\n{json.dumps(table_schema, indent=2)}\n\n"
+                f"PDF Text Content:\n{pdf_content}"
+            )
+
+            # 5. Call OpenAI API
+            completion = client.chat.completions.create(
+                model="gpt-4o",  # Use gpt-4o or gpt-3.5-turbo depending on budget/complexity
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_content},
+                ],
+                temperature=0,  # Keep deterministic
+            )
+
+            # 6. Parse Response
+            ai_response_text = completion.choices[0].message.content
+            parsed_response = json.loads(ai_response_text)
+
+            # Ensure we get the list from the 'results' key we requested
+            extracted_array = parsed_response.get("results", [])
+
+            # Fallback checks if AI messed up the structure slightly
+            if not isinstance(extracted_array, list):
+                # If it returned a single object instead of a list, wrap it
+                extracted_array = [extracted_array]
+
+            return JsonResponse({"success": True, "extracted_data": extracted_array})
+
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "error": "Invalid JSON format in request body"},
+                status=400,
+            )
+        except openai.APIError as e:
+            logger.error(f"OpenAI API Error: {e}")
+            return JsonResponse(
+                {"success": False, "error": f"AI Processing failed: {str(e)}"},
+                status=502,
+            )
+        except Exception as e:
+            logger.error(f"Extraction Error: {e}", exc_info=True)
+            return JsonResponse({"success": False, "error": str(e)}, status=500)

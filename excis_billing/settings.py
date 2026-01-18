@@ -29,6 +29,8 @@ SECRET_KEY = config("DJANGO_SECRET_KEY", default="django-insecure-&r5twgh-a9*=72
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG_STATUS", default=False, cast=bool)
 
+OPENAI_API_KEY = config("OPENAI_API_KEY")
+
 
 ALLOWED_HOSTS = ['billing.pickfreshdevelopment.site', 'www.billing.pickfreshdevelopment.site', 'localhost',
     "37.59.106.222",

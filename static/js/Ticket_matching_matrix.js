@@ -18,6 +18,8 @@ window.PENDING_DATA = [];
 window.DIFF_LOG = [];
 window.currentImportIndex = 0;
 window.VALIDATION_RESULTS = [];
+window.VALIDATION_DATA_MAP = {};
+window.CURRENT_VALIDATION_ROW = null;
 
 // VISUAL STORE: What is currently displayed in the DOM inputs
 const DATA_STORE = {
@@ -575,9 +577,15 @@ function handleFiles(files) {
 
   window.showToast(`Processing ${file.name}...`, 'info');
 
-  if (ext === 'csv') parseCSV(file);
-  else if (['xls', 'xlsx'].includes(ext)) parseExcel(file);
-  else window.showToast("Invalid format", "error");
+  if (ext === 'csv') {
+    parseCSV(file);
+  } else if (['xls', 'xlsx'].includes(ext)) {
+    parseExcel(file);
+  } else if (ext === 'pdf') {
+    parsePDF(file);
+  } else {
+    window.showToast("Invalid format. Supported: CSV, Excel, PDF", "error");
+  }
 }
 
 function parseCSV(file) {
@@ -955,24 +963,50 @@ function loadRecord(index) {
 
   const record = window.MASTER_DATA[index];
 
+  // ════════════════════════════════════════════════════════════════
+  // NEW: 3-STEP PRIORITY MATCHING LOGIC
+  // ════════════════════════════════════════════════════════════════
+  window.CURRENT_VALIDATION_ROW = null;
+
+  // 1. Get Clean Keys from the SYSTEM record
+  const sysTicket = getCleanKey(record.ticket_number);
+  const sysReq = getCleanKey(record.request_id);
+  const sysPo = getCleanKey(record.vendor_po);
+
+  // 2. Priority 1: TICKET NUMBER
+  if (sysTicket && window.VAL_BY_TICKET && window.VAL_BY_TICKET[sysTicket]) {
+    window.CURRENT_VALIDATION_ROW = window.VAL_BY_TICKET[sysTicket];
+    // console.log(`Matched by Ticket: ${sysTicket}`);
+  }
+  // 3. Priority 2: REQUEST ID (Only if Ticket failed)
+  else if (sysReq && window.VAL_BY_REQ && window.VAL_BY_REQ[sysReq]) {
+    window.CURRENT_VALIDATION_ROW = window.VAL_BY_REQ[sysReq];
+    // console.log(`Matched by Request ID: ${sysReq}`);
+  }
+  // 4. Priority 3: VENDOR PO (Only if Ticket AND Req failed)
+  else if (sysPo && window.VAL_BY_PO && window.VAL_BY_PO[sysPo]) {
+    window.CURRENT_VALIDATION_ROW = window.VAL_BY_PO[sysPo];
+    // console.log(`Matched by Vendor PO: ${sysPo}`);
+  }
+  // ════════════════════════════════════════════════════════════════
+
   STATE.smartAddCount = 0;
   STATE.autoPopulatedCount = 0;
 
-  // 1. Reset Visual Stores
+  // Reset Visual Stores
   Object.keys(DATA_STORE).forEach(key => DATA_STORE[key] = {});
 
-  // 2. Populate Visual Stores based on TABLE_SCHEMAS
+  // Populate Visual Stores
   Object.keys(TABLE_SCHEMAS).forEach(tableKey => {
     const fieldsInTable = TABLE_SCHEMAS[tableKey];
     fieldsInTable.forEach(field => {
-      // [CHECK] This grabs the value for the new dynamicId we just created
       if (record[field] !== undefined) {
         DATA_STORE[tableKey][field] = record[field];
       }
     });
   });
 
-  // 3. Run Smart Add logic (Synchronize shared fields across other tables)
+  // Smart Add logic
   Object.keys(FIELD_DEFINITIONS).forEach(field => {
     const val = record[field];
     if (val) smartAddToOtherTables(field, val);
@@ -980,10 +1014,8 @@ function loadRecord(index) {
 
   document.getElementById('currentRecordDisplay').innerText = `${index + 1} / ${window.MASTER_DATA.length}`;
 
-  // 4. Force Render
   renderMatrixBody();
 
-  // 5. Re-apply UI layers
   if (typeof window.applyFilters === 'function') window.applyFilters();
   if (typeof window.applyColumnVisibility === 'function') window.applyColumnVisibility();
 
@@ -1050,9 +1082,6 @@ function renderMatrixHeader() {
   header.innerHTML = html;
 }
 
-/**
- * Renders the Matrix Body based on Data, Filters, and Display Mode
- */
 function renderMatrixBody() {
   const body = document.getElementById('matrixBody');
   if (!body) return;
@@ -1071,11 +1100,9 @@ function renderMatrixBody() {
   const generateRowHtml = (field) => {
     const def = FIELD_DEFINITIONS[field] || { label: field, type: 'TEXT', group: 'SYSTEM', rag: 'RED' };
 
-    // We add data-attributes for filters and highlighting
     let row = `<tr class="matrix-row" data-field="${field}" data-group="${def.group}" data-type="${def.type}" data-rag="${def.rag}">
       <td class="field-cell">
         <span class="field-name">${def.label || field}</span>
-        
         <span class="field-meta">${def.type || ''} | ${def.group || ''}</span>
         ${def.required ? '<span class="required-badge">Required</span>' : ''}
         <span class="rag-indicator rag-${(def.rag || '').toLowerCase()}">●</span>
@@ -1091,9 +1118,28 @@ function renderMatrixBody() {
                   ${exists ? '<i class="fas fa-check"></i>' : ''}
                 </td>`;
       } else {
-        // Data Input Mode
+        let validationClass = '';
+        let titleAttr = ''; // For tooltip
+
+        if (exists && window.CURRENT_VALIDATION_ROW) {
+          const validVal = String(window.CURRENT_VALIDATION_ROW[field] || "").trim();
+          const currentVal = String(value || "").trim();
+
+          if (validVal !== "") {
+            if (currentVal === validVal) {
+              validationClass = 'val-match'; // GREEN
+            } else {
+              validationClass = 'val-mismatch'; // RED
+              titleAttr = `title="Validation File says: ${validVal}"`;
+            }
+          }
+        }
+
         row += `<td class="matrix-cell data-cell ${exists ? '' : 'pending-data'}" data-table="${tableKey}" data-field="${field}">
-          <input type="text" class="cell-input" value="${value}" 
+          <input type="text" 
+                 class="cell-input ${validationClass}" 
+                 value="${value}" 
+                 ${titleAttr}
                  onchange="handleCellChange('${tableKey}', '${field}', this.value)" 
                  placeholder="${exists ? 'Value' : 'Pending'}">
         </td>`;
@@ -1103,16 +1149,14 @@ function renderMatrixBody() {
     return row;
   };
 
-  // --- LOGIC A: FLAT / COMPACT / EXPANDED (No Grouping headers) ---
-  if (displayMode === 'FLAT' || displayMode === 'COMPACT' || displayMode === 'EXPANDED') {
-    allFields.forEach(field => {
-      html += generateRowHtml(field);
-    });
-  }
+  // ... (Rest of the renderMatrixBody function logic - grouping etc - remains exactly the same)
 
+  // --- LOGIC A: FLAT / COMPACT / EXPANDED ---
+  if (displayMode === 'FLAT' || displayMode === 'COMPACT' || displayMode === 'EXPANDED') {
+    allFields.forEach(field => { html += generateRowHtml(field); });
+  }
   // --- LOGIC B: GROUPED BY CATEGORY ---
   else if (displayMode === 'GROUPED') {
-    // 1. Group fields by their definition group (e.g., BASIC_INFO, FINANCIAL)
     const groups = {};
     allFields.forEach(field => {
       const def = FIELD_DEFINITIONS[field] || { group: 'OTHER' };
@@ -1120,64 +1164,37 @@ function renderMatrixBody() {
       if (!groups[gName]) groups[gName] = [];
       groups[gName].push(field);
     });
-
-    // 2. Sort group keys (optional: specific order logic can be added here)
     const sortedKeys = Object.keys(groups).sort();
-
-    // 3. Render Groups
     sortedKeys.forEach(groupName => {
-      // Header Row
       const colSpan = Object.keys(TABLE_SCHEMAS).length + 1;
       html += `<tr class="group-header-row"><td colspan="${colSpan}">${groupName.replace(/_/g, ' ')}</td></tr>`;
-
-      // Field Rows
-      groups[groupName].forEach(field => {
-        html += generateRowHtml(field);
-      });
+      groups[groupName].forEach(field => { html += generateRowHtml(field); });
     });
   }
-
-  // --- LOGIC C: TABLE WISE (Group by "Primary" Table) ---
+  // --- LOGIC C: TABLE WISE ---
   else if (displayMode === 'TABLE_WISE') {
-    // Strategy: Assign field to the *first* table in the schema list that contains it.
-    // If common, it goes to the first one defined in TABLE_SCHEMAS order.
     const tableGroups = {};
     const tableKeys = Object.keys(TABLE_SCHEMAS);
-
-    // Initialize groups
     tableKeys.forEach(k => tableGroups[k] = []);
-    tableGroups['OTHER'] = []; // Fallback
-
+    tableGroups['OTHER'] = [];
     allFields.forEach(field => {
-      // Find first table containing this field
       const foundTable = tableKeys.find(key => TABLE_SCHEMAS[key].includes(field));
-      if (foundTable) {
-        tableGroups[foundTable].push(field);
-      } else {
-        tableGroups['OTHER'].push(field);
-      }
+      if (foundTable) tableGroups[foundTable].push(field);
+      else tableGroups['OTHER'].push(field);
     });
-
-    // Render
     [...tableKeys, 'OTHER'].forEach(tblKey => {
       const fields = tableGroups[tblKey];
       if (fields && fields.length > 0) {
         const colSpan = tableKeys.length + 1;
         const displayName = TABLE_NAMES[tblKey] || "Imported / Other";
         html += `<tr class="group-header-row"><td colspan="${colSpan}">${displayName}</td></tr>`;
-
         fields.forEach(f => html += generateRowHtml(f));
       }
     });
   }
 
   body.innerHTML = html;
-
-  // Re-apply post-render effects
   applyHighlighting();
-  // We re-apply filters because grouping might have reset the visibility of rows
-  // Note: Filtering usually hides rows. In Grouped mode, if all rows in a group are hidden,
-  // the header will typically remain visible unless we add extra logic to hide empty headers.
   if (typeof window.applyFilters === 'function') window.applyFilters();
 }
 
@@ -1427,63 +1444,67 @@ function CheckParsingFile() {
 
 
 /**
- * Validation Analysis Engine
- * Compares Master vs New File and categorize discrepancies
+ * REPLACED: Indexes the validation file into THREE separate buckets 
+ * Priority: Ticket -> Request ID -> Vendor PO
  */
 function runValidationAnalysis(currentData, newData) {
-  window.VALIDATION_LOG = [];
-  const limit = Math.max(currentData.length, newData.length);
+  // 1. Reset Maps
+  window.VAL_BY_TICKET = {};
+  window.VAL_BY_REQ = {};
+  window.VAL_BY_PO = {}; // <--- New Map
 
-  for (let i = 0; i < limit; i++) {
-    const currentRow = currentData[i] || {};
-    const newRow = newData[i] || {};
+  let matchCount = 0;
 
-    let discrepancies = [];
-    let hasIssue = false;
+  // 2. Index the Validation Data (Build Lookup Tables)
+  newData.forEach(row => {
+    // Clean keys from the FILE
+    const fileTicket = getCleanKey(row.ticket_number);
+    const fileReqId = getCleanKey(row.request_id);
+    const filePo = getCleanKey(row.vendor_po); // <--- New Key
 
-    // If one of the records is completely missing (Row count mismatch)
-    if (!currentData[i]) {
-      discrepancies.push({ type: 'NEW_RECORD', msg: "Row exists in File but not in System" });
-      hasIssue = true;
-    } else if (!newData[i]) {
-      discrepancies.push({ type: 'MISSING_RECORD', msg: "Row exists in System but missing in File" });
-      hasIssue = true;
-    } else {
-      // Field-level comparison
-      Object.keys(FIELD_DEFINITIONS).forEach(field => {
-        const currentVal = String(currentRow[field] || "").trim();
-        const newVal = String(newRow[field] || "").trim();
-
-        if (currentVal !== newVal) {
-          hasIssue = true;
-          let type = 'MISMATCH';
-
-          if (currentVal && !newVal) type = 'MISSING_IN_FILE'; // Value lost
-          else if (!currentVal && newVal) type = 'NEW_IN_FILE'; // Value added
-
-          discrepancies.push({
-            field: field,
-            current: currentVal,
-            new: newVal,
-            type: type
-          });
-        }
-      });
+    // Index by Ticket Number
+    if (fileTicket) {
+      window.VAL_BY_TICKET[fileTicket] = row;
     }
 
-    if (hasIssue) {
-      window.VALIDATION_LOG.push({
-        index: i,
-        rowId: currentRow.ticket_number || newRow.ticket_number || `Row ${i + 1}`,
-        issues: discrepancies
-      });
+    // Index by Request ID
+    if (fileReqId) {
+      window.VAL_BY_REQ[fileReqId] = row;
     }
-  }
 
-  if (window.VALIDATION_LOG.length === 0) {
-    showToast("Validation Passed: File matches System Data exactly.", "success");
+    // Index by Vendor PO
+    if (filePo) {
+      window.VAL_BY_PO[filePo] = row;
+    }
+  });
+
+  // 3. Verify matches against current system data (For the Toast Notification count)
+  currentData.forEach(record => {
+    const sysTicket = getCleanKey(record.ticket_number);
+    const sysReq = getCleanKey(record.request_id);
+    const sysPo = getCleanKey(record.vendor_po);
+
+    // Priority 1: Match by Ticket Number
+    if (sysTicket && window.VAL_BY_TICKET[sysTicket]) {
+      matchCount++;
+    }
+    // Priority 2: Match by Request ID
+    else if (sysReq && window.VAL_BY_REQ[sysReq]) {
+      matchCount++;
+    }
+    // Priority 3: Match by Vendor PO
+    else if (sysPo && window.VAL_BY_PO[sysPo]) {
+      matchCount++;
+    }
+  });
+
+  // 4. Feedback
+  if (matchCount > 0) {
+    window.showToast(`Validation Data Loaded. Linked ${matchCount} records.`, "success");
+    // Reload current record to trigger highlighting immediately
+    loadRecord(window.currentImportIndex);
   } else {
-    renderValidationModal();
+    window.showToast("Warning: No matching Ticket, Request ID, or Vendor PO found.", "warning");
   }
 }
 
@@ -1528,6 +1549,11 @@ function renderValidationModal() {
   document.body.insertAdjacentHTML('beforeend', html);
   VAL_PAGE = 1;
   renderValPage();
+}
+
+function getCleanKey(val) {
+  if (val === undefined || val === null) return "";
+  return String(val).trim().toLowerCase();
 }
 
 function renderValPage() {
@@ -1914,4 +1940,144 @@ function changeValTablePage(dir) {
     VAL_TABLE_PAGE = newPage;
     renderValidationTableUI();
   }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// NEW: PDF PROCESSING ENGINE
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * 1. Reads PDF
+ * 2. Extracts Text (Preserving Layout)
+ * 3. Sends to API with current Schema
+ * 4. Feeds result into existing initializeImportData()
+ */
+async function parsePDF(file) {
+  try {
+    window.showToast("Reading PDF content...", "info");
+
+    // 1. Read File
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
+    let fullText = "";
+
+    // 2. Extract Text Page by Page
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const textContent = await page.getTextContent();
+      // Use the layout-preserving reconstruct function
+      const pageText = reconstructPdfText(textContent);
+      fullText += `--- Page ${p} ---\n\n${pageText}\n\n`;
+
+      // Optional: Update toast for multi-page PDFs
+      if (p % 5 === 0) window.showToast(`Reading page ${p}/${pdf.numPages}...`, "info");
+    }
+
+    // 3. Prepare Schema for AI
+    // We generate this dynamically from your FIELD_DEFINITIONS so AI knows what to look for
+    const dynamicSchema = generateSchemaForAI();
+
+    window.showToast("Analyzing with AI...", "info");
+
+    // 4. Call API
+    const payload = {
+      pdf_content: fullText,
+      table_schema: dynamicSchema
+    };
+
+    const response = await fetch('/billing/api/extract-pdf-data/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add CSRF Token if Django requires it
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "AI Extraction Failed");
+    }
+
+    // 5. Handover to Existing Logic
+    // data.extracted_data is an array of objects, exactly what initializeImportData expects
+    window.showToast("PDF Processed Successfully!", "success");
+    initializeImportData(data.extracted_data);
+
+  } catch (error) {
+    console.error("PDF Error:", error);
+    window.showToast(`PDF Error: ${error.message}`, "error");
+  }
+}
+
+/**
+ * Reconstructs text from PDF.js items, attempting to preserve visual layout
+ * (columns, tables) by using X/Y coordinates to insert newlines and spaces.
+ */
+function reconstructPdfText(textContent) {
+  const items = textContent.items.map(i => ({
+    str: i.str,
+    x: Math.round(i.transform[4]), // X coordinate
+    y: Math.round(i.transform[5]), // Y coordinate (PDF origin is bottom-left)
+    w: i.width
+  }));
+
+  // Sort: Top-to-Bottom, then Left-to-Right
+  items.sort((a, b) => b.y - a.y || a.x - b.x);
+
+  let out = "";
+  let lastY = null;
+  let lastX = 0;
+
+  items.forEach(i => {
+    if (!i.str.trim()) return; // Skip empty strings
+
+    // Detect new line (if Y difference is significant)
+    if (lastY !== null && Math.abs(i.y - lastY) > 5) {
+      out += "\n";
+      lastX = 0;
+    }
+
+    // Calculate approximate spaces for indentation/columns
+    // Dividing by 4 is a heuristic for average char width
+    let spaces = 0;
+    if (lastX) {
+      spaces = Math.floor((i.x - lastX) / 4);
+    } else {
+      spaces = Math.floor(i.x / 4);
+    }
+
+    out += " ".repeat(Math.max(0, spaces)) + i.str;
+
+    lastY = i.y;
+    lastX = i.x + i.w;
+  });
+
+  return out;
+}
+
+/**
+ * helper to convert your internal FIELD_DEFINITIONS into the simplified
+ * schema format expected by the backend/AI.
+ */
+function generateSchemaForAI() {
+  const aiSchema = {};
+
+  // You can customize this list if you only want specific fields extracted from PDF
+  // For now, we dump all defined fields + hints about their type
+  Object.keys(FIELD_DEFINITIONS).forEach(key => {
+    const def = FIELD_DEFINITIONS[key];
+    let description = `${def.type}`;
+
+    if (def.type === 'DATE') description += " (YYYY-MM-DD)";
+    if (def.type === 'CURRENCY') description += " (Number, extract value only)";
+    if (key === 'ticket_number') description += " (Important: Extract unique ID)";
+
+    aiSchema[key] = description;
+  });
+
+  return aiSchema;
 }

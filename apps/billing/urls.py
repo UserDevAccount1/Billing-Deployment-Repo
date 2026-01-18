@@ -64,4 +64,9 @@ urlpatterns = [
         name="auto_assign_bands",
     ),
     path("comparison/", views.comparison_tool, name="comparison_tool"),
+    path(
+        "api/extract-pdf-data/",
+        views.ExtractPdfDataView.as_view(),
+        name="extract_pdf_data",
+    ),
 ]

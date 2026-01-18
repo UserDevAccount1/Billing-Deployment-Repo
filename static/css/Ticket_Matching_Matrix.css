@@ -2160,3 +2160,21 @@
     /* Ensure enough width for metadata */
     min-width: 250px; 
 }
+
+/* Validation Highlighting Styles */
+.cell-input.val-match {
+    background-color: #d4edda !important; /* Green */
+    border: 2px solid #28a745 !important;
+    color: #155724 !important;
+}
+
+.cell-input.val-mismatch {
+    background-color: #f8d7da !important; /* Red */
+    border: 2px solid #dc3545 !important;
+    color: #721c24 !important;
+}
+
+/* Optional: Tooltip to show what the validation file value was on hover */
+.cell-input.val-mismatch:hover {
+    cursor: help;
+}
