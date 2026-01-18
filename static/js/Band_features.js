@@ -264,6 +264,7 @@ function tmmConvertRateCardCsvToJson(csvString) {
       ticket_number: row[5] || "N/A"
     };
 
+    console.log(row);
     const services = {
       // 6-15: Dedicated
       dedicated: {
@@ -658,6 +659,7 @@ function tmmSaveBandDetails() {
   }
   let payload = [];
 
+  // 1. BUILD PAYLOAD (No UUID sent, treated as new inserts)
   if (TMM_BAND_STATE.importedRecords.length > 0) {
     payload = TMM_BAND_STATE.importedRecords.map(record => ({
       customer: customerId,
@@ -695,8 +697,22 @@ function tmmSaveBandDetails() {
     })
     .then(data => {
       console.log("Success:", data);
-      tmmShowToast(`Saved ${payload.length} records successfully!`, 'success');
+      tmmShowToast(`Saved ${payload.length} records successfully! Clearing data...`, 'success');
+
+      // 2. CLEAR LOCAL DATA (Reset State)
+      TMM_BAND_STATE.importedRecords = [];
+      TMM_BAND_STATE.currentImportIndex = 0;
+      TMM_BAND_STATE.currentMeta = {};
+      
+      // Reset visual band data structure
+      Object.keys(TMM_BAND_TABLES).forEach(k => TMM_BAND_STATE.bandData[k] = {});
+
       TMM_BAND_STATE.isModified = false;
+
+      // 3. REFRESH UI (Show empty state)
+      tmmLoadBandDetailsContent();
+      tmmUpdateFooterControls(); // Removes pagination controls
+
       if (typeof window.tmmSyncBandDataToMatrix === 'function') window.tmmSyncBandDataToMatrix();
     })
     .catch(error => {
@@ -707,7 +723,6 @@ function tmmSaveBandDetails() {
       console.groupEnd();
     });
 }
-
 
 function tmmShowToast(message, type = 'info') {
   if (typeof showToast === 'function') { showToast(message, type); return; }

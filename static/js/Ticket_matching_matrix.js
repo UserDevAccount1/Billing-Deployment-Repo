@@ -432,20 +432,18 @@ function initValidationViewToggles() {
   }
 }
 function initRecordValidationButton() {
-  const btn = document.getElementById('saveRecordBtn'); // The green "Save Record" button
+  const btn = document.getElementById('saveRecordBtn'); 
   if (!btn) return;
 
   btn.addEventListener('click', function () {
-    // 1. Check if we have data
+    // 1. Check Data
     if (!window.MASTER_DATA || window.MASTER_DATA.length === 0) {
       showToast("No records available to save.", "error");
       return;
     }
 
-    // 2. Get Context IDs from DOM
     const customerSelect = document.getElementById('tmm_customerSelect');
     const accountSelect = document.getElementById('tmm_accountSelect');
-
     const customerId = (customerSelect && customerSelect.value !== 'all') ? parseInt(customerSelect.value) : null;
     const accountId = (accountSelect && accountSelect.value !== 'all') ? parseInt(accountSelect.value) : null;
 
@@ -454,14 +452,13 @@ function initRecordValidationButton() {
       return;
     }
 
-    // 3. Force Validation Run (Ensure Sync)
+    // 2. Force Validation
     runFinalTicketValidation();
 
-    // 4. Construct Payload for API
+    // 3. Construct Payload
     const payload = window.VALIDATION_RESULTS.map(res => {
       const record = window.MASTER_DATA[res.rowIndex];
 
-      // Prepare the Data Table JSON (Actual data + Validation Metadata)
       const jsonStorage = {
         ...record,
         _meta: {
@@ -472,15 +469,14 @@ function initRecordValidationButton() {
       };
 
       return {
+        // --- KEY CHANGE: Include Final Ticket UUID if it exists ---
+        uuid: record._final_uuid || null, 
+        
         customer: customerId,
-        account: accountId, // Can be null
+        account: accountId, 
         ticket_number: record.ticket_number || "UNKNOWN",
         request_id: record.request_id || "UNKNOWN",
         data_table: jsonStorage,
-
-        // --- NEW: Attach Initial Ticket UUID ---
-        // This comes from the Step 1 execution. 
-        // If viewRulesBtn wasn't clicked, this will be null.
         initial_ticket_uuid: record._initial_uuid || null
       };
     });
@@ -488,7 +484,7 @@ function initRecordValidationButton() {
     console.group("💾 SAVING FINAL TICKETS");
     console.log(`Payload (${payload.length} records):`, payload);
 
-    // 5. Send to API
+    // 4. Send to API
     const csrftoken = getCookie('csrftoken');
     const btnOriginalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -510,9 +506,21 @@ function initRecordValidationButton() {
       })
       .then(data => {
         console.log("Success:", data);
-        showToast(`Successfully saved ${payload.length} validated records!`, 'success');
+        showToast(`Successfully processed ${payload.length} records!`, 'success');
 
-        // Visual Success Feedback
+        // --- KEY CHANGE: Map Final Ticket UUIDs back to Master Data ---
+        if (data.created_items && Array.isArray(data.created_items)) {
+            data.created_items.forEach(item => {
+                // We use ticket_number to find the record in Master Data
+                const record = window.MASTER_DATA.find(r => r.ticket_number === item.ticket_number);
+                if (record) {
+                    record._final_uuid = item.uuid; // <--- Store for next update
+                }
+            });
+            console.log("Updated Master Data with Final UUIDs.");
+        }
+        // -------------------------------------------------------------
+
         btn.innerHTML = '<i class="fas fa-check"></i> Saved';
         setTimeout(() => {
           btn.innerHTML = btnOriginalText;
@@ -1312,28 +1320,26 @@ function initSaveButton() {
       return;
     }
 
-    // 2. Prepare Payload & Sanitize Ticket Numbers
-    // We modify MASTER_DATA in place to ensure visual consistency
+    // 2. Prepare Payload
     const payload = window.MASTER_DATA.map(record => {
 
-      // GENERATE UNIQUE TICKET NUMBER IF MISSING
+      // Ensure Ticket Number exists
       let cleanTicketNum = record.ticket_number;
       if (!cleanTicketNum || cleanTicketNum === 'N/A' || cleanTicketNum.trim() === '') {
-        // Generate: GEN-{Timestamp}-{Random4Digits}
         cleanTicketNum = `GEN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        record.ticket_number = cleanTicketNum; // Update local state
+        record.ticket_number = cleanTicketNum;
       }
 
-      // Ensure Request ID exists (fallback to ticket number)
       const cleanRequestId = record.request_id || cleanTicketNum;
-      record.request_id = cleanRequestId; // Update local state
+      record.request_id = cleanRequestId;
 
       return {
+        uuid: record._initial_uuid || null, // <--- KEY CHANGE: Send UUID if we have it
         customer: customerId,
         account: accountId,
         ticket_number: cleanTicketNum,
         request_id: cleanRequestId,
-        data_table: record // Store the full raw object
+        data_table: record
       };
     });
 
@@ -1341,7 +1347,7 @@ function initSaveButton() {
     console.log(`Sending ${payload.length} records...`);
 
     // 3. Send to API
-    const csrftoken = getCookie('csrftoken'); // Ensure you have this helper function
+    const csrftoken = getCookie('csrftoken');
     const btnOriginalText = saveBtn.innerHTML;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading Initial...';
     saveBtn.disabled = true;
@@ -1360,23 +1366,23 @@ function initSaveButton() {
       })
       .then(data => {
         if (data.success) {
-          showToast(`Initial Data Uploaded! Linked ${data.created_items.length} records.`, "success");
+          showToast(`Initial Data Processed! (${data.message})`, "success");
 
           // 4. MAP UUIDS BACK TO MASTER DATA
-          // We assume the API returns items in the same order, or we match by ticket_number
+          // The backend returns 'created_items' containing { ticket_number, uuid }
           if (data.created_items && Array.isArray(data.created_items)) {
-            data.created_items.forEach((item, index) => {
-              // Option A: Map by Index (Fastest if API preserves order)
-              if (window.MASTER_DATA[index]) {
-                window.MASTER_DATA[index]._initial_uuid = item.uuid;
+            data.created_items.forEach(item => {
+              // Find the record in Master Data by ticket number
+              // (Using index is risky if the backend processed async or out of order, though usually safe in this loop)
+              const record = window.MASTER_DATA.find(r => r.ticket_number === item.ticket_number);
+              if (record) {
+                record._initial_uuid = item.uuid; // <--- Store for next time
               }
             });
-            console.log("UUIDs linked to Master Data:", window.MASTER_DATA.map(r => r._initial_uuid));
+            console.log("Updated Master Data with Initial UUIDs.");
           }
 
-          // Refresh View to show generated ticket numbers if any
           if (window.loadRecord) loadRecord(window.currentImportIndex);
-
           saveBtn.innerHTML = '<i class="fas fa-check"></i> Initial Linked';
         } else {
           throw new Error(data.message || 'Unknown Error');
@@ -1390,10 +1396,10 @@ function initSaveButton() {
       .finally(() => {
         saveBtn.disabled = false;
         console.groupEnd();
-
-        // Optional: Restore button text after delay
         setTimeout(() => {
-          if (saveBtn.innerHTML.includes('Check')) saveBtn.innerHTML = btnOriginalText;
+          if (saveBtn.innerHTML.includes('Check') || saveBtn.innerHTML.includes('Initial')) {
+            saveBtn.innerHTML = btnOriginalText;
+          }
         }, 3000);
       });
   });
