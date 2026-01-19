@@ -395,7 +395,7 @@ def create_billing_run(request):
 from .models import BandTable, FinalTicket
 
 
-# @login_required
+@login_required
 def get_all_band_data(request):
     """API to retrieve all BandTable JSON data"""
     try:
@@ -428,7 +428,7 @@ def get_all_band_data(request):
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
-# @login_required
+@login_required
 def get_all_final_data(request):
     """API to retrieve all FinalTicket JSON data"""
     try:
@@ -682,7 +682,7 @@ class BatchStoreFinalTicketView(View):
             return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
-# @login_required
+@login_required
 def get_all_initial_data(request):
     """API to retrieve all InitialTicket JSON data"""
     try:
@@ -969,3 +969,54 @@ class ExtractPdfDataView(View):
         except Exception as e:
             logger.error(f"Extraction Error: {e}", exc_info=True)
             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@login_required
+def get_initial_tickets_filtered(request):
+    """
+    API to retrieve InitialTicket JSON data filtered by customer and account.
+    Expects GET parameters: ?customer_id=1&account_id=2
+    If customer_id or account_id is 'all' (or missing), that filter is ignored.
+    """
+    try:
+        customer_id = request.GET.get("customer_id")
+        account_id = request.GET.get("account_id")
+
+        # Start with all records, optimized with select_related
+        queryset = InitialTicket.objects.select_related("customer", "account").all().order_by("-created_at")
+
+        # Apply Customer Filter
+        if customer_id and customer_id != "all":
+            queryset = queryset.filter(customer_id=customer_id)
+
+        # Apply Account Filter
+        if account_id and account_id != "all":
+            queryset = queryset.filter(account_id=account_id)
+
+        if not queryset.exists():
+            return JsonResponse(
+                {"success": True, "data": [], "message": "No initial tickets found for this selection"},
+                status=200,
+            )
+
+        data = []
+        for entry in queryset:
+            data.append(
+                {
+                    "uuid": str(entry.uuid),
+                    "ticket_number": entry.ticket_number,
+                    "request_id": entry.request_id,
+                    "customer": entry.customer.name,
+                    "customer_id": entry.customer.id,
+                    "account": entry.account.name if entry.account else None,
+                    "account_id": entry.account.id if entry.account else None,
+                    "data_table": entry.data_table,
+                    "created_at": entry.created_at.isoformat() if entry.created_at else None,
+                }
+            )
+
+        return JsonResponse({"success": True, "count": len(data), "data": data})
+
+    except Exception as e:
+        logger.error(f"Error filtering initial ticket data: {e}")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)

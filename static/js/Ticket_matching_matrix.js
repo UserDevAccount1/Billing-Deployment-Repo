@@ -365,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initSaveButton();
   updateStatistics();
   updateFinalTablePreview();
+  initLoadDataButton();
   initRecordValidationButton();
   initBandPreviewListeners();
   initValidationViewToggles();
@@ -2086,4 +2087,86 @@ function generateSchemaForAI() {
   });
 
   return aiSchema;
+}
+
+function initLoadDataButton() {
+  const btn = document.getElementById('loadDataButton');
+  if (!btn) return;
+
+  btn.addEventListener('click', function() {
+    // 1. Get Context values
+    const customerSelect = document.getElementById('tmm_customerSelect');
+    const accountSelect = document.getElementById('tmm_accountSelect');
+    
+    // Get values (default to 'all' if not found)
+    const custVal = customerSelect ? customerSelect.value : 'all';
+    const accVal = accountSelect ? accountSelect.value : 'all';
+
+    // 2. Visual Feedback
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    btn.disabled = true;
+
+    // 3. Construct URL
+    const url = `/billing/api/initial-tickets-filtered/?customer_id=${custVal}&account_id=${accVal}`;
+
+    console.group("📥 LOADING DATA FROM API");
+    console.log(`Fetching from: ${url}`);
+
+    // 4. Fetch Data
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error("Server response was not ok");
+        return response.json();
+      })
+      .then(resp => {
+        if (resp.success && Array.isArray(resp.data)) {
+          
+          if (resp.data.length === 0) {
+            window.showToast("No records found for this selection.", "warning");
+            return;
+          }
+
+          // 5. Map API Data to Master Data Format
+          // We extract the inner 'data_table' and attach the UUID for future updates
+          window.MASTER_DATA = resp.data.map(apiRecord => {
+            // Flatten the structure: Take the data_table object
+            const record = {
+              ...(apiRecord.data_table || {}), // Spread the stored data fields
+              
+              // Ensure critical keys from the wrapper exist/override if missing in data_table
+              ticket_number: apiRecord.ticket_number,
+              request_id: apiRecord.request_id,
+              
+              // Store the UUID internally so we can update this record later instead of creating new
+              _initial_uuid: apiRecord.uuid 
+            };
+            
+            // Ensure fields defined in FIELD_DEFINITIONS exist (fill defaults)
+            Object.keys(window.FIELD_DEFINITIONS).forEach(field => {
+              if (record[field] === undefined) record[field] = "";
+            });
+
+            return record;
+          });
+
+          // 6. Refresh UI using existing finalizeLoad logic
+          finalizeLoad(); // This handles counters, navigation display, and loading the first record
+          
+          window.showToast(`Successfully loaded ${window.MASTER_DATA.length} records from database.`, "success");
+        } else {
+          throw new Error(resp.message || "Failed to load data");
+        }
+      })
+      .catch(err => {
+        console.error("Load Data Error:", err);
+        window.showToast(`Error loading data: ${err.message}`, "error");
+      })
+      .finally(() => {
+        // Reset Button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        console.groupEnd();
+      });
+  });
 }

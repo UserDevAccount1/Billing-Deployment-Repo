@@ -69,4 +69,9 @@ urlpatterns = [
         views.ExtractPdfDataView.as_view(),
         name="extract_pdf_data",
     ),
+    path(
+        "api/initial-tickets-filtered/",
+        views.get_initial_tickets_filtered,
+        name="get_initial_tickets_filtered",
+    ),
 ]

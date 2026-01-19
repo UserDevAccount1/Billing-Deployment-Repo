@@ -260,6 +260,7 @@ class RateCardAssignmentEnhanced {
         if (!tableBody || !tableHead) return;
 
         const filteredTickets = this.filterTickets();
+        const searchTerm = this.filters.search ? this.filters.search.trim() : null; // Get active search term
 
         const columnMap = {
             'ticket_number': { label: 'Ticket #', path: 'data_table.ticket_number', width: '120px', tooltip: 'Customer Ticket Number' },
@@ -303,21 +304,51 @@ class RateCardAssignmentEnhanced {
 
                 for (const [key, def] of Object.entries(columnMap)) {
                     if (this.visibleColumns[key]) {
-                        let value = this.getValueByPath(ticket, def.path);
+                        // 1. Get Raw Value
+                        let rawValue = this.getValueByPath(ticket, def.path);
+                        let displayValue = rawValue;
 
+                        // 2. Apply Formatting & Highlighting logic per column type
                         if (key === 'total_cost') {
                             const curr = this.getValueByPath(ticket, 'data_table.currency') || '';
-                            value = `${curr} ${value || 0}`;
+                            const fullStr = `${curr} ${rawValue || 0}`;
+                            displayValue = searchTerm ? this.highlightText(fullStr, searchTerm) : fullStr;
+
                         } else if (key === 'status') {
-                            value = this.getStatusBadge(ticket.assignmentStatus || 'pending');
+                            // Generate HTML Badge first
+                            const badgeHtml = this.getStatusBadge(ticket.assignmentStatus || 'pending');
+                            // If searching, we highlight the text *inside* the badge string
+                            if (searchTerm) {
+                                // Simple string replace is safe here because status badges usually don't contain common words in their HTML attributes
+                                const regex = new RegExp(`(${this.escapeRegex(searchTerm)})`, 'gi');
+                                displayValue = badgeHtml.replace(regex, '<mark style="background-color: #ffeeba; color: #856404; padding:0;">$1</mark>');
+                            } else {
+                                displayValue = badgeHtml;
+                            }
+
                         } else if (key === 'priority') {
-                            value = `<span class="priority-badge ${(value || '').toLowerCase()}">${value || '-'}</span>`;
+                            // Highlight inner text, then wrap in badge
+                            let innerText = rawValue || '-';
+                            if (searchTerm) innerText = this.highlightText(innerText, searchTerm);
+                            displayValue = `<span class="priority-badge ${(rawValue || '').toLowerCase()}">${innerText}</span>`;
+
                         } else if (key === 'sla_met') {
-                            const isMet = String(value).toLowerCase().includes('yes');
-                            value = isMet ? '<span style="color:#2ecc71; font-weight:600;">Yes</span>' : '<span style="color:#e74c3c; font-weight:600;">No</span>';
+                            const isMet = String(rawValue).toLowerCase().includes('yes');
+                            let text = isMet ? 'Yes' : 'No';
+                            // Highlight text
+                            if (searchTerm) text = this.highlightText(text, searchTerm);
+                            displayValue = isMet ? `<span style="color:#2ecc71; font-weight:600;">${text}</span>` : `<span style="color:#e74c3c; font-weight:600;">${text}</span>`;
+
+                        } else {
+                            // Standard Text Column - Direct Highlight
+                            if (searchTerm) {
+                                displayValue = this.highlightText(displayValue, searchTerm);
+                            }
                         }
 
-                        rowHtml += `<td title="${String(value).replace(/<[^>]*>/g, '')}">${value}</td>`;
+                        // Remove HTML tags for title attribute to keep tooltip clean
+                        const cleanTitle = String(rawValue).replace(/<[^>]*>/g, '');
+                        rowHtml += `<td title="${cleanTitle}">${displayValue}</td>`;
                     }
                 }
 
@@ -325,9 +356,9 @@ class RateCardAssignmentEnhanced {
                     <td>
                         <div class="table-actions" style="display: flex; gap: 5px;">
                             <button class="btn btn-sm btn-outline" style="display: inline-flex; align-items: center; gap: 5px;" 
-    onclick="rateCardApp.openOverviewModal('${uniqueId}')" title="View Overview">
-    <i class="fas fa-eye"></i> Overview
-</button>
+                                onclick="rateCardApp.openOverviewModal('${uniqueId}')" title="View Overview">
+                                <i class="fas fa-eye"></i> Overview
+                            </button>
                             ${ticket.assignmentStatus !== 'assigned' ?
                         `<button class="btn btn-sm btn-success" style="display: inline-flex; align-items: center; gap: 5px;" onclick="rateCardApp.manualAssignRateCard('${uniqueId}')" title="Assign">
                                     <i class="fas fa-plus"></i> Assign
@@ -720,26 +751,70 @@ class RateCardAssignmentEnhanced {
             : 'All Accounts';
         const selectedStatus = statusSelect ? statusSelect.value : 'all';
 
-        console.log(selectedAcc, selectedCust);
-
         return this.tickets.filter(ticket => {
             const data = ticket.data_table || {};
-            const uniqueId = this.getUniqueId(ticket);
 
+            // 1. Filter by Status
             if (selectedStatus !== 'all') {
                 const currentStatus = ticket.assignmentStatus || 'pending';
                 if (currentStatus !== selectedStatus) return false;
             }
+
+            // 2. Filter by Customer
             if (selectedCust !== 'All customers' && String(ticket.customer) !== String(selectedCust)) return false;
+
+            // 3. Filter by Account
             if (selectedAcc !== 'All Accounts' && String(ticket.account) !== String(selectedAcc)) return false;
 
+            // 4. Search Functionality (Updated to search ALL fields)
             if (this.filters.search) {
-                const term = this.filters.search.toLowerCase();
-                const searchable = [uniqueId, data.site_name, data.technician_name, data.subject].map(s => (s || '').toString().toLowerCase());
-                if (!searchable.some(val => val.includes(term))) return false;
+                const term = this.filters.search.toLowerCase().trim();
+
+                // Collect values from the top-level ticket object
+                const topLevelValues = [
+                    ticket.ticket_number,
+                    ticket.request_id,
+                    ticket.customer,
+                    ticket.account,
+                    ticket.assignmentStatus,
+                    ticket.uuid
+                ];
+
+                // Collect all values from the inner data_table (Subject, Site, Cost, PO, etc.)
+                const innerValues = Object.values(data);
+
+                // Combine all potential data points
+                const allSearchableValues = [...topLevelValues, ...innerValues];
+
+                // Check if ANY field contains the search term
+                const matchFound = allSearchableValues.some(val => {
+                    if (val === null || val === undefined) return false;
+                    // Convert to string to handle numbers/booleans and check inclusion
+                    return String(val).toLowerCase().includes(term);
+                });
+
+                if (!matchFound) return false;
             }
+
             return true;
         });
+    }
+
+    // Helper to safely escape regex characters
+    escapeRegex(string) {
+        return String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Helper to wrap text in a highlight span
+    highlightText(text, term) {
+        if (!text || !term) return text || '';
+        const safeText = String(text);
+        const safeTerm = this.escapeRegex(term);
+        // 'gi' = global, case-insensitive
+        const regex = new RegExp(`(${safeTerm})`, 'gi');
+
+        // Return text with yellow highlight mark
+        return safeText.replace(regex, '<mark style="background-color: #ffeeba; color: #856404; padding: 0; border-radius: 2px;">$1</mark>');
     }
 
     getStatusBadge(status) {
@@ -1051,48 +1126,6 @@ class RateCardAssignmentEnhanced {
 
     // --- RENDERERS ---
 
-    renderOverviewHeader() {
-        const meta = this.currentComparison.meta;
-        const currentId = meta.uniqueId;
-
-        // Calculate Pagination Context
-        const filteredTickets = this.filterTickets();
-        const currentIndex = filteredTickets.findIndex(t => this.getUniqueId(t) === currentId);
-        const total = filteredTickets.length;
-
-        const hasPrev = currentIndex > 0;
-        const hasNext = currentIndex < total - 1;
-
-        // Render Title with Controls
-        const titleContainer = document.getElementById('overview-ticket-id');
-
-        // Use HTML instead of Text to include buttons
-        titleContainer.innerHTML = `
-            <div style="display:flex; align-items:center; gap:15px;">
-                <button class="btn btn-sm btn-outline" 
-                    ${!hasPrev ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
-                    onclick="rateCardApp.changeOverviewPage(-1)">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                
-                <div style="text-align:center;">
-                    <div style="font-size:1.1em; font-weight:bold;">${meta.ticketNumber}</div>
-                    <div style="font-size:0.8em; color:#666;">${meta.requestId} <span style="margin-left:5px; font-weight:normal;">(${currentIndex + 1} of ${total})</span></div>
-                </div>
-
-                <button class="btn btn-sm btn-outline" 
-                    ${!hasNext ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
-                    onclick="rateCardApp.changeOverviewPage(1)">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        `;
-
-        const badgesContainer = document.getElementById('overview-meta-badges');
-        badgesContainer.innerHTML = meta.isLinked
-            ? `<span class="badge badge-success" style="background:#dcfce7; color:#15803d; padding:5px 10px; border-radius:15px;">Linked to Initial</span>`
-            : `<span class="badge badge-warning" style="background:#fff7ed; color:#c2410c; padding:5px 10px; border-radius:15px;">Unlinked (New)</span>`;
-    }
 
     switchOverviewTab(tabId, tabElement) {
         // Hide all contents
@@ -1105,16 +1138,183 @@ class RateCardAssignmentEnhanced {
         if (tabElement) tabElement.classList.add('active');
     }
 
+    renderOverviewHeader() {
+        const meta = this.currentComparison.meta;
+        const currentId = meta.uniqueId;
+        const currentSearch = this.filters.search || '';
+
+        // 1. Calculate Initial Context
+        const filteredTickets = this.filterTickets();
+        const currentIndex = filteredTickets.findIndex(t => this.getUniqueId(t) === currentId);
+        const total = filteredTickets.length;
+
+        // 2. Render Structure (With IDs for direct updates)
+        const titleContainer = document.getElementById('overview-ticket-id');
+
+        // Check if we are re-rendering or initializing. 
+        // We only want to create the HTML string if the input doesn't exist yet to avoid losing focus, 
+        // OR if we are explicitly navigating via buttons.
+        const inputExists = document.getElementById('overviewSearchSync');
+
+        if (!inputExists || document.activeElement !== inputExists) {
+            titleContainer.innerHTML = `
+                <div style="display:flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <button class="btn btn-sm btn-outline" id="ov-btn-prev" onclick="rateCardApp.changeOverviewPage(-1)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        
+                        <div style="text-align:center;">
+                            <div style="font-size:1.1em; font-weight:bold;" id="ov-header-title">${meta.ticketNumber}</div>
+                            <div style="font-size:0.8em; color:#666;" id="ov-header-subtitle">
+                                ${meta.requestId} 
+                                <span style="margin-left:5px; font-weight:normal;" id="ov-header-pagination">
+                                    (${currentIndex !== -1 ? currentIndex + 1 : '-'} of ${total})
+                                </span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-sm btn-outline" id="ov-btn-next" onclick="rateCardApp.changeOverviewPage(1)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div style="position: relative; width: 100%; max-width: 250px;">
+                        <i class="fas fa-search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 0.8em;"></i>
+                        <input type="text" id="overviewSearchSync" class="form-control" 
+                            placeholder="Search & Highlight..." 
+                            value="${currentSearch}"
+                            style="width: 100%; padding: 4px 8px 4px 25px; font-size: 0.85em; border: 1px solid #ddd; border-radius: 15px; text-align: left;">
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Update Buttons State (Direct DOM manipulation)
+        const btnPrev = document.getElementById('ov-btn-prev');
+        const btnNext = document.getElementById('ov-btn-next');
+
+        if (btnPrev) {
+            btnPrev.disabled = currentIndex <= 0;
+            btnPrev.style.opacity = currentIndex <= 0 ? '0.5' : '1';
+            btnPrev.style.cursor = currentIndex <= 0 ? 'not-allowed' : 'pointer';
+        }
+        if (btnNext) {
+            btnNext.disabled = currentIndex === -1 || currentIndex >= total - 1;
+            btnNext.style.opacity = (currentIndex === -1 || currentIndex >= total - 1) ? '0.5' : '1';
+            btnNext.style.cursor = (currentIndex === -1 || currentIndex >= total - 1) ? 'not-allowed' : 'pointer';
+        }
+
+        // 4. Update Badges
+        const badgesContainer = document.getElementById('overview-meta-badges');
+        badgesContainer.innerHTML = meta.isLinked
+            ? `<span class="badge badge-success" style="background:#dcfce7; color:#15803d; padding:5px 10px; border-radius:15px;">Linked to Initial</span>`
+            : `<span class="badge badge-warning" style="background:#fff7ed; color:#c2410c; padding:5px 10px; border-radius:15px;">Unlinked (New)</span>`;
+
+        // 5. Bind Logic (Ensure we don't duplicate listeners)
+        const searchInput = document.getElementById('overviewSearchSync');
+        if (searchInput && !searchInput.dataset.listening) {
+            searchInput.dataset.listening = "true"; // Prevent double binding
+
+            // Restore cursor position if re-rendered
+            if (this.currentSearchCursorPos) {
+                searchInput.setSelectionRange(this.currentSearchCursorPos, this.currentSearchCursorPos);
+                searchInput.focus();
+            }
+
+            searchInput.addEventListener('input', (e) => {
+                const val = e.target.value;
+                this.filters.search = val;
+                this.currentSearchCursorPos = e.target.selectionStart; // Save cursor
+
+                // A. Sync with Main Table Input
+                const mainInput = document.getElementById('searchTickets');
+                if (mainInput) mainInput.value = val;
+
+                // B. RE-CALCULATE FILTERS & JUMP TO TICKET
+                const matches = this.filterTickets();
+                const totalMatches = matches.length;
+                let activeTicketId = this.currentComparison.meta.uniqueId;
+
+                // Check if current ticket is still valid in the new search
+                const currentStillValid = matches.some(t => this.getUniqueId(t) === activeTicketId);
+
+                // LOGIC: If current ticket is gone, OR if we want to "Search to find", 
+                // we usually jump to the first result.
+                let dataChanged = false;
+
+                if (totalMatches > 0) {
+                    if (!currentStillValid) {
+                        // Current ticket filtered out -> Jump to first match
+                        activeTicketId = this.getUniqueId(matches[0]);
+                        dataChanged = this.loadComparisonForTicket(activeTicketId);
+                    } else {
+                        // Current ticket still exists.
+                        // Optional: If you want search to ALWAYS jump to the top result (like a quick find),
+                        // uncomment the lines below. Otherwise, it stays on current if valid.
+
+                        /* const firstMatchId = this.getUniqueId(matches[0]);
+                        if (firstMatchId !== activeTicketId) {
+                             activeTicketId = firstMatchId;
+                             dataChanged = this.loadComparisonForTicket(activeTicketId);
+                        }
+                        */
+                    }
+                } else {
+                    // No matches found - stay on current view but show 0/0
+                }
+
+                // C. Update Header DOM Elements (Manually to preserve input focus)
+                const newMeta = this.currentComparison.meta;
+                const newIndex = matches.findIndex(t => this.getUniqueId(t) === newMeta.uniqueId);
+
+                document.getElementById('ov-header-title').innerText = newMeta.ticketNumber;
+                // Update text content with highlight
+                const reqIdHtml = this.highlightText(newMeta.requestId, val);
+                document.getElementById('ov-header-subtitle').innerHTML = `
+                    ${reqIdHtml}
+                    <span style="margin-left:5px; font-weight:normal;" id="ov-header-pagination">
+                        (${newIndex !== -1 ? newIndex + 1 : '0'} of ${totalMatches})
+                    </span>
+                `;
+
+                // Update Button States
+                const prevBtn = document.getElementById('ov-btn-prev');
+                const nextBtn = document.getElementById('ov-btn-next');
+
+                if (prevBtn) {
+                    const disabled = newIndex <= 0;
+                    prevBtn.disabled = disabled;
+                    prevBtn.style.opacity = disabled ? '0.5' : '1';
+                    prevBtn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+                }
+                if (nextBtn) {
+                    const disabled = newIndex === -1 || newIndex >= totalMatches - 1;
+                    nextBtn.disabled = disabled;
+                    nextBtn.style.opacity = disabled ? '0.5' : '1';
+                    nextBtn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+                }
+
+                // D. Re-render Content Tabs (Highlights + New Data if changed)
+                this.renderTab1Data();
+                this.renderOverviewTab2();
+                this.renderTab3Data();
+            });
+        }
+    }
+
+    // 2. Updated Summary Tab with Highlighting
     renderTab1Data() {
         const counts = this.currentComparison.counts;
         const diffs = this.currentComparison.diffs;
+        const searchTerm = this.filters.search ? this.filters.search.trim() : null;
 
         // Update Counts
         document.getElementById('ov-stat-added').innerText = counts.added;
         document.getElementById('ov-stat-modified').innerText = counts.modified;
         document.getElementById('ov-stat-removed').innerText = counts.removed;
 
-        // Update Summary Table (Only show changed items)
+        // Update Summary Table
         const tbody = document.getElementById('ov-summary-body');
         const changedItems = diffs.filter(d => d.status !== 'unchanged');
 
@@ -1129,20 +1329,27 @@ class RateCardAssignmentEnhanced {
             if (item.status === 'modified') statusBadge = `<span style="color:#f39c12; font-weight:bold;">Modified</span>`;
             if (item.status === 'removed') statusBadge = `<span style="color:#e74c3c; font-weight:bold;">Removed</span>`;
 
+            // Apply Highlight
+            const keyDisplay = searchTerm ? this.highlightText(item.key, searchTerm) : item.key;
+            const initDisplay = searchTerm ? this.highlightText(item.initial, searchTerm) : (item.initial || '-');
+            const finalDisplay = searchTerm ? this.highlightText(item.final, searchTerm) : (item.final || '-');
+
             return `
                 <tr>
-                    <td style="font-weight:600;">${item.key}</td>
+                    <td style="font-weight:600;">${keyDisplay}</td>
                     <td>${statusBadge}</td>
-                    <td style="color:#666;">${item.initial || '-'}</td>
-                    <td>${item.final || '-'}</td>
+                    <td style="color:#666;">${initDisplay}</td>
+                    <td>${finalDisplay}</td>
                 </tr>
             `;
         }).join('');
     }
 
+    // 3. Updated Full Data Tab with Highlighting
     renderOverviewTab2() {
         const isFinal = document.getElementById('overviewViewToggle').checked;
         const diffs = this.currentComparison.diffs;
+        const searchTerm = this.filters.search ? this.filters.search.trim() : null;
 
         // Toggle Labels UI
         document.getElementById('ov-toggle-before').classList.toggle('active', !isFinal);
@@ -1151,7 +1358,17 @@ class RateCardAssignmentEnhanced {
         const tbody = document.getElementById('ov-full-body');
 
         tbody.innerHTML = diffs.map(item => {
-            const displayValue = isFinal ? item.final : item.initial;
+            let rawValue = isFinal ? item.final : item.initial;
+            let displayValue = rawValue !== null ? rawValue : '<em style="color:#ccc">null</em>';
+            let displayKey = item.key;
+
+            // Apply Highlight
+            if (searchTerm) {
+                displayKey = this.highlightText(displayKey, searchTerm);
+                if (rawValue !== null) {
+                    displayValue = this.highlightText(displayValue, searchTerm);
+                }
+            }
 
             // Determine row highlight
             let rowClass = '';
@@ -1161,16 +1378,18 @@ class RateCardAssignmentEnhanced {
 
             return `
                 <tr class="${rowClass}">
-                    <td style="font-weight:500;">${item.key}</td>
-                    <td>${displayValue !== null ? displayValue : '<em style="color:#ccc">null</em>'}</td>
+                    <td style="font-weight:500;">${displayKey}</td>
+                    <td>${displayValue}</td>
                 </tr>
             `;
         }).join('');
     }
 
+    // 4. Updated Changes Tab with Highlighting
     renderTab3Data() {
         const container = document.getElementById('ov-changes-list');
         const changedItems = this.currentComparison.diffs.filter(d => d.status !== 'unchanged');
+        const searchTerm = this.filters.search ? this.filters.search.trim() : null;
 
         if (changedItems.length === 0) {
             container.innerHTML = `<div style="text-align:center; padding:30px; color:#999;">No changes detected.</div>`;
@@ -1179,19 +1398,24 @@ class RateCardAssignmentEnhanced {
 
         container.innerHTML = changedItems.map(item => {
             let content = '';
+            let keyDisplay = searchTerm ? this.highlightText(item.key, searchTerm) : item.key;
+
+            // Helper to highlight values
+            const h = (val) => searchTerm ? this.highlightText(val, searchTerm) : val;
+
             if (item.status === 'modified') {
-                content = `Changed from <span style="background:#fee2e2; padding:2px 5px; border-radius:3px; text-decoration:line-through;">${item.initial}</span> 
-                           to <span style="background:#dcfce7; padding:2px 5px; border-radius:3px; font-weight:bold;">${item.final}</span>`;
+                content = `Changed from <span style="background:#fee2e2; padding:2px 5px; border-radius:3px; text-decoration:line-through;">${h(item.initial)}</span> 
+                           to <span style="background:#dcfce7; padding:2px 5px; border-radius:3px; font-weight:bold;">${h(item.final)}</span>`;
             } else if (item.status === 'added') {
-                content = `New Value: <strong>${item.final}</strong>`;
+                content = `New Value: <strong>${h(item.final)}</strong>`;
             } else {
-                content = `Removed Value: <span style="text-decoration:line-through;">${item.initial}</span>`;
+                content = `Removed Value: <span style="text-decoration:line-through;">${h(item.initial)}</span>`;
             }
 
             return `
                 <div class="change-card ${item.status}">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <strong style="color:#2c3e50;">${item.key}</strong>
+                        <strong style="color:#2c3e50;">${keyDisplay}</strong>
                         <span style="text-transform:uppercase; font-size:0.75em; font-weight:700; opacity:0.7;">${item.status}</span>
                     </div>
                     <div style="font-size:0.9rem; color:#444;">${content}</div>
@@ -1285,7 +1509,7 @@ class RateCardAssignmentEnhanced {
         }
     }
 
-    
+
     getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -1309,6 +1533,31 @@ class RateCardAssignmentEnhanced {
         this.modalBandPageSize = 5; // Or 10 for library view if preferred
         // Call show modal with NULL ticket to indicate Library Mode
         this.showManualAssignmentModal(null, this.bandRecords);
+    }
+
+    // Helper to reload the comparison object for a specific ticket ID
+    loadComparisonForTicket(ticketId) {
+        // 1. Get Final Ticket Data
+        const finalTicket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+        if (!finalTicket) return false;
+
+        // 2. Get Initial Data from Cache
+        const initialUuid = finalTicket.initial_ticket_uuid;
+        const initialData = (initialUuid && this.initialDataMap)
+            ? (this.initialDataMap.get(initialUuid) || {})
+            : {};
+
+        const finalData = finalTicket.data_table || {};
+
+        // 3. Generate Diff Data & Update State
+        this.currentComparison = this.generateComparisonData(initialData, finalData);
+        this.currentComparison.meta = {
+            uniqueId: ticketId,
+            ticketNumber: finalTicket.ticket_number,
+            requestId: finalTicket.request_id,
+            isLinked: !!initialUuid
+        };
+        return true;
     }
 }
 
