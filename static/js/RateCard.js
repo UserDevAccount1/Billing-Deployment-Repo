@@ -80,6 +80,19 @@ class RateCardAssignmentEnhanced {
         }
     }
 
+    // --- NEW HELPER METHOD ---
+    async reloadData() {
+        // specific refresh for tickets and bands
+        await Promise.all([
+            this.fetchFinalTickets(),
+            this.fetchBandData()
+        ]);
+        // Re-apply filters and update UI
+        this.renderTable();
+        this.updateSummary();
+        console.log("Data refreshed from server.");
+    }
+
     // ==================== API CALLS ====================
 
     async fetchFinalTickets() {
@@ -207,6 +220,19 @@ class RateCardAssignmentEnhanced {
             if (btn.dataset.view === view) btn.classList.add('active');
         });
 
+        // --- CHANGE START: Handle Comparison View ---
+        if (view === 'comparison') {
+            const filtered = this.filterTickets();
+            if (filtered.length > 0) {
+                // Open the first ticket available in the filtered list
+                this.openOverviewModal(this.getUniqueId(filtered[0]));
+            } else {
+                this.showNotification("No tickets available to compare", "warning");
+            }
+            return; // Exit early so we don't hide the background table
+        }
+        // --- CHANGE END ---
+
         document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
         const activeContainer = document.getElementById(`${view}View`);
         if (activeContainer) activeContainer.classList.add('active');
@@ -215,13 +241,13 @@ class RateCardAssignmentEnhanced {
             this.renderTable();
         } else if (view === 'form') {
             this.renderForm();
-        } else if (view === 'comparison') {
-
         }
         this.updateSummary();
     }
 
     getUniqueId(ticket) {
+        //  Safety check to prevent crash if ticket is null ---
+        if (!ticket) return null;
         return ticket.uuid || ticket.ticket_number || ticket.request_id;
     }
 
@@ -389,45 +415,102 @@ class RateCardAssignmentEnhanced {
         this.showManualAssignmentModal(ticket, matchingCards, allCustomerCards);
     }
 
-    showManualAssignmentModal(ticket, exactMatches = [], otherMatches = []) {
-        const uniqueId = this.getUniqueId(ticket);
+    showManualAssignmentModal(ticket, bandRecords) {
+        // Remove existing modal if any
+        const existing = document.getElementById('assignModal');
+        if (existing) existing.remove();
+
+        // --- SAFE INITIALIZATION START ---
+        // 1. Determine Mode
+        const isLibraryMode = !ticket;
+
+        // 2. Safe ID Extraction
+        // If library mode, use placeholder. If ticket exists, try to get ID, fallback to 'Unknown'
+        let uniqueId = 'Library View';
+        if (!isLibraryMode) {
+            uniqueId = this.getUniqueId(ticket) || 'Unknown ID';
+        }
+
+        // 3. Safe Data Extraction
+        // If ticket is null, data is empty object.
+        const data = (ticket && ticket.data_table) ? ticket.data_table : {};
+        // --- SAFE INITIALIZATION END ---
+
+        // Calculate Pagination
+        const totalPages = Math.ceil(bandRecords.length / this.modalBandPageSize);
+        const startIdx = this.modalBandPage * this.modalBandPageSize;
+        const currentRecords = bandRecords.slice(startIdx, startIdx + this.modalBandPageSize);
+
+        // Header Text
+        const headerTitle = isLibraryMode ? 'Rate Card Library' : 'Assign Band Record';
+        const subHeader = isLibraryMode ? 'Full Database' : `Ticket: <strong>${uniqueId}</strong>`;
+
+        // Target Info Box (Hidden in Library Mode)
+        // Note: We use optional chaining (?.) just in case, but 'data' is guaranteed to be {} at minimum now.
+        const targetBoxHtml = isLibraryMode ? '' : `
+            <div style="background:#e3f2fd; padding:10px 15px; border-radius:6px; margin-bottom:20px; border-left:4px solid #2196f3; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="color:#1565c0;">Target:</strong> ${ticket?.customer || 'N/A'} - ${ticket?.account || 'N/A'}
+                </div>
+                <div style="font-size:0.9em; color:#1565c0;">
+                    Region: ${data.region || '-'} | Service: ${data.service_type || '-'}
+                </div>
+            </div>
+        `;
+
+        // Pagination Buttons Logic (Pass 'null' string for library mode)
+        const ticketIdParam = isLibraryMode ? 'null' : `'${uniqueId}'`;
 
         const modalHtml = `
-            <div class="modal-overlay" id="assignModal">
-                <div class="modal-content" style="width:600px; max-height:80vh; overflow-y:auto;">
-                    <div class="modal-header">
-                        <h3>Assign Rate Card to ${uniqueId}</h3>
-                        <button onclick="document.getElementById('assignModal').remove()">&times;</button>
+            <div class="" id="assignModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">
+                <div style="background:white; width:900px; max-width:95%; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                    
+                    <div class="" style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border-radius: 8px 8px 0 0;">
+                        <div>
+                            <h3 style="margin:0; color:#2c3e50;">${headerTitle}</h3>
+                            <small style="color:#666;">${subHeader}</small>
+                        </div>
+                        <button onclick="document.getElementById('assignModal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
                     </div>
-                    <div class="modal-body">
-                        <div style="background:#f8f9fa; padding:10px; border-radius:5px; margin-bottom:15px;">
-                            <p style="margin:5px 0;"><strong>Service:</strong> ${ticket.data_table?.service_type}</p>
-                            <p style="margin:5px 0;"><strong>Region:</strong> ${ticket.data_table?.region}</p>
+
+                    <div class="" style="padding:20px; overflow-y:auto; background:#fff; flex: 1;">
+                        
+                        ${targetBoxHtml}
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h5 style="margin:0; color:#2c3e50;">Available Band Records (${bandRecords.length})</h5>
+                            <div class="modal-pagination">
+                                <button class="btn btn-sm btn-outline" onclick="rateCardApp.changeModalPage(-1, ${ticketIdParam})" ${this.modalBandPage === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span style="font-size:0.85em; margin:0 10px;">Page ${this.modalBandPage + 1} of ${totalPages || 1}</span>
+                                <button class="btn btn-sm btn-outline" onclick="rateCardApp.changeModalPage(1, ${ticketIdParam})" ${this.modalBandPage >= totalPages - 1 ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
 
-                        ${exactMatches.length > 0 ? `
-                            <h5 style="margin-bottom:10px; color:#2c3e50;">Recommended Cards (Account Match)</h5>
-                            ${exactMatches.map(card => this.renderRateCardItem(card, uniqueId)).join('')}
-                        ` : ''}
+                        <div class="band-list-container">
+                            ${currentRecords.length > 0 ?
+                currentRecords.map(record => this.renderBandSelectionItem(record, uniqueId, isLibraryMode)).join('')
+                :
+                `<div style="text-align:center; padding:40px; color:#95a5a6;">
+                                    <i class="fas fa-database" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+                                    No Band Data Records Available
+                                </div>`
+            }
+                        </div>
+                    </div>
 
-                        ${otherMatches.length > 0 ? `
-                            <h5 style="margin:15px 0 10px; color:#e67e22;">Other Customer Cards</h5>
-                            ${otherMatches.map(card => this.renderRateCardItem(card, uniqueId)).join('')}
-                        ` : ''}
-
-                        ${exactMatches.length === 0 && otherMatches.length === 0 ? `
-                            <div style="text-align:center; padding:20px; color:#7f8c8d;">
-                                <i class="fas fa-exclamation-circle" style="font-size:24px; margin-bottom:10px;"></i>
-                                <p>No matching rate cards found for this Customer.</p>
-                            </div>
-                        ` : ''}
+                    <div class="modal-footer" style="padding:15px 20px; border-top:1px solid #eee; text-align:right; background:#f8f9fa; border-radius: 0 0 8px 8px;">
+                        <button class="btn btn-outline" onclick="document.getElementById('assignModal').remove()">Close</button>
                     </div>
                 </div>
             </div>
         `;
+
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
-
     renderRateCardItem(card, ticketId) {
         return `
             <div style="border:1px solid #eee; padding:12px; margin-bottom:8px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; background:white;">
@@ -701,6 +784,14 @@ class RateCardAssignmentEnhanced {
             if (this.currentView === 'table') this.renderTable();
         });
 
+        const libraryBtn = document.getElementById('rateCardLibraryBtn');
+        if (libraryBtn) {
+            libraryBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.openRateCardLibrary();
+            });
+        }
+
         ['filterCustomer', 'filterAccount', 'filterStatus'].forEach(id => {
             document.getElementById(id)?.addEventListener('change', (e) => {
                 const filterKey = id.replace('filter', '').toLowerCase();
@@ -723,6 +814,15 @@ class RateCardAssignmentEnhanced {
                 this.renderForm();
             }
         });
+
+        const autoAssignBtn = document.getElementById('autoAssignAll');
+        if (autoAssignBtn) {
+            autoAssignBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to attempt auto-assignment for all pending tickets?')) {
+                    this.autoAssignAll();
+                }
+            });
+        }
     }
 
     // ==================== MANUAL ASSIGNMENT MODAL LOGIC ====================
@@ -743,106 +843,46 @@ class RateCardAssignmentEnhanced {
         this.showManualAssignmentModal(ticket, allBandRecords);
     }
 
-    showManualAssignmentModal(ticket, bandRecords) {
-        // Remove existing modal if any
-        const existing = document.getElementById('assignModal');
-        if (existing) existing.remove();
-
-        const uniqueId = this.getUniqueId(ticket);
-        const data = ticket.data_table || {};
-
-        // Calculate Pagination
-        const totalPages = Math.ceil(bandRecords.length / this.modalBandPageSize);
-        const startIdx = this.modalBandPage * this.modalBandPageSize;
-        const currentRecords = bandRecords.slice(startIdx, startIdx + this.modalBandPageSize);
-
-        const modalHtml = `
-            <div class="" id="assignModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">
-                <div style="background:white; width:900px; max-width:95%; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-                    
-                    <div class="" style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border-radius: 8px 8px 0 0;">
-                        <div>
-                            <h3 style="margin:0; color:#2c3e50;">Assign Band Record</h3>
-                            <small style="color:#666;">Ticket: <strong>${uniqueId}</strong></small>
-                        </div>
-                        <button onclick="document.getElementById('assignModal').remove()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
-                    </div>
-
-                    <div class="" style="padding:20px; overflow-y:auto; background:#fff; flex: 1;">
-                        
-                        <div style="background:#e3f2fd; padding:10px 15px; border-radius:6px; margin-bottom:20px; border-left:4px solid #2196f3; display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <strong style="color:#1565c0;">Target:</strong> ${ticket.customer || 'N/A'} - ${ticket.account || 'N/A'}
-                            </div>
-                            <div style="font-size:0.9em; color:#1565c0;">
-                                Region: ${data.region || '-'} | Service: ${data.service_type || '-'}
-                            </div>
-                        </div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h5 style="margin:0; color:#2c3e50;">Available Band Records (${bandRecords.length})</h5>
-                            <div class="modal-pagination">
-                                <button class="btn btn-sm btn-outline" onclick="rateCardApp.changeModalPage(-1, '${uniqueId}')" ${this.modalBandPage === 0 ? 'disabled' : ''}>
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <span style="font-size:0.85em; margin:0 10px;">Page ${this.modalBandPage + 1} of ${totalPages || 1}</span>
-                                <button class="btn btn-sm btn-outline" onclick="rateCardApp.changeModalPage(1, '${uniqueId}')" ${this.modalBandPage >= totalPages - 1 ? 'disabled' : ''}>
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="band-list-container">
-                            ${currentRecords.length > 0 ?
-                currentRecords.map(record => this.renderBandSelectionItem(record, uniqueId)).join('')
-                :
-                `<div style="text-align:center; padding:40px; color:#95a5a6;">
-                                    <i class="fas fa-database" style="font-size:24px; margin-bottom:10px; display:block;"></i>
-                                    No Band Data Records Available
-                                </div>`
-            }
-                        </div>
-                    </div>
-
-                    <div class="modal-footer" style="padding:15px 20px; border-top:1px solid #eee; text-align:right; background:#f8f9fa; border-radius: 0 0 8px 8px;">
-                        <button class="btn btn-outline" onclick="document.getElementById('assignModal').remove()">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-
     changeModalPage(direction, ticketId) {
         const totalPages = Math.ceil((this.bandRecords || []).length / this.modalBandPageSize);
         const newPage = this.modalBandPage + direction;
 
         if (newPage >= 0 && newPage < totalPages) {
             this.modalBandPage = newPage;
-            const ticket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+
+            let ticket = null;
+            // Only search if ticketId is valid and NOT the string "Library View"
+            if (ticketId && ticketId !== 'Library View') {
+                ticket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
+            }
+
             this.showManualAssignmentModal(ticket, this.bandRecords);
         }
     }
 
-    renderBandSelectionItem(record, ticketId) {
+    renderBandSelectionItem(record, ticketId, isLibraryMode = false) {
         // Safe access to nested properties
         const customer = record.customer || 'Unknown Customer';
         const account = record.account || 'Unknown Account';
         const refTicket = record.ticket_number || 'N/A';
-
-        // --- FIX: Ensure we get the correct UUID from the band record ---
         const recordUuid = record.uuid;
-        // ----------------------------------------------------------------
+        const uniqueKey = `band-${recordUuid}`;
 
-        const uniqueKey = `band-${recordUuid}`; // For collapse ID
-
-        // Extract some summary data to show in the row
+        // Summary data
         const dispatchCount = record.band_data?.dispatch ? Object.keys(record.band_data.dispatch).length : 0;
         const dedicatedCount = record.band_data?.dedicated ? Object.keys(record.band_data.dedicated).length : 0;
 
         // Generate Collapsible Detail HTML
         const detailsHtml = this.generateBandDetailsHtml(record.band_data);
+
+        // Conditional Button HTML
+        const actionButtonHtml = isLibraryMode
+            ? `<span style="font-size:0.8em; color:#999; font-style:italic;">Read Only</span>`
+            : `<button class="btn btn-sm btn-primary" 
+                    style="padding:6px 15px; box-shadow:0 2px 4px rgba(52, 152, 219, 0.3);"
+                    onclick="rateCardApp.confirmAssignment('${ticketId}', '${recordUuid}')">
+                    Assign
+               </button>`;
 
         return `
             <div class="band-selection-card" style="border:1px solid #e0e0e0; border-radius:6px; margin-bottom:10px; background:white; overflow:hidden;">
@@ -864,11 +904,7 @@ class RateCardAssignmentEnhanced {
                     </div>
 
                     <div style="margin-left:15px;" onclick="event.stopPropagation()">
-                        <button class="btn btn-sm btn-primary" 
-                            style="padding:6px 15px; box-shadow:0 2px 4px rgba(52, 152, 219, 0.3);"
-                            onclick="rateCardApp.confirmAssignment('${ticketId}', '${recordUuid}')">
-                            Assign
-                        </button>
+                        ${actionButtonHtml}
                     </div>
                 </div>
                 
@@ -932,10 +968,6 @@ class RateCardAssignmentEnhanced {
     }
     // ==================== OVERVIEW MODAL LOGIC ====================
 
-    /**
-     * Entry point to open the comparison modal
-     * @param {string} ticketId - Unique identifier of the ticket (usually uuid)
-     */
     openOverviewModal(ticketId) {
         // 1. Get Final Ticket Data
         const finalTicket = this.tickets.find(t => this.getUniqueId(t) === ticketId);
@@ -946,7 +978,6 @@ class RateCardAssignmentEnhanced {
         }
 
         // 2. Get Initial Data from Cache
-        // Note: The API returns initial_ticket_uuid in the final ticket object
         const initialUuid = finalTicket.initial_ticket_uuid;
         const initialData = (initialUuid && this.initialDataMap)
             ? (this.initialDataMap.get(initialUuid) || {})
@@ -957,6 +988,7 @@ class RateCardAssignmentEnhanced {
         // 3. Generate Diff Data
         this.currentComparison = this.generateComparisonData(initialData, finalData);
         this.currentComparison.meta = {
+            uniqueId: ticketId, // <--- ADD THIS: Needed for pagination index lookup
             ticketNumber: finalTicket.ticket_number,
             requestId: finalTicket.request_id,
             isLinked: !!initialUuid
@@ -964,9 +996,9 @@ class RateCardAssignmentEnhanced {
 
         // 4. Render UI
         this.renderOverviewHeader();
-        this.renderTab1Data(); // Summary
-        this.renderOverviewTab2(); // Full Table
-        this.renderTab3Data(); // Changes
+        this.renderTab1Data();
+        this.renderOverviewTab2();
+        this.renderTab3Data();
 
         // 5. Reset to Tab 1 & Show Modal
         this.switchOverviewTab('ov-tab1', document.querySelector('[data-tab="ov-tab1"]'));
@@ -975,6 +1007,8 @@ class RateCardAssignmentEnhanced {
 
     closeOverviewModal() {
         document.getElementById('overviewModal').style.display = 'none';
+        this.switchView('table');
+
     }
 
     /**
@@ -1019,7 +1053,40 @@ class RateCardAssignmentEnhanced {
 
     renderOverviewHeader() {
         const meta = this.currentComparison.meta;
-        document.getElementById('overview-ticket-id').innerText = `${meta.ticketNumber} | ${meta.requestId}`;
+        const currentId = meta.uniqueId;
+
+        // Calculate Pagination Context
+        const filteredTickets = this.filterTickets();
+        const currentIndex = filteredTickets.findIndex(t => this.getUniqueId(t) === currentId);
+        const total = filteredTickets.length;
+
+        const hasPrev = currentIndex > 0;
+        const hasNext = currentIndex < total - 1;
+
+        // Render Title with Controls
+        const titleContainer = document.getElementById('overview-ticket-id');
+
+        // Use HTML instead of Text to include buttons
+        titleContainer.innerHTML = `
+            <div style="display:flex; align-items:center; gap:15px;">
+                <button class="btn btn-sm btn-outline" 
+                    ${!hasPrev ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
+                    onclick="rateCardApp.changeOverviewPage(-1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <div style="text-align:center;">
+                    <div style="font-size:1.1em; font-weight:bold;">${meta.ticketNumber}</div>
+                    <div style="font-size:0.8em; color:#666;">${meta.requestId} <span style="margin-left:5px; font-weight:normal;">(${currentIndex + 1} of ${total})</span></div>
+                </div>
+
+                <button class="btn btn-sm btn-outline" 
+                    ${!hasNext ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} 
+                    onclick="rateCardApp.changeOverviewPage(1)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
 
         const badgesContainer = document.getElementById('overview-meta-badges');
         badgesContainer.innerHTML = meta.isLinked
@@ -1132,9 +1199,122 @@ class RateCardAssignmentEnhanced {
             `;
         }).join('');
     }
+    changeOverviewPage(direction) {
+        if (!this.currentComparison || !this.currentComparison.meta) return;
+
+        const currentId = this.currentComparison.meta.uniqueId;
+        const filteredTickets = this.filterTickets();
+        const currentIndex = filteredTickets.findIndex(t => this.getUniqueId(t) === currentId);
+
+        if (currentIndex === -1) return;
+
+        const newIndex = currentIndex + direction;
+
+        // Ensure bounds
+        if (newIndex >= 0 && newIndex < filteredTickets.length) {
+            const nextTicket = filteredTickets[newIndex];
+            const nextId = this.getUniqueId(nextTicket);
+
+            // Reload modal with new ticket
+            this.openOverviewModal(nextId);
+        }
+    }
+
+    // ==================== AUTO ASSIGN LOGIC ====================
+
+    async autoAssignAll() {
+        // 1. Filter for pending tickets
+        const pendingTickets = this.tickets.filter(t => t.assignmentStatus === 'pending');
+
+        if (pendingTickets.length === 0) {
+            this.showNotification("No pending tickets to assign.", "warning");
+            return;
+        }
+
+        const uuids = pendingTickets.map(t => t.uuid);
+
+        // UI Feedback: Disable button and show spinner
+        const btn = document.getElementById('autoAssignAll');
+        const originalContent = btn ? btn.innerHTML : 'Auto-Assign All';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+
+        try {
+            // 2. Prepare Payload
+            const payload = {
+                "final_ticket_uuids": uuids
+            };
+
+            // 3. Send Request
+            const response = await fetch('/billing/api/auto-assign-bands/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken')
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Calculate success count just for the notification
+                const successCount = result.results ? result.results.filter(r => r.status === 'Assigned').length : 0;
+
+                this.showNotification(`Auto-assigned ${successCount} tickets. Refreshing data...`, 'success');
+
+                // 4. --- REFETCH DATA FROM SERVER ---
+                // Instead of manually updating local JS objects, we pull the source of truth
+                await this.reloadData();
+
+            } else {
+                this.showNotification(`Error: ${result.error}`, 'error');
+            }
+
+        } catch (error) {
+            console.error("Auto-assign error:", error);
+            this.showNotification("Failed to connect to server.", "error");
+        } finally {
+            // Reset Button
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        }
+    }
+
+    
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    openRateCardLibrary() {
+        if (!this.bandRecords || this.bandRecords.length === 0) {
+            this.showNotification("No Band Data records loaded.", "warning");
+            return;
+        }
+        this.modalBandPage = 0;
+        this.modalBandPageSize = 5; // Or 10 for library view if preferred
+        // Call show modal with NULL ticket to indicate Library Mode
+        this.showManualAssignmentModal(null, this.bandRecords);
+    }
 }
 
 // Initialize when DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
     window.rateCardApp = new RateCardAssignmentEnhanced();
 });
+
+

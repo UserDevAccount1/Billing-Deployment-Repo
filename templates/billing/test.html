@@ -241,18 +241,16 @@
                             </div>
                         </div>
 
-                        <div class="tmm-additional-content">
+                        <!-- <div class="tmm-additional-content">
                             <div class="tmm-card qdi-card" id="tmm_additionalContent">
                                 <h4 class="tmm-section-title">
                                     <i class="fas fa-edit"></i> Quick Data Input
                                 </h4>
 
-                                <!-- Block 1: Quick input -->
                                 <div class="qdi-block qdi-block--input">
                                     <div class="qdi-block-title">Quick Input</div>
 
                                     <div class="qdi-input-grid">
-                                        <!-- Row 2: Target table (full width) -->
                                         <div class="qdi-item qdi-span-2">
                                             <label class="qdi-label" for="quickTable">Target table</label>
                                             <select id="quickTable" class="input-field qdi-control">
@@ -268,14 +266,12 @@
                                             </select>
                                         </div>
 
-                                        <!-- Row 3: NEW input below target table -->
                                         <div class="qdi-item qdi-span-2">
                                             <label class="qdi-label" for="quickNameField">Name field (optional)</label>
                                             <input type="text" id="quickNameField" class="input-field qdi-control"
                                                 placeholder="e.g., Notes / Key / Label">
                                         </div>
 
-                                        <!-- Row 4: centered button below the new input -->
                                         <div class="qdi-actions qdi-span-2">
                                             <button class="btn-add" type="button" onclick="addQuickData()">
                                                 <i class="fas fa-plus"></i> Add Data
@@ -291,7 +287,7 @@
                                 </div>
 
                             </div>
-                        </div>
+                        </div> -->
 
 
                     </div>
@@ -742,16 +738,6 @@
                                             </select>
                                         </div>
 
-                                        <div class="control-group" id="matrixTableSelectGroup" style="display:none;">
-                                            <label class="control-label"><i class="fas fa-table"></i> Select
-                                                Table</label>
-                                            <select class="control-input" id="matrixSearchTableSelect"
-                                                onchange="performMatrixSearch()">
-                                                <option value="">All Tables</option>
-                                                <!-- Tables will be populated dynamically -->
-                                            </select>
-                                        </div>
-
                                         <div class="control-group">
                                             <label class="control-label"><i class="fas fa-cog"></i> Search
                                                 Options</label>
@@ -938,10 +924,6 @@
                                                 <label class="checkbox-inline">
                                                     <input type="checkbox" id="autoScrollToMatch" checked>
                                                     <span>Auto-scroll to Match</span>
-                                                </label>
-                                                <label class="checkbox-inline">
-                                                    <input type="checkbox" id="showMatchTooltips" checked>
-                                                    <span>Show Tooltips</span>
                                                 </label>
                                                 <label class="checkbox-inline">
                                                     <input type="checkbox" id="persistHighlights" checked>
@@ -1338,14 +1320,8 @@
                                     <button class="btn btn-primary" id="autoAssignAll">
                                         <i class="fas fa-robot"></i> Auto-Assign All
                                     </button>
-                                    <button class="btn btn-outline" id="bulkAssign">
-                                        <i class="fas fa-layer-group"></i> Bulk Assign
-                                    </button>
                                     <button class="btn btn-outline" id="exportReport">
                                         <i class="fas fa-download"></i> Export
-                                    </button>
-                                    <button class="btn btn-success" id="generateReport">
-                                        <i class="fas fa-file-alt"></i> Report
                                     </button>
                                 </div>
                             </div>

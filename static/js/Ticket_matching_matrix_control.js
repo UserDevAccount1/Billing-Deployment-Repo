@@ -9,6 +9,8 @@
 // COLUMN VISIBILITY CONTROLS
 // ════════════════════════════════════════════════════════════════════════════
 
+let highlightTimeoutId = null;
+
 /**
  * Initialize column visibility checkboxes
  */
@@ -681,18 +683,15 @@ let lastQuery = '';
 let currentMatchIndex = -1;
 
 // ──── SEARCH ────
-// ──── SEARCH ────
 function initSearchHighlight() {
   const searchInput = document.getElementById('searchInput');
   const matrixSearch = document.getElementById('matrixSearchInput');
 
   const attach = (el) => {
     if (!el) return;
-
-    // FIX 1: Prevent double-binding. 
-    // If we already attached a listener to this specific element, stop here.
     if (el.dataset.hasSearchListener === 'true') return;
     el.dataset.hasSearchListener = 'true';
+
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -702,7 +701,12 @@ function initSearchHighlight() {
     });
 
     el.addEventListener('input', (e) => {
-      if (e.target.value === '') clearSearchHighlight();
+      // If user clears input, clear visuals AND reset index
+      if (e.target.value === '') {
+         clearSearchHighlight();
+         currentMatchIndex = -1; 
+         lastQuery = '';
+      }
     });
   };
 
@@ -710,70 +714,180 @@ function initSearchHighlight() {
   attach(matrixSearch);
 }
 
-function performSearchHighlight(query) {
-  const lowerQuery = query.toLowerCase().trim();
+// ════════════════════════════════════════════════════════════════════════════
+// SEARCH LOGIC UPDATE
+// ════════════════════════════════════════════════════════════════════════════
 
-  if (!lowerQuery) {
+/**
+ * Triggered when Search Mode dropdown changes
+ */
+function updateMatrixSearchMode(mode) {
+  const input = document.getElementById('matrixSearchInput');
+  if (input && input.value.trim() !== '') {
+    performSearchHighlight(input.value, false);
+  }
+}
+
+/**
+ * Triggered when Search Option checkboxes change
+ */
+function updateMatrixSearchOptions() {
+  const input = document.getElementById('matrixSearchInput');
+  if (input && input.value.trim() !== '') {
+    performSearchHighlight(input.value, false);
+  }
+}
+
+
+function updateHighlightDuration(val) {
+    // Optional: Update a label text if you have one, e.g.:
+    // document.getElementById('durationLabel').textContent = val + 'ms';
+    console.log('Highlight duration set to:', val);
+}
+
+
+/**
+ * Main Search Execution Function
+ * Respects: Mode (All/Field/Value), Case Sensitivity, Exact Match, Hidden Rows
+ */
+// Add this helper for the range slider (optional, handles the oninput event)
+function performSearchHighlight(query, shouldScrollParam = true) {
+  // 1. Get Search Controls & Options
+  const searchMode = document.getElementById('matrixSearchMode')?.value || 'all';
+  const isCaseSensitive = document.getElementById('matrixCaseSensitive')?.checked || false;
+  const isExactMatch = document.getElementById('matrixExactMatch')?.checked || false;
+  const includeHidden = document.getElementById('matrixSearchHidden')?.checked || false;
+  const matchColor = document.getElementById('currentMatchColor')?.value || '#FFFF00';
+  
+  // --- TIMEOUT MANAGEMENT: Clear pending removal if user searches again ---
+  if (highlightTimeoutId) {
+    clearTimeout(highlightTimeoutId);
+    highlightTimeoutId = null;
+  }
+
+  // 2. Prepare Query
+  const comparisonQuery = isCaseSensitive ? query : query.toLowerCase();
+
+  // Handle Empty Query
+  if (!comparisonQuery || comparisonQuery.trim() === '') {
     clearSearchHighlight();
+    lastQuery = '';
+    currentMatchIndex = -1; 
     return;
   }
 
-  const sameQuery = lowerQuery === lastQuery;
-  lastQuery = lowerQuery;
-
-  if (!sameQuery) {
-    clearSearchHighlight();
+  // Handle New Query
+  if (comparisonQuery !== lastQuery) {
     currentMatchIndex = -1;
+    lastQuery = comparisonQuery;
   }
+
+  // 3. Clear Previous Highlights
+  clearSearchHighlight();
 
   const rows = document.querySelectorAll('#matrixBody .matrix-row');
   let matches = [];
 
+  // --- HELPER: Comparison Logic ---
+  const checkMatch = (textValue) => {
+    if (!textValue) return false;
+    const val = isCaseSensitive ? textValue : textValue.toLowerCase();
+    if (isExactMatch) return val === comparisonQuery;
+    return val.includes(comparisonQuery);
+  };
+
+  // 4. Iterate Rows
   rows.forEach(row => {
-    const field = row.dataset.field;
-    const def = FIELD_DEFINITIONS[field] || {};
-    const fieldLabel = (def.label || field).toLowerCase();
+    if (!includeHidden && row.style.display === 'none') return;
 
-    let match = fieldLabel.includes(lowerQuery);
+    let rowMatches = false;
 
-    if (!match) {
-      row.querySelectorAll('.cell-input').forEach(input => {
-        if (input.value.toLowerCase().includes(lowerQuery)) {
-          input.closest('td').classList.add('search-match-cell');
-          match = true;
+    // Scope 1: Field Names
+    if (searchMode === 'all' || searchMode === 'field') {
+      const fieldNameEl = row.querySelector('.field-name');
+      if (fieldNameEl && checkMatch(fieldNameEl.textContent.trim())) {
+        rowMatches = true;
+        fieldNameEl.closest('td').classList.add('search-match-cell');
+      }
+    }
+
+    // Scope 2: Values
+    if (searchMode === 'all' || searchMode === 'value' || searchMode === 'table') {
+      const cells = row.querySelectorAll('td.data-cell');
+      cells.forEach(cell => {
+        if (searchMode === 'table') {
+          const tableKey = cell.getAttribute('data-table');
+          if (checkMatch(tableKey)) {
+             cell.classList.add('search-match-cell');
+             rowMatches = true;
+          }
+        } else {
+          const input = cell.querySelector('input');
+          if (input && checkMatch(input.value)) {
+            cell.classList.add('search-match-cell');
+            rowMatches = true;
+          }
         }
       });
     }
 
-    if (match) {
+    // 5. Collect Matches
+    if (rowMatches) {
       row.classList.add('search-match-row');
       matches.push(row);
     }
   });
 
-  if (!matches.length) {
+  // 6. Handle No Matches
+  if (matches.length === 0) {
     showToast('No matches found', 'warning');
+    currentMatchIndex = -1; 
     return;
   }
 
+  // 7. Navigation
   currentMatchIndex = (currentMatchIndex + 1) % matches.length;
-
-  document.querySelectorAll('.search-match-active').forEach(el => el.classList.remove('search-match-active'));
-
   const currentRow = matches[currentMatchIndex];
+  
+  // Apply Color
+  document.documentElement.style.setProperty('--tmm-current-match-color', matchColor);
   currentRow.classList.add('search-match-active');
 
-  currentRow.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center'
-  });
+  // Scroll
+  const shouldScrollCheckbox = document.getElementById('autoScrollToMatch')?.checked || false;
+  if (shouldScrollCheckbox && shouldScrollParam) {
+    currentRow.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
 
   showToast(`Match ${currentMatchIndex + 1} of ${matches.length}`, 'info');
+
+  // 8. --- NEW: AUTO-CLEAR HIGHLIGHTS LOGIC ---
+  // If "Persist Highlights" is UNCHECKED, remove highlights after X seconds
+  const persistCheckbox = document.getElementById('persistHighlights');
+  
+  // Default to true (persist) if element is missing
+  const shouldPersist = persistCheckbox ? persistCheckbox.checked : true; 
+
+  if (!shouldPersist) {
+      const durationInput = document.getElementById('highlightDuration');
+      const duration = durationInput ? parseInt(durationInput.value, 10) : 1000;
+
+      highlightTimeoutId = setTimeout(() => {
+          clearSearchHighlight();
+          // We do NOT reset currentMatchIndex here so if they press 'Enter' again, 
+          // it continues to the next match even if visually cleared.
+      }, duration);
+  }
 }
+
 
 function clearSearchHighlight() {
   document.querySelectorAll('.search-match-row').forEach(el => el.classList.remove('search-match-row'));
   document.querySelectorAll('.search-match-cell').forEach(el => el.classList.remove('search-match-cell'));
+  document.querySelectorAll('.search-match-active').forEach(el => el.classList.remove('search-match-active'));
 }
 
 

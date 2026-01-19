@@ -264,7 +264,6 @@ function tmmConvertRateCardCsvToJson(csvString) {
       ticket_number: row[5] || "N/A"
     };
 
-    console.log(row);
     const services = {
       // 6-15: Dedicated
       dedicated: {
@@ -436,7 +435,8 @@ function tmmLoadBandDetailsContent() {
 
 function tmmRenderBandDetailsContent() {
   let html = '';
-  const meta = TMM_BAND_STATE.currentMeta;
+  // Ensure meta object exists to prevent errors
+  const meta = TMM_BAND_STATE.currentMeta || {};
   const isImported = TMM_BAND_STATE.importedRecords.length > 0;
 
   html += `
@@ -445,10 +445,29 @@ function tmmRenderBandDetailsContent() {
         <div class="tmm-band-section-title" style="color: white;"><i class="fas fa-globe"></i><span>${isImported ? 'Imported Record Context' : 'Manual Entry Context'}</span></div>
         ${isImported ? `<div style="background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:4px; font-size:0.85rem;">Record ${TMM_BAND_STATE.currentImportIndex + 1} of ${TMM_BAND_STATE.importedRecords.length}</div>` : ''}
       </div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-          <div class="tmm-band-info-row"><span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Customer:</span><span class="tmm-band-info-value" style="color:white;font-weight:600;">${isImported ? (meta.country || 'N/A') : (TMM_BAND_STATE.currentCustomer || 'Not Selected')}</span></div>
-          <div class="tmm-band-info-row"><span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Region:</span><span class="tmm-band-info-value" style="color:white;font-weight:600;">${isImported ? (meta.region || 'N/A') : 'Global'}</span></div>
-          ${isImported ? `<div class="tmm-band-info-row"><span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Currency:</span><span class="tmm-band-info-value" style="color:white;font-weight:600;">${meta.currency || 'USD'}</span></div>` : ''}
+      
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px;">
+          
+          <div class="tmm-band-info-row">
+            <span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Customer:</span>
+            <span class="tmm-band-info-value" style="color:white;font-weight:600;">${isImported ? (meta.country || 'N/A') : (TMM_BAND_STATE.currentCustomer || 'Not Selected')}</span>
+          </div>
+          
+          <div class="tmm-band-info-row">
+            <span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Region:</span>
+            <span class="tmm-band-info-value" style="color:white;font-weight:600;">${isImported ? (meta.region || 'N/A') : 'Global'}</span>
+          </div>
+
+          <div class="tmm-band-info-row">
+            <span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Ticket #:</span>
+            <span class="tmm-band-info-value" style="color:white;font-weight:600;">${meta.ticket_number || 'N/A'}</span>
+          </div>
+
+          ${isImported ? `
+          <div class="tmm-band-info-row">
+            <span class="tmm-band-info-label" style="color:rgba(255,255,255,0.9);">Currency:</span>
+            <span class="tmm-band-info-value" style="color:white;font-weight:600;">${meta.currency || 'USD'}</span>
+          </div>` : ''}
       </div>
     </div>`;
 
@@ -703,7 +722,7 @@ function tmmSaveBandDetails() {
       TMM_BAND_STATE.importedRecords = [];
       TMM_BAND_STATE.currentImportIndex = 0;
       TMM_BAND_STATE.currentMeta = {};
-      
+
       // Reset visual band data structure
       Object.keys(TMM_BAND_TABLES).forEach(k => TMM_BAND_STATE.bandData[k] = {});
 

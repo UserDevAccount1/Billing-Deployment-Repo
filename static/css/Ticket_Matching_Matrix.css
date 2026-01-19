@@ -807,22 +807,22 @@
    SEARCH HIGHLIGHTING
    ───────────────────────────────────────────────────────────────────────────── */
 #tmm .search-match-row {
-  background: rgba(37, 99, 235, 0.12) !important;
+  background: var(--tmm-current-match-color);
   border-left: 4px solid var(--primary);
 }
 
 #tmm .search-match-row .field-cell {
-  background: rgba(37, 99, 235, 0.12) !important;
+  background: var(--tmm-current-match-color) !important;
 }
 
 #tmm .search-match-cell {
-  background: rgba(245, 158, 11, 0.3) !important;
+  background: var(--tmm-current-match-color) !important;
   outline: 3px solid var(--warning);
   outline-offset: -3px;
 }
 
 #tmm .search-match-cell .cell-input {
-  background: rgba(245, 158, 11, 0.2);
+  background: var(--tmm-current-match-color) !important;
   border-color: var(--warning);
 }
 
