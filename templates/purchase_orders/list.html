@@ -364,12 +364,18 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    position: relative;
   }
   .form-field.full { grid-column: 1 / -1; }
   .form-field label {
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
+    pointer-events: none; /* Prevent labels from triggering input focus */
+  }
+  .form-field label[for] {
+    pointer-events: auto; /* Allow labels with explicit 'for' to work */
+    cursor: pointer;
   }
   .form-field input,
   .form-field select,
@@ -395,6 +401,19 @@
     margin-top: 8px;
     margin-bottom: -8px;
     color: var(--ink);
+    position: relative;
+    z-index: 0;
+  }
+
+  /* Prevent date inputs from stealing focus unexpectedly */
+  .form-field input[type="date"] {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Ensure form-field has proper stacking context */
+  .form-field {
+    position: relative;
   }
 
   /* CSV Upload Area */
@@ -913,7 +932,7 @@
       <button type="button" class="po-btn" id="modal-close" style="padding:6px 10px;">✖️</button>
     </div>
 
-    <div class="modal-body">
+    <div class="modal-body" tabindex="-1">
       <!-- CSV Upload Section -->
       <div id="csv-section" style="margin-bottom:24px;">
         <label style="font-weight:600;margin-bottom:8px;display:block;">Upload CSV File</label>
@@ -1017,12 +1036,12 @@
           </div>
 
           <div class="form-field">
-            <label>Valid From *</label>
+            <label for="valid-from">Valid From *</label>
             <input type="date" id="valid-from" required />
           </div>
 
           <div class="form-field">
-            <label>Valid Until *</label>
+            <label for="valid-until">Valid Until *</label>
             <input type="date" id="valid-until" required />
           </div>
 
@@ -1578,7 +1597,58 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) closeModal();
 });
 
-
+// Fix for date picker staying open - use wrapper approach
+(function() {
+  const validFromInput = document.getElementById('valid-from');
+  const validUntilInput = document.getElementById('valid-until');
+  const dateInputs = [validFromInput, validUntilInput];
+  
+  // Wrap each date input in a container that controls interaction
+  dateInputs.forEach(input => {
+    if (!input) return;
+    
+    // Create wrapper
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;display:block;';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+    
+    // Create an overlay that blocks unwanted clicks
+    const overlay = document.createElement('div');
+    overlay.className = 'date-click-overlay';
+    overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;cursor:pointer;display:none;';
+    wrapper.appendChild(overlay);
+    
+    // When input is focused, show overlay after a delay to catch stray clicks
+    input.addEventListener('blur', () => {
+      overlay.style.display = 'block';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 300);
+    });
+    
+    // Clicking overlay does nothing (absorbs the click)
+    overlay.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    
+    overlay.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+  
+  // Global handler to blur date inputs on any click outside them
+  document.addEventListener('click', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.type === 'date') {
+      if (!e.target.closest('input[type="date"]')) {
+        activeEl.blur();
+      }
+    }
+  }, true);
+})();
 
 // ==================================================================
 // ==================== PO File Attachment =========================
@@ -2610,9 +2680,15 @@ function loadExchangeRates(page = 1) {
   if (!tableBody) return; // Safety check if table not rendered yet
 
   fetch('{% url "exchange_rates:api" %}')
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return res.json();
+    })
     .then(data => {
-      exchangeRateData = data
+      console.log('Exchange rate data received:', data);
+      exchangeRateData = data;
 
       if (!Array.isArray(data) || data.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No exchange rates found</td></tr>';
@@ -2644,10 +2720,10 @@ function loadExchangeRates(page = 1) {
       pageData.forEach(rate => {
         const row = `
           <tr id="rate-row-${rate.id}">
-            <td>${rate.currency_code}</td>
-            <td>${rate.currency_name}</td>
-            <td class="text-end" id="usd-cell-${rate.id}">${parseFloat(rate.usd_per_unit).toFixed(6)}</td>
-            <td>${rate.last_updated}</td>
+            <td>${rate.currency_code || ''}</td>
+            <td>${rate.currency_name || ''}</td>
+            <td class="text-end" id="usd-cell-${rate.id}">${parseFloat(rate.usd_per_unit || 0).toFixed(6)}</td>
+            <td>${rate.last_updated || '-'}</td>
             <td class="text-center">
               <button class="btn btn-sm btn-outline-primary" onclick="editRate(${rate.id})">Edit</button>
               <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRate(${rate.id})">Delete</button>
@@ -2658,24 +2734,33 @@ function loadExchangeRates(page = 1) {
 
       // Exchange Dropdown
       const projectSelectEl = document.getElementById("slctExchangeCurrency");
-      projectSelectEl.innerHTML = "";
+      if (projectSelectEl) {
+        projectSelectEl.innerHTML = "";
 
-      const defaultOption = new Option("-- Select Currency --", "");
-      projectSelectEl.add(defaultOption);
+        const defaultOption = new Option("-- Select Currency --", "");
+        projectSelectEl.add(defaultOption);
 
-      data.forEach(item => {
-        const newOption = document.createElement("option");
-        const optionText = document.createTextNode(`${item.currency_name} (${item.currency_code})`);
-        newOption.appendChild(optionText);
-        newOption.setAttribute('value', item.currency_code);
-        projectSelectEl.appendChild(newOption);
-      });
+        data.forEach(item => {
+          const newOption = document.createElement("option");
+          const optionText = document.createTextNode(`${item.currency_name || ''} (${item.currency_code || ''})`);
+          newOption.appendChild(optionText);
+          newOption.setAttribute('value', item.currency_code || '');
+          projectSelectEl.appendChild(newOption);
+        });
 
-      $('#slctExchangeCurrency').selectpicker('refresh');
+        // Safely refresh selectpicker if available
+        if (typeof $ !== 'undefined' && $.fn.selectpicker) {
+          try {
+            $('#slctExchangeCurrency').selectpicker('refresh');
+          } catch (e) {
+            console.warn('selectpicker refresh failed:', e);
+          }
+        }
+      }
     })
     .catch(err => {
-      console.error(err);
-      tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Error loading exchange rates</td></tr>`;
+      console.error('Error loading exchange rates:', err);
+      tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Error loading exchange rates: ${err.message}</td></tr>`;
     });
 }
 
