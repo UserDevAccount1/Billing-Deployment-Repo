@@ -20,8 +20,7 @@ urlpatterns = [
     path('api/create/', views.create_purchase_order_api, name='create_po_api'),
     path('api/<int:pk>/', views.get_purchase_order_api, name='get_po_api'),
     path('api/<int:pk>/update/', views.update_purchase_order_api, name='update_po_api'),
-    path('api/<int:pk>/delete/', views.delete_purchase_order_api, name='delete_po_api'),
-
+    path('api/po/<int:pk>/delete/', views.delete_purchase_order_api, name='delete_po_api'),
     # Export
     path('export/', views.export_purchase_orders, name='export'),
 

@@ -637,6 +637,11 @@
     </div>
 
     <!-- KPI Cards -->
+    <div class="d-flex justify-content-end mb-2">
+      <button type="button" class="po-btn" id="toggle-invoice-cards" onclick="toggleInvoiceCards()">
+        <span id="toggle-icon">👁️</span> Toggle Invoice Cards
+      </button>
+    </div>
     <div class="po-cards">
       <div class="po-card">
         <div class="label">Total PO Value in USD</div>
@@ -650,22 +655,20 @@
         <div class="hint">All customers remaining balance (converted to USD) — reflects Convert Currency selection</div>
       </div>
 
-      <!-- Total Invoiced (All Currency) -->
-      <div class="po-card">
+      <!-- Toggleable Invoice Cards -->
+      <div class="po-card invoice-card-toggle">
         <div class="label">Total Invoiced (All Currency)</div>
         <div class="value">$ {{ kpis.total_invoiced_all_currency_usd|floatformat:2|intcomma|default:"0.00" }}</div>
         <div class="hint">Sum of invoiced amounts across all currencies (does not change with Convert Currency selection)</div>
       </div>
 
-      <!-- Total Amount Invoiced (Non-USD) -->
-      <div class="po-card">
+      <div class="po-card invoice-card-toggle">
         <div class="label">Total Amount Invoiced (Non-USD)</div>
         <div class="value">$ {{ kpis.total_invoiced_non_usd_model|floatformat:2|intcomma|default:"0.00" }}</div>
         <div class="hint">Total invoiced for all non-USD currencies (does not change with Convert Currency selection)</div>
       </div>
 
-      <!-- Total Amount Invoiced Converted to USD -->
-      <div class="po-card">
+      <div class="po-card invoice-card-toggle">
         <div class="label">Total Amount Invoiced Converted to USD</div>
         <div class="value">$ {{ kpis.display_total_invoiced_converted_usd|floatformat:2|intcomma|default:"0.00" }}</div>
         <div class="hint">Total invoiced for the current Convert Currency selection converted to USD</div>
@@ -1374,6 +1377,35 @@
 {% block extra_js %}
 <script>
 const csrftoken = '{{ csrf_token }}';
+
+// Toggle Invoice Cards visibility
+function toggleInvoiceCards() {
+  const cards = document.querySelectorAll('.invoice-card-toggle');
+  const toggleIcon = document.getElementById('toggle-icon');
+  const isHidden = cards[0].style.display === 'none';
+  
+  cards.forEach(card => {
+    card.style.display = isHidden ? '' : 'none';
+  });
+  
+  toggleIcon.textContent = isHidden ? '👁️' : '👁️‍🗨️';
+  
+  // Save preference to localStorage
+  localStorage.setItem('invoiceCardsHidden', !isHidden);
+}
+
+// Initialize invoice cards visibility on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const isHidden = localStorage.getItem('invoiceCardsHidden') === 'true';
+  if (isHidden) {
+    const cards = document.querySelectorAll('.invoice-card-toggle');
+    const toggleIcon = document.getElementById('toggle-icon');
+    cards.forEach(card => {
+      card.style.display = 'none';
+    });
+    toggleIcon.textContent = '👁️‍🗨️';
+  }
+});
 
 let selectedRows = new Set();
 let csvData = null; // Store parsed CSV data
@@ -2173,7 +2205,7 @@ document.getElementById('po-tbody').addEventListener('click', async (e) => {
   if (act === 'del') {
     if (confirm('Delete this PO? This cannot be undone.')) {
       try {
-        const response = await fetch(`/purchase-orders/api/${id}/delete/`, {
+        const response = await fetch(`/purchase-orders/api/po/${id}/delete/`, {
           method: 'DELETE',
           headers: { 'X-CSRFToken': csrftoken }
         });
