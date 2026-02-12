@@ -1588,7 +1588,7 @@
 }
 
 /* Dark mode support */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
     #projectTab {
         background-color: #1a1d21;
     }
@@ -1640,4 +1640,4 @@
         background: #ffd700;
         color: #000;
     }
-}
+} */
