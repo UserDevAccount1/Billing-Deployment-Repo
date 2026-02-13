@@ -1089,7 +1089,10 @@
     display: flex;
     border-bottom: 2px solid var(--border-color);
     margin-bottom: 25px;
-    position: relative;
+    position: sticky;
+    top: -30px; /* Aligned with modal-body padding */
+    background: white;
+    z-index: 100;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;

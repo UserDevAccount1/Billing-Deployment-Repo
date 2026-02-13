@@ -10,9 +10,6 @@
 <link rel="stylesheet" href="{% static 'css/ProjectTab.css' %}">
 
 <script src="{% static 'js/Monitor_Billing.js' %}"></script>
-<script src="{% static 'js/DedicatedTab.js' %}"></script>
-<script src="{% static 'js/ProjectTab.js' %}"></script>
-
 
 <div id="billingDashboard">
 
@@ -23,7 +20,7 @@
             <i class="fas fa-play"></i> Play Pipeline
         </button>
         <button class="control-btn secondary" id="quickSetupBtn">
-            <i class="fas fa-cog"></i> Quick Setup
+            <i class="fas fa-cog"></i> Quick View
         </button>
 
     </div>
@@ -46,7 +43,7 @@
                     <div class="table-filters">
                         <div class="filter-with-icon">
                             <i class="fas fa-globe"></i>
-                            <select id="regionFilter" class="table-filter">
+                            <select id="billingRegionFilter" class="table-filter">
                                 <option value="">All Regions</option>
                                 <option value="APAC">APAC</option>
                                 <option value="EMEA">EMEA</option>
@@ -57,7 +54,7 @@
 
                         <div class="filter-with-icon">
                             <i class="fas fa-users"></i>
-                            <select id="customerFilter" class="table-filter">
+                            <select id="billingCustomerFilter" class="table-filter">
                                 <option value="">All Customers</option>
                                 <option value="HCL">HCL</option>
                                 <option value="acme">Acme Corp</option>
@@ -89,7 +86,7 @@
 
                         <div class="filter-with-icon">
                             <i class="fas fa-building"></i>
-                            <select id="accountFilter" class="table-filter">
+                            <select id="billingAccountFilter" class="table-filter">
                                 <option value="">All Accounts</option>
                                 <option value="hcl_abbvie">HCL_ABBVIE</option>
                                 <option value="hcl_abbvie_dss">HCL_ABBVIE DSS</option>
@@ -104,7 +101,7 @@
 
                         <div class="filter-with-icon">
                             <i class="fas fa-search"></i>
-                            <input type="search" id="searchInput" class="table-filter"
+                            <input type="search" id="billingSearchInput" class="table-filter"
                                 placeholder="Search ticket ID...">
                         </div>
                     </div>
@@ -128,28 +125,18 @@
                     </div>
                 </div>
             </div>
-            <table id="managementTable">
-                <thead>
-                    <tr>
-                        <th class="sortable" data-column="cycleId">Cycle ID</th>
-                        <th class="sortable" data-column="customer">Customer</th>
-                        <th class="sortable" data-column="region">Region</th>
-                        <th class="sortable" data-column="status">Status</th>
-                        <th class="sortable" data-column="currentStep">Current Step</th>
-                        <th class="sortable" data-column="processed">Processed</th>
-                        <th class="sortable" data-column="errors">Errors</th>
-                        <th class="sortable" data-column="lastAction">Last Action</th>
-                        <th class="sortable" data-column="uploadRef">Upload Ref</th>
-                        <th class="sortable" data-column="slaTimer">SLA Timer</th>
-                        <th>Manual Intervention</th>
-                        <th>Manual Step</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <!-- Data will be dynamically inserted here -->
-                </tbody>
-            </table>
+            <div class="table-container-outer" style="overflow-x: auto; max-width: 100%;">
+                <table id="managementTable">
+                    <thead>
+                        <tr>
+                            <!-- Headers will be dynamic -->
+                        </tr>
+                    </thead>
+                    <tbody id="billingMonitorTableBody">
+                        <!-- Data will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Pagination Controls -->
             <div class="pagination-controls" id="paginationControls">
@@ -221,619 +208,105 @@
     </div>
 </div>
 
-<!-- Quick Setup Modal -->
+<!-- Quick View Modal (Reusing quickSetupModal ID) -->
 <div class="modal" id="quickSetupModal">
-    <div class="modal-content quick-setup-modal">
+    <div class="modal-content quick-setup-modal" style="width: 95%; max-width: 1600px;">
         <div class="modal-header">
-            <h2><i class="fas fa-cog"></i> Quick Setup Configuration</h2>
+            <h2><i class="fas fa-eye"></i> Quick View Initial Data</h2>
             <button class="close-modal" id="closeQuickSetupModal">&times;</button>
         </div>
         <div class="modal-body">
+            <!-- Global Search for all tabs in modal -->
+            <div class="quick-view-filters" style="margin-bottom: 20px; display: flex; gap: 15px;">
+                <div class="filter-group">
+                    <input type="text" id="quickViewSearchInput" class="form-control"
+                        placeholder="Search Customer, Account, Ticket or Request ID...">
+                </div>
+            </div>
+
             <!-- Tabs Section -->
             <div class="modal-tabs">
                 <div class="tabs-header">
                     <button class="tab-btn active" data-tab="dedicated">Dedicated</button>
                     <button class="tab-btn" data-tab="project">Project</button>
-                    <button class="tab-btn" data-tab="svVisit">SV Full & Half Day</button>
+                    <button class="tab-btn" data-tab="sv_visit">SV Full & Half Day</button>
                     <button class="tab-btn" data-tab="dispatch">Dispatch</button>
                 </div>
 
                 <!-- Dedicated Tab -->
-                <div class="tab-content active" id="dedicatedTab">
-                    <h3>Dedicated Resources Configuration</h3>
-                    <div class="tab-content-inner">
-
-                        <!-- Filters and Controls Section - Fixed Alignment -->
-                        <div class="filters-section">
-                            <div class="filter-row">
-                                <div class="filter-group">
-                                    <label for="customerSelect">Customer</label>
-                                    <select id="customerSelect" class="filter-select">
-                                        <option value="">All Customers</option>
-                                        <option value="HCL">HCL</option>
-                                        <option value="Microsoft">Microsoft</option>
-                                        <option value="Google">Google</option>
-                                        <option value="Amazon">Amazon</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="partnerSelect">Partner</label>
-                                    <select id="partnerSelect" class="filter-select">
-                                        <option value="">All Partners</option>
-                                        <option value="HCL Partner">HCL Partner</option>
-                                        <option value="Tech Solutions Inc">Tech Solutions Inc</option>
-                                        <option value="Global Services">Global Services</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="countrySelect">Country</label>
-                                    <select id="countrySelect" class="filter-select">
-                                        <option value="">All Countries</option>
-                                        <option value="Hungary">Hungary</option>
-                                        <option value="South Africa">South Africa</option>
-                                        <option value="Nigeria">Nigeria</option>
-                                        <option value="United Kingdom">United Kingdom</option>
-                                        <option value="Netherlands">Netherlands</option>
-                                        <option value="Germany">Germany</option>
-                                        <option value="UAE">UAE</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="bandSelect">Band</label>
-                                    <select id="bandSelect" class="filter-select">
-                                        <option value="">All Bands</option>
-                                        <option value="Band 1">Band 1</option>
-                                        <option value="Band 2">Band 2</option>
-                                        <option value="Band 3">Band 3</option>
-                                    </select>
-                                </div>
-
-                                <div class="filter-group">
-                                    <label for="searchInput">Search</label>
-                                    <input type="text" id="searchInput" class="filter-input"
-                                        placeholder="Search anything...">
-                                </div>
-
-                                <button id="clearFiltersBtn" class="btn btn-secondary">
-                                    <i class="fas fa-filter-circle-xmark"></i> Clear
-                                </button>
-
-                                <div class="filter-group">
-                                    <label>View Type:</label>
-                                    <div class="view-toggle">
-                                        <button class="view-btn active" data-view="table">
-                                            <i class="fas fa-table"></i> Table
-                                        </button>
-                                        <button class="view-btn" data-view="form">
-                                            <i class="fas fa-list"></i> Form
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Sorting Controls -->
-                            <div class="sorting-controls">
-                                <div class="sort-group">
-                                    <label for="sortField">Sort By:</label>
-                                    <select id="sortField" class="sort-select">
-                                        <option value="technicianName">Technician Name</option>
-                                        <option value="country">Country</option>
-                                        <option value="totalCost">Total Cost</option>
-                                        <option value="serviceMonth">Service Month</option>
-                                    </select>
-                                </div>
-
-                                <div class="sort-group">
-                                    <label>
-                                        <input type="radio" name="sortOrder" value="asc" checked>
-                                        Ascending
-                                    </label>
-                                    <label>
-                                        <input type="radio" name="sortOrder" value="desc"> Descending
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Table View -->
-                        <div id="tableView" class="data-view active">
-                            <div class="table-container">
-                                <table id="dedicatedTable" class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Actions</th>
-                                            <th>Results</th>
-                                            <th>Site Category</th>
-                                            <th>Customer Name</th>
-                                            <th>Partner Name</th>
-                                            <th>Country</th>
-                                            <th>State</th>
-                                            <th>City</th>
-                                            <th>Site Address</th>
-                                            <th>Zip Code</th>
-                                            <th>PO Number</th>
-                                            <th>Technician Name</th>
-                                            <th>Band</th>
-                                            <th>Variant</th>
-                                            <th>Working Days</th>
-                                            <th>Worked Days</th>
-                                            <th>Monthly Rate</th>
-                                            <th>Daily Rate</th>
-                                            <th>Actual Cost</th>
-                                            <th>Currency</th>
-                                            <th>OT Hours</th>
-                                            <th>OT per Hour Rate</th>
-                                            <th>OT Hours cost</th>
-                                            <th>Weekened OT Hours</th>
-                                            <th>Weekend Rate</th>
-                                            <th>Weekend Cost</th>
-                                            <th>Travel/extra cost</th>
-                                            <th>Tax %</th>
-                                            <th>Tax cost</th>
-                                            <th>Total Cost</th>
-                                            <th>SLA %</th>
-                                            <th>SLA Met</th>
-                                            <th>Reason for SLA not met</th>
-                                            <th>Attendance Approved</th>
-                                            <th>Service Month</th>
-                                            <th>Remarks</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tableBody">
-                                        <!-- Data will be populated by JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Pagination -->
-                            <div class="pagination-container">
-                                <div class="pagination-info" id="paginationInfo">
-                                    Showing 0 of 0 entries
-                                </div>
-                                <div class="pagination-controls">
-                                    <button id="firstPage" class="pagination-btn">
-                                        <i class="fas fa-angle-double-left"></i>
-                                    </button>
-                                    <button id="prevPage" class="pagination-btn">
-                                        <i class="fas fa-angle-left"></i>
-                                    </button>
-                                    <div class="page-numbers" id="pageNumbers"></div>
-                                    <button id="nextPage" class="pagination-btn">
-                                        <i class="fas fa-angle-right"></i>
-                                    </button>
-                                    <button id="lastPage" class="pagination-btn">
-                                        <i class="fas fa-angle-double-right"></i>
-                                    </button>
-                                </div>
-                                <div class="page-size">
-                                    <label>Show:</label>
-                                    <select id="pageSizeSelect">
-                                        <option value="10">10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Replace the form view section with this: -->
-                        <div id="formView" class="data-view">
-                            <!-- Form View Navigation -->
-                            <div class="form-navigation">
-                                <div class="form-nav-info">
-                                    <span id="formCurrentRecord">Record 1 of 11</span>
-                                    <span id="formRecordDetails">HCL - Mark Magyar (Hungary)</span>
-                                </div>
-                                <div class="form-nav-controls">
-                                    <button id="formFirstRecord" class="btn btn-secondary" title="First Record">
-                                        <i class="fas fa-fast-backward"></i>
-                                    </button>
-                                    <button id="formPrevRecord" class="btn btn-secondary" title="Previous Record">
-                                        <i class="fas fa-chevron-left"></i> Previous
-                                    </button>
-                                    <button id="formNextRecord" class="btn btn-secondary" title="Next Record">
-                                        Next <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                    <button id="formLastRecord" class="btn btn-secondary" title="Last Record">
-                                        <i class="fas fa-fast-forward"></i>
-                                    </button>
-                                    <button id="printForm" class="btn btn-info" title="Print">
-                                        <i class="fas fa-print"></i> Print
-                                    </button>
-                                    <button id="exportForm" class="btn btn-success" title="Export as PDF">
-                                        <i class="fas fa-file-pdf"></i> Export
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Single Record Form Display -->
-                            <div class="form-page-container" id="formPageContainer">
-                                <!-- Content will be generated dynamically -->
-                            </div>
-
-                            <!-- Quick Navigation -->
-                            <div class="form-quick-nav">
-                                <span>Jump to record:</span>
-                                <select id="formRecordSelect" class="form-control"
-                                    style="width: 200px; display: inline-block; margin-left: 10px;">
-                                    <!-- Options will be populated dynamically -->
-                                </select>
-                            </div>
-                        </div>
+                <div class="tab-content active" id="qvDedicatedTab">
+                    <div class="table-container-outer" style="overflow-x: auto;">
+                        <table class="data-table" id="dedicatedInitialTable">
+                            <thead>
+                                <!-- Headers populated via JS -->
+                            </thead>
+                            <tbody id="dedicatedInitialBody"></tbody>
+                        </table>
                     </div>
                 </div>
+
                 <!-- Project Tab -->
-                <div class="tab-content" id="projectTab">
-                    <h3>Project Configuration</h3>
-                    <div class="project-tab-content-inner">
-                        <!-- Filters and Controls Section -->
-                        <div class="project-filters-section">
-                            <div class="project-filter-row">
-                                <div class="project-filter-group">
-                                    <label for="projectCustomerSelect">Customer</label>
-                                    <select id="projectCustomerSelect" class="project-filter-select">
-                                        <option value="">All Customers</option>
-                                        <option value="HCL">HCL</option>
-                                        <option value="Microsoft">Microsoft</option>
-                                        <option value="Google">Google</option>
-                                        <option value="Amazon">Amazon</option>
-                                    </select>
-                                </div>
-
-                                <div class="project-filter-group">
-                                    <label for="projectPartnerSelect">Partner</label>
-                                    <select id="projectPartnerSelect" class="project-filter-select">
-                                        <option value="">All Partners</option>
-                                        <option value="HCL Partner">HCL Partner</option>
-                                        <option value="Tech Solutions Inc">Tech Solutions Inc</option>
-                                        <option value="Global Services">Global Services</option>
-                                    </select>
-                                </div>
-
-                                <div class="project-filter-group">
-                                    <label for="projectCountrySelect">Country</label>
-                                    <select id="projectCountrySelect" class="project-filter-select">
-                                        <option value="">All Countries</option>
-                                        <option value="Hungary">Hungary</option>
-                                        <option value="South Africa">South Africa</option>
-                                        <option value="Nigeria">Nigeria</option>
-                                        <option value="United Kingdom">United Kingdom</option>
-                                        <option value="Netherlands">Netherlands</option>
-                                        <option value="Germany">Germany</option>
-                                        <option value="UAE">UAE</option>
-                                    </select>
-                                </div>
-
-                                <div class="project-filter-group">
-                                    <label for="projectBandSelect">Band</label>
-                                    <select id="projectBandSelect" class="project-filter-select">
-                                        <option value="">All Bands</option>
-                                        <option value="Band 1">Band 1</option>
-                                        <option value="Band 2">Band 2</option>
-                                        <option value="Band 3">Band 3</option>
-                                    </select>
-                                </div>
-
-                                <div class="project-filter-group">
-                                    <label for="projectSearchInput">Search</label>
-                                    <input type="text" id="projectSearchInput" class="project-filter-input"
-                                        placeholder="Search anything...">
-                                </div>
-
-                                <button id="projectClearFiltersBtn" class="project-btn project-btn-secondary">
-                                    <i class="fas fa-filter-circle-xmark"></i> Clear
-                                </button>
-
-                                <div class="project-filter-group">
-                                    <label>View Type:</label>
-                                    <div class="project-view-toggle">
-                                        <button class="project-view-btn active" data-view="table">
-                                            <i class="fas fa-table"></i> Table
-                                        </button>
-                                        <button class="project-view-btn" data-view="form">
-                                            <i class="fas fa-list"></i> Form
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Sorting Controls -->
-                            <div class="project-sorting-controls">
-                                <div class="project-sort-group">
-                                    <label for="projectSortField">Sort By:</label>
-                                    <select id="projectSortField" class="project-sort-select">
-                                        <option value="technicianName">Technician Name</option>
-                                        <option value="country">Country</option>
-                                        <option value="totalCost">Total Cost</option>
-                                        <option value="serviceMonth">Service Month</option>
-                                    </select>
-                                </div>
-
-                                <div class="project-sort-group">
-                                    <label>
-                                        <input type="radio" name="projectSortOrder" value="asc" checked>
-                                        Ascending
-                                    </label>
-                                    <label>
-                                        <input type="radio" name="projectSortOrder" value="desc">
-                                        Descending
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Band Details Section -->
-                        <div id="projectBandDetailsContainer" class="project-band-details-container">
-                            <!-- Band details will be loaded here -->
-                        </div>
-
-                        <!-- Table View -->
-                        <div id="projectTableView" class="project-data-view active">
-                            <div class="project-table-container">
-                                <table id="projectDedicatedTable" class="project-data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Actions</th>
-                                            <th>Files</th>
-                                            <th>Site Category</th>
-                                            <th>Customer Name</th>
-                                            <th>Partner Name</th>
-                                            <th>Country</th>
-                                            <th>State</th>
-                                            <th>City</th>
-                                            <th>Site Address</th>
-                                            <th>Zip Code</th>
-                                            <th>PO Number</th>
-                                            <th>Technician Name</th>
-                                            <th>Band</th>
-                                            <th>Variant</th>
-                                            <th>Working Days</th>
-                                            <th>Worked Days</th>
-                                            <th>Monthly Rate</th>
-                                            <th>Daily Rate</th>
-                                            <th>Actual Cost</th>
-                                            <th>Currency</th>
-                                            <th>OT Hours</th>
-                                            <th>OT per Hour Rate</th>
-                                            <th>OT Hours cost</th>
-                                            <th>Weekened OT Hours</th>
-                                            <th>Weekend Rate</th>
-                                            <th>Weekend Cost</th>
-                                            <th>Travel/extra cost</th>
-                                            <th>Tax %</th>
-                                            <th>Tax cost</th>
-                                            <th>Total Cost</th>
-                                            <th>SLA %</th>
-                                            <th>SLA Met</th>
-                                            <th>Reason for SLA not met</th>
-                                            <th>Attendance Approved</th>
-                                            <th>Service Month</th>
-                                            <th>Remarks</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="projectTableBody">
-                                        <!-- Data will be populated by JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Pagination -->
-                            <div class="project-pagination-container">
-                                <div class="project-pagination-info" id="projectPaginationInfo">
-                                    Showing 0 of 0 entries
-                                </div>
-                                <div class="project-pagination-controls">
-                                    <button id="projectFirstPage" class="project-pagination-btn">
-                                        <i class="fas fa-angle-double-left"></i>
-                                    </button>
-                                    <button id="projectPrevPage" class="project-pagination-btn">
-                                        <i class="fas fa-angle-left"></i>
-                                    </button>
-                                    <div class="project-page-numbers" id="projectPageNumbers"></div>
-                                    <button id="projectNextPage" class="project-pagination-btn">
-                                        <i class="fas fa-angle-right"></i>
-                                    </button>
-                                    <button id="projectLastPage" class="project-pagination-btn">
-                                        <i class="fas fa-angle-double-right"></i>
-                                    </button>
-                                </div>
-                                <div class="project-page-size">
-                                    <label>Show:</label>
-                                    <select id="projectPageSizeSelect">
-                                        <option value="10">10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Form View -->
-                        <div id="projectFormView" class="project-data-view">
-                            <!-- Form View Navigation -->
-                            <div class="project-form-navigation">
-                                <div class="project-form-nav-info">
-                                    <span id="projectFormCurrentRecord">Record 1 of 11</span>
-                                    <span id="projectFormRecordDetails">HCL - Mark Magyar
-                                        (Hungary)</span>
-                                </div>
-                                <div class="project-form-nav-controls">
-                                    <button id="projectFormFirstRecord" class="project-btn project-btn-secondary"
-                                        title="First Record">
-                                        <i class="fas fa-fast-backward"></i>
-                                    </button>
-                                    <button id="projectFormPrevRecord" class="project-btn project-btn-secondary"
-                                        title="Previous Record">
-                                        <i class="fas fa-chevron-left"></i> Previous
-                                    </button>
-                                    <button id="projectFormNextRecord" class="project-btn project-btn-secondary"
-                                        title="Next Record">
-                                        Next <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                    <button id="projectFormLastRecord" class="project-btn project-btn-secondary"
-                                        title="Last Record">
-                                        <i class="fas fa-fast-forward"></i>
-                                    </button>
-                                    <button id="projectPrintForm" class="project-btn project-btn-info" title="Print">
-                                        <i class="fas fa-print"></i> Print
-                                    </button>
-                                    <button id="projectExportForm" class="project-btn project-btn-success"
-                                        title="Export as PDF">
-                                        <i class="fas fa-file-pdf"></i> Export
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Single Record Form Display -->
-                            <div class="project-form-page-container" id="projectFormPageContainer">
-                                <!-- Content will be generated dynamically -->
-                            </div>
-
-                            <!-- Quick Navigation -->
-                            <div class="project-form-quick-nav">
-                                <span>Jump to record:</span>
-                                <select id="projectFormRecordSelect" class="project-form-control">
-                                    <!-- Options will be populated dynamically -->
-                                </select>
-                            </div>
-                        </div>
+                <div class="tab-content" id="qvProjectTab">
+                    <div class="table-container-outer" style="overflow-x: auto;">
+                        <table class="data-table" id="projectInitialTable">
+                            <thead>
+                                <!-- Headers populated via JS -->
+                            </thead>
+                            <tbody id="projectInitialBody"></tbody>
+                        </table>
                     </div>
                 </div>
 
                 <!-- SV Full & Half Day Visit Tab -->
-                <div class="tab-content" id="svVisitTab">
-                    <h3>SV Full & Half Day Visit Configuration</h3>
-                    <div class="tab-content-inner">
-
+                <div class="tab-content" id="qvSv_visitTab">
+                    <div class="table-container-outer" style="overflow-x: auto;">
+                        <table class="data-table" id="sv_visitInitialTable">
+                            <thead>
+                                <!-- Headers populated via JS -->
+                            </thead>
+                            <tbody id="sv_visitInitialBody"></tbody>
+                        </table>
                     </div>
                 </div>
 
                 <!-- Dispatch Tab -->
-                <div class="tab-content" id="dispatchTab">
-                    <h3>Dispatch Configuration</h3>
-                    <div class="tab-content-inner">
+                <div class="tab-content" id="qvDispatchTab">
+                    <div class="table-container-outer" style="overflow-x: auto;">
+                        <table class="data-table" id="dispatchInitialTable">
+                            <thead>
+                                <!-- Headers populated via JS -->
+                            </thead>
+                            <tbody id="dispatchInitialBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="control-btn" id="cancelQuickSetup">
-                <i class="fas fa-times"></i> Cancel
-            </button>
-            <button class="control-btn primary" id="saveQuickSetup">
-                <i class="fas fa-save"></i> Save Configuration
-            </button>
-            <button class="control-btn success" id="applyQuickSetup">
-                <i class="fas fa-check"></i> Apply & Close
-            </button>
+            <button class="control-btn" id="closeQuickViewBtn">Close</button>
         </div>
     </div>
 </div>
 
-<!-- AI Fix Modal -->
-<div class="modal" id="aiFixModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fas fa-robot"></i> AI-Assisted Fix</h2>
-            <button class="close-modal" id="closeAIFixModal">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="ai-suggestion">
-                <div class="confidence-score">Confidence: 92%</div>
-                <h3>AI Suggested Correction</h3>
-                <p>The AI has identified a rate mismatch for <strong>Acme Corp - Consulting</strong> in
-                    the <strong>EMEA</strong> region.</p>
-
-                <div class="suggestion-diff">
-                    <p><strong>Current Rate:</strong> <span class="diff-removed">120 USD/hour</span></p>
-                    <p><strong>Suggested Rate:</strong> <span class="diff-added">135 USD/hour</span></p>
-                    <p><strong>Reason:</strong> Rate card update from 2024-Q3 applies 12.5% increase for
-                        consulting services in EMEA.</p>
-                </div>
-
-                <h4>Impact Analysis:</h4>
-                <ul>
-                    <li>Total billing impact: +$2,400 for this cycle</li>
-                    <li>Matches contract clause 4.2b</li>
-                    <li>Validated against 3 similar customer cases</li>
-                </ul>
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">Affected Records:</span>
-                <span class="info-value">3 records (Ticket IDs: TKT-001, TKT-003, TKT-007)</span>
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">AI Model:</span>
-                <span class="info-value">GPT-4 with rate card fine-tuning</span>
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">Processing Time:</span>
-                <span class="info-value">2.4 seconds</span>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="control-btn" id="rejectAIFix">
-                <i class="fas fa-times"></i> Reject Suggestion
-            </button>
-            <button class="control-btn success" id="applyAIFix">
-                <i class="fas fa-check"></i> Apply & Continue
-            </button>
-        </div>
-    </div>
-</div>
-
+<!-- Remaining Modals -->
 <!-- Advanced Search Modal -->
 <div class="modal" id="advancedSearchModal">
     <div class="modal-content">
         <div class="modal-header">
             <h2><i class="fas fa-search-plus"></i> Advanced Search</h2>
-            <button class="close-modal" id="closeAdvancedSearchModal">&times;</button>
+            <button class="close-modal" id="closeAdvancedSearch">&times;</button>
         </div>
         <div class="modal-body">
-            <div id="searchConditions">
-                <!-- Search conditions will be dynamically inserted here -->
+            <div id="advancedSearchConditions">
+                <!-- Search conditions will be added here -->
             </div>
-            <button class="control-btn info" id="addCondition">
+            <button class="control-btn info" id="addSearchCondition" style="margin-top: 15px;">
                 <i class="fas fa-plus"></i> Add Condition
             </button>
-            <div style="margin-top: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Filter
-                    Logic:</label>
-                <select id="filterLogic"
-                    style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
-                    <option value="AND">ALL conditions must be true (AND)</option>
-                    <option value="OR">ANY condition can be true (OR)</option>
-                </select>
-            </div>
         </div>
         <div class="modal-footer">
-            <button class="control-btn" id="clearAllConditions">
-                <i class="fas fa-broom"></i> Clear All
-            </button>
-            <button class="control-btn success" id="applyAdvancedSearch">
-                <i class="fas fa-check"></i> Apply Search
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Exception Editor Modal -->
-<div class="modal" id="exceptionModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2><i class="fas fa-exclamation-triangle"></i> Exception Editor</h2>
-            <button class="close-modal" id="closeExceptionModal">&times;</button>
-        </div>
-        <div class="modal-body">
-            <!-- Exception editor content will be dynamically inserted -->
+            <button class="control-btn" id="clearAllConditions">Clear All</button>
+            <button class="control-btn success" id="applyAdvancedSearch">Search</button>
         </div>
     </div>
 </div>
