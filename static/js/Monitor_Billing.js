@@ -1,5 +1,8 @@
 // Monitor_Billing.js - Complete Dashboard Logic
 
+let qvCurrentMode = 'table';
+let qvCurrentRecordIndex = 0;
+
 const steps = [
     { id: 1, name: 'Ticket Match', icon: 'fas fa-ticket-alt', status: 'completed' },
     { id: 2, name: 'Rate Match', icon: 'fas fa-exchange-alt', status: 'in-progress' },
@@ -490,16 +493,16 @@ function renderQuickViewTable(tab) {
     const body = document.getElementById(config.bodyId);
     if (!table || !body) return;
 
-    // Ensure Headers are built
+    // Ensure Headers are built with an Actions column for the Eye icon
     const thead = table.querySelector('thead');
     if (thead.rows.length === 0 || thead.innerHTML.trim() === '') {
-        thead.innerHTML = '<tr>' + config.cols.map(c => `<th>${c.label}</th>`).join('') + '</tr>';
+        thead.innerHTML = '<tr>' + config.cols.map(c => `<th>${c.label}</th>`).join('') + '<th>Actions</th></tr>';
     }
 
-    // ALL DATA goes to EVERY TAB (No heuristic filtering)
+    // ALL DATA goes to EVERY TAB
     let displayData = initialTickets;
 
-    // Apply Global Quick View Search if present
+    // Apply Search Filter if present
     const search = document.getElementById('quickViewSearchInput')?.value.toLowerCase();
     if (search) {
         displayData = displayData.filter(t => {
@@ -510,25 +513,291 @@ function renderQuickViewTable(tab) {
     }
 
     if (displayData.length === 0) {
-        body.innerHTML = `<tr><td colspan="${config.cols.length}" style="text-align:center; padding: 20px; color: #666;">No data found</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${config.cols.length + 1}" style="text-align:center; padding: 20px; color: #666;">No data found</td></tr>`;
+
+        // If form view is active, update it to show empty state
+        if (qvCurrentMode === 'form') renderQuickViewForm();
         return;
     }
 
-    // Map data to columns, fill missing with "-"
-    body.innerHTML = displayData.map(t => {
+    // Map data to columns, fill missing with "-", and add Action Button
+    body.innerHTML = displayData.map((t, index) => {
         const dt = t.data_table || {};
-        return '<tr>' + config.cols.map(c => {
-            // Check data_table first, then top level object
+        const cells = config.cols.map(c => {
             let val = (dt[c.id] !== undefined && dt[c.id] !== null) ? dt[c.id] : (t[c.id] !== undefined && t[c.id] !== null ? t[c.id] : '-');
-
-            // Clean up empty or garbage strings to just "-"
             const sVal = String(val).trim().toLowerCase();
             if (val === "" || sVal === "na" || sVal === "n/a" || sVal === "null" || sVal === "nan" || sVal === "undefined") {
                 val = '-';
             }
             return `<td>${val}</td>`;
-        }).join('') + '</tr>';
+        }).join('');
+
+        const actionCell = `<td><button class="control-btn secondary" style="padding: 4px 8px;" onclick="openQuickViewForm(${index})" title="View in Form"><i class="fas fa-eye"></i></button></td>`;
+
+        return `<tr>${cells}${actionCell}</tr>`;
     }).join('');
+
+    // If form view is currently active, ensure it syncs with any search changes
+    if (qvCurrentMode === 'form') {
+        renderQuickViewForm();
+    }
+}
+
+function toggleQuickViewMode(forceMode = null) {
+    qvCurrentMode = forceMode || (qvCurrentMode === 'table' ? 'form' : 'table');
+
+    const tableContainer = document.getElementById('quickViewTableContainer');
+    const formContainer = document.getElementById('quickViewFormContainer');
+    const toggleBtn = document.getElementById('toggleQuickViewModeBtn');
+
+    if (qvCurrentMode === 'form') {
+        tableContainer.style.display = 'none';
+        formContainer.style.display = 'block';
+        toggleBtn.innerHTML = '<i class="fas fa-table"></i> Table View';
+        renderQuickViewForm();
+    } else {
+        tableContainer.style.display = 'block';
+        formContainer.style.display = 'none';
+        toggleBtn.innerHTML = '<i class="fas fa-list-alt"></i> Form View';
+    }
+}
+
+// ---- NEW FUNCTION: Open Form from Row Eye Button ----
+window.openQuickViewForm = function (index) {
+    qvCurrentRecordIndex = index;
+    toggleQuickViewMode('form');
+};
+
+// ---- REPLACEMENT FUNCTION: Render the Form View Grid & Pagination ----
+function renderQuickViewForm() {
+    const container = document.getElementById('qvFormContent');
+    const counter = document.getElementById('qvFormRecordCounter');
+    const prevBtn = document.getElementById('qvFormPrevBtn');
+    const nextBtn = document.getElementById('qvFormNextBtn');
+    const tabNameDisplay = document.getElementById('qvFormActiveTabName');
+
+    const tabNames = { 'dedicated': 'Dedicated', 'project': 'Project', 'sv_visit': 'SV Full & Half Day', 'dispatch': 'Dispatch' };
+    tabNameDisplay.textContent = tabNames[quickViewTab] || 'Details';
+
+    let displayData = initialTickets;
+    const search = document.getElementById('quickViewSearchInput')?.value.toLowerCase();
+    if (search) {
+        displayData = displayData.filter(t => {
+            const dt = t.data_table || {};
+            const text = `${t.customer} ${t.account} ${t.ticket_number} ${t.request_id} ${dt.customer} ${dt.account} ${dt.ticket_number} ${dt.request_id} ${dt.subject}`.toLowerCase();
+            return text.includes(search);
+        });
+    }
+
+    if (displayData.length === 0) {
+        container.innerHTML = '<div style="width: 100%; text-align: center; padding: 20px;">No records match your search.</div>';
+        counter.textContent = 'Record 0 of 0';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+    }
+
+    if (qvCurrentRecordIndex >= displayData.length) qvCurrentRecordIndex = displayData.length - 1;
+    if (qvCurrentRecordIndex < 0) qvCurrentRecordIndex = 0;
+
+    const ticket = displayData[qvCurrentRecordIndex];
+    const dt = ticket.data_table || {};
+    const config = quickViewConfig[quickViewTab];
+
+    counter.textContent = `Record ${qvCurrentRecordIndex + 1} of ${displayData.length}`;
+
+    const groups = {
+        details: { title: 'General Details', icon: 'fa-info-circle', cols: [] },
+        location: { title: 'Location Details', icon: 'fa-map-marked-alt', cols: [] },
+        resource: { title: 'Resource Details', icon: 'fa-users', cols: [] },
+        dates_sla: { title: 'Dates & SLA', icon: 'fa-calendar-check', cols: [] },
+        cost: { title: 'Cost Summary', icon: 'fa-calculator', cols: [] }
+    };
+
+    const locationKeys = ['address', 'city', 'country', 'region', 'postal_code', 'site_name'];
+    const resourceKeys = ['technician_name', 'technician_id', 'band', 'variant', 'working_days', 'worked_days', 'attendance_approved', 'team_size', 'project_manager'];
+    const costKeys = ['total_cost', 'total_cost_inc_tax', 'actual_cost', 'budget', 'monthly_rate', 'daily_rate', 'rate', 'currency', 'ot_cost', 'ot_rate', 'tax_cost', 'tax_percent', 'travel_extra_cost', 'weekend_cost', 'weekend_rate', 'first_hour_cost', 'first_hour_rate', 'after_hours_cost', 'after_hours_rate', 'out_of_office_cost', 'out_of_office_rate', 'half_day_rate', 'full_day_rate', 'revenue', 'profit', 'margin'];
+    const dateSlaKeys = ['start_date', 'end_date', 'service_month', 'visit_date', 'dispatch_date', 'scheduled_date', 'arrival_time', 'departure_time', 'onsite_time', 'travel_time', 'sla_percentage', 'sla_met', 'sla_reason', 'technician_in_date'];
+
+    config.cols.forEach(c => {
+        if (locationKeys.includes(c.id)) groups.location.cols.push(c);
+        else if (resourceKeys.includes(c.id)) groups.resource.cols.push(c);
+        else if (costKeys.includes(c.id)) groups.cost.cols.push(c);
+        else if (dateSlaKeys.includes(c.id)) groups.dates_sla.cols.push(c);
+        else groups.details.cols.push(c);
+    });
+
+    container.style.display = 'block';
+    let html = '';
+
+    Object.values(groups).forEach(group => {
+        if (group.cols.length === 0) return;
+
+        html += `
+            <div style="width: 100%; margin-bottom: 25px;">
+                <h4 style="margin: 0 0 15px 0; font-size: 16px; color: #495057; border-bottom: 2px solid #e9ecef; padding-bottom: 8px;">
+                    <i class="fas ${group.icon}" style="color: #6c757d; margin-right: 8px;"></i>${group.title}
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+        `;
+
+        group.cols.forEach(c => {
+            let val = (dt[c.id] !== undefined && dt[c.id] !== null) ? dt[c.id] : (ticket[c.id] !== undefined && ticket[c.id] !== null ? ticket[c.id] : '-');
+            const sVal = String(val).trim().toLowerCase();
+            if (val === "" || sVal === "na" || sVal === "n/a" || sVal === "null" || sVal === "nan" || sVal === "undefined") {
+                val = '-';
+            }
+
+            if (c.id === 'sla_met' && val === 'Yes') {
+                val = `<span class="status-badge status-success" style="padding: 2px 8px; border-radius: 4px; background: #e6f4ea; color: #28a745;">${val}</span>`;
+            } else if (c.id === 'sla_met' && val === 'No') {
+                val = `<span class="status-badge status-danger" style="padding: 2px 8px; border-radius: 4px; background: #fce4e4; color: #dc3545;">${val}</span>`;
+            }
+
+            html += `
+                <div style="background: white; padding: 12px 15px; border-radius: 6px; border: 1px solid #ced4da; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; margin-bottom: 5px; font-weight: 600;">${c.label}</label>
+                    <div style="font-size: 14px; color: #212529; word-break: break-word;">${val}</div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+    });
+
+    // --- LOOKUP BAND DATA FROM FINAL TICKETS ---
+    const matchingFinalTicket = finalTickets.find(ft => ft.initial_ticket_uuid === ticket.uuid);
+
+    if (matchingFinalTicket && matchingFinalTicket.band && matchingFinalTicket.band.band_data) {
+        const tabBandData = matchingFinalTicket.band.band_data[quickViewTab];
+        if (tabBandData) {
+            html += generateBandHtml(tabBandData, quickViewTab);
+        }
+    }
+
+    // --- APPEND ATTACHMENTS & APPROVALS SECTIONS ---
+    html += `
+        <div style="width: 100%; margin-top: 30px; margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; margin-bottom: 15px;">
+                <h4 style="margin: 0; font-size: 16px; color: #495057; display: flex; align-items: center;">
+                    <i class="fas fa-file-invoice" style="color: #6f42c1; margin-right: 8px;"></i> Ticket References
+                    <span style="background: #6f42c1; color: white; border-radius: 50%; padding: 2px 8px; font-size: 11px; margin-left: 10px; font-weight: bold;">0</span>
+                </h4>
+                <button class="control-btn info" style="padding: 6px 14px; font-size: 13px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-plus"></i> Add Ticket
+                </button>
+            </div>
+            <div style="background: #f8f9fa; border: 1px dashed #ced4da; border-radius: 6px; padding: 40px; text-align: center; color: #6c757d;">
+                No ticket references available.
+            </div>
+        </div>
+
+        <div style="width: 100%; margin-top: 30px; margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; margin-bottom: 15px;">
+                <h4 style="margin: 0; font-size: 16px; color: #495057; display: flex; align-items: center;">
+                    <i class="fas fa-file-signature" style="color: #6f42c1; margin-right: 8px;"></i> Files for Approval
+                    <span style="background: #6f42c1; color: white; border-radius: 50%; padding: 2px 8px; font-size: 11px; margin-left: 10px; font-weight: bold;">0</span>
+                </h4>
+                <button class="control-btn success" style="padding: 6px 14px; font-size: 13px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-upload"></i> Upload for Approval
+                </button>
+            </div>
+            <div style="background: #f8f9fa; border: 1px dashed #ced4da; border-radius: 6px; padding: 40px; text-align: center; color: #6c757d;">
+                No files pending approval.
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    prevBtn.disabled = qvCurrentRecordIndex === 0;
+    nextBtn.disabled = qvCurrentRecordIndex === displayData.length - 1;
+}
+
+// ---- NEW HELPER FUNCTIONS FOR BAND DATA ----
+function generateBandHtml(tabBandData, tabName) {
+    let html = `
+    <div style="width: 100%; margin-top: 30px; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; margin-bottom: 15px;">
+            <h4 style="margin: 0; font-size: 16px; color: #495057; display: flex; align-items: center;">
+                <i class="fas fa-chart-bar" style="color: #007bff; margin-right: 8px;"></i> Band Details
+            </h4>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+    `;
+
+    const firstKey = Object.keys(tabBandData)[0];
+    if (!firstKey) return '';
+
+    // Check if nested (like Project) or direct array (like Dedicated)
+    if (Array.isArray(tabBandData[firstKey])) {
+        html += buildBandTable(tabName.toUpperCase(), tabBandData, tabName);
+    } else {
+        Object.entries(tabBandData).forEach(([subCategory, bandObj]) => {
+            html += buildBandTable(subCategory, bandObj, tabName);
+        });
+    }
+
+    html += `</div></div>`;
+    return html;
+}
+
+function buildBandTable(title, bandObj, tabName) {
+    let maxCols = 0;
+    Object.values(bandObj).forEach(arr => {
+        if (Array.isArray(arr) && arr.length > maxCols) maxCols = arr.length;
+    });
+
+    // Dynamic headers based on tab structure
+    let headers = ['Band'];
+    if (tabName === 'project') {
+        headers.push('Price', 'Duration', 'Min Term', 'Max Term');
+    } else if (tabName === 'sv_visit') {
+        headers.push('Price', 'Duration', 'Qty/Units');
+    } else if (tabName === 'dispatch') {
+        headers.push('Price', 'SLA/Duration', 'Priority/Type');
+    } else {
+        for (let i = 0; i < maxCols; i++) headers.push(`Value ${i + 1}`);
+    }
+
+    let colsHtml = headers.slice(0, maxCols + 1).map(h => `<th style="padding: 10px; border-bottom: 2px solid #dee2e6; color: #495057; font-size: 12px; text-transform: uppercase;">${h}</th>`).join('');
+
+    let rowsHtml = '';
+    Object.entries(bandObj).forEach(([bandName, values]) => {
+        // Color coding for bands
+        let bg = '#6c757d';
+        if (bandName.includes('0')) bg = '#6c757d';
+        if (bandName.includes('1')) bg = '#28a745';
+        if (bandName.includes('2')) bg = '#007bff';
+        if (bandName.includes('3')) bg = '#ffc107';
+        if (bandName.includes('4')) bg = '#dc3545';
+
+        let textColor = bg === '#ffc107' ? '#000' : '#fff';
+        let badgeStyle = `padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; text-align: center; min-width: 60px; background-color: ${bg}; color: ${textColor};`;
+
+        let row = `<tr><td style="padding: 10px; border-bottom: 1px solid #e9ecef;"><span style="${badgeStyle}">${bandName}</span></td>`;
+        for (let i = 0; i < maxCols; i++) {
+            let val = (values && values[i]) ? values[i].trim() : '-';
+            if (val === '') val = '-';
+            row += `<td style="padding: 10px; border-bottom: 1px solid #e9ecef; font-size: 13px; color: #495057;">${val}</td>`;
+        }
+        row += `</tr>`;
+        rowsHtml += row;
+    });
+
+    return `
+        <div style="background: white; border: 1px solid #ced4da; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+            <div style="background: #f8f9fa; padding: 12px 15px; border-bottom: 1px solid #ced4da;">
+                <h5 style="margin: 0; font-size: 14px; color: #343a40;"><i class="fas fa-calendar-alt" style="color: #6c757d; margin-right: 5px;"></i> ${title}</h5>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead style="background: #fff;"><tr>${colsHtml}</tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
 }
 
 function initQuickView() {
@@ -546,6 +815,30 @@ function initQuickView() {
 
     if (closeBtn) closeBtn.onclick = () => modal.classList.remove('active');
     if (closeBtn2) closeBtn2.onclick = () => modal.classList.remove('active');
+
+    // Bind Toggle Button
+    document.getElementById('toggleQuickViewModeBtn')?.addEventListener('click', () => toggleQuickViewMode());
+
+    // Bind Pagination Buttons
+    document.getElementById('qvFormPrevBtn')?.addEventListener('click', () => {
+        if (qvCurrentRecordIndex > 0) {
+            qvCurrentRecordIndex--;
+            renderQuickViewForm();
+        }
+    });
+
+    document.getElementById('qvFormNextBtn')?.addEventListener('click', () => {
+        // Find current length based on search
+        let displayData = initialTickets;
+        const search = document.getElementById('quickViewSearchInput')?.value.toLowerCase();
+        if (search) {
+            displayData = displayData.filter(t => JSON.stringify(t).toLowerCase().includes(search));
+        }
+        if (qvCurrentRecordIndex < displayData.length - 1) {
+            qvCurrentRecordIndex++;
+            renderQuickViewForm();
+        }
+    });
 
     // Tab switching for Quick View modal
     document.querySelectorAll('#quickSetupModal .tab-btn').forEach(btn => {
@@ -570,13 +863,17 @@ function initQuickView() {
             }
 
             quickViewTab = tab;
+            qvCurrentRecordIndex = 0; // Reset index when changing tabs
             renderQuickViewTable(tab);
         };
     });
 
     const qvSearchInput = document.getElementById('quickViewSearchInput');
     if (qvSearchInput) {
-        qvSearchInput.addEventListener('input', () => renderQuickViewTabs());
+        qvSearchInput.addEventListener('input', () => {
+            qvCurrentRecordIndex = 0; // Reset index when search changes
+            renderQuickViewTabs();
+        });
     }
 }
 

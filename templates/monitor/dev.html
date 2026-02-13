@@ -213,74 +213,86 @@
     <div class="modal-content quick-setup-modal" style="width: 95%; max-width: 1600px;">
         <div class="modal-header">
             <h2><i class="fas fa-eye"></i> Quick View Initial Data</h2>
-            <button class="close-modal" id="closeQuickSetupModal">&times;</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="control-btn info" id="toggleQuickViewModeBtn"><i class="fas fa-list-alt"></i> Form
+                    View</button>
+                <button class="close-modal" id="closeQuickSetupModal">&times;</button>
+            </div>
         </div>
         <div class="modal-body">
-            <!-- Global Search for all tabs in modal -->
             <div class="quick-view-filters" style="margin-bottom: 20px; display: flex; gap: 15px;">
-                <div class="filter-group">
+                <div class="filter-group" style="flex-grow: 1;">
                     <input type="text" id="quickViewSearchInput" class="form-control"
                         placeholder="Search Customer, Account, Ticket or Request ID...">
                 </div>
             </div>
 
-            <!-- Tabs Section -->
-            <div class="modal-tabs">
-                <div class="tabs-header">
-                    <button class="tab-btn active" data-tab="dedicated">Dedicated</button>
-                    <button class="tab-btn" data-tab="project">Project</button>
-                    <button class="tab-btn" data-tab="sv_visit">SV Full & Half Day</button>
-                    <button class="tab-btn" data-tab="dispatch">Dispatch</button>
-                </div>
-
-                <!-- Dedicated Tab -->
-                <div class="tab-content active" id="qvDedicatedTab">
-                    <div class="table-container-outer" style="overflow-x: auto;">
-                        <table class="data-table" id="dedicatedInitialTable">
-                            <thead>
-                                <!-- Headers populated via JS -->
-                            </thead>
-                            <tbody id="dedicatedInitialBody"></tbody>
-                        </table>
+            <div id="quickViewTableContainer">
+                <div class="modal-tabs">
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="dedicated">Dedicated</button>
+                        <button class="tab-btn" data-tab="project">Project</button>
+                        <button class="tab-btn" data-tab="sv_visit">SV Full & Half Day</button>
+                        <button class="tab-btn" data-tab="dispatch">Dispatch</button>
                     </div>
-                </div>
 
-                <!-- Project Tab -->
-                <div class="tab-content" id="qvProjectTab">
-                    <div class="table-container-outer" style="overflow-x: auto;">
-                        <table class="data-table" id="projectInitialTable">
-                            <thead>
-                                <!-- Headers populated via JS -->
-                            </thead>
-                            <tbody id="projectInitialBody"></tbody>
-                        </table>
+                    <div class="tab-content active" id="qvDedicatedTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="dedicatedInitialTable">
+                                <thead></thead>
+                                <tbody id="dedicatedInitialBody"></tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
-                <!-- SV Full & Half Day Visit Tab -->
-                <div class="tab-content" id="qvSv_visitTab">
-                    <div class="table-container-outer" style="overflow-x: auto;">
-                        <table class="data-table" id="sv_visitInitialTable">
-                            <thead>
-                                <!-- Headers populated via JS -->
-                            </thead>
-                            <tbody id="sv_visitInitialBody"></tbody>
-                        </table>
+                    <div class="tab-content" id="qvProjectTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="projectInitialTable">
+                                <thead></thead>
+                                <tbody id="projectInitialBody"></tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Dispatch Tab -->
-                <div class="tab-content" id="qvDispatchTab">
-                    <div class="table-container-outer" style="overflow-x: auto;">
-                        <table class="data-table" id="dispatchInitialTable">
-                            <thead>
-                                <!-- Headers populated via JS -->
-                            </thead>
-                            <tbody id="dispatchInitialBody"></tbody>
-                        </table>
+                    <div class="tab-content" id="qvSv_visitTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="sv_visitInitialTable">
+                                <thead></thead>
+                                <tbody id="sv_visitInitialBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="qvDispatchTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="dispatchInitialTable">
+                                <thead></thead>
+                                <tbody id="dispatchInitialBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div id="quickViewFormContainer"
+                style="display: none; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e0e0e0; border-radius: 8px 8px 0 0; background: white;">
+                    <h3 style="margin: 0; font-size: 16px; color: #333;"><i class="fas fa-file-alt"></i> Record Details
+                        (<span id="qvFormActiveTabName">Dedicated</span>)</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="control-btn secondary" id="qvFormPrevBtn"><i class="fas fa-chevron-left"></i>
+                            Prev</button>
+                        <span id="qvFormRecordCounter" style="font-weight: 600; color: #555;">Record 0 of 0</span>
+                        <button class="control-btn secondary" id="qvFormNextBtn">Next <i
+                                class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div id="qvFormContent"
+                    style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                </div>
+            </div>
+
         </div>
         <div class="modal-footer">
             <button class="control-btn" id="closeQuickViewBtn">Close</button>
