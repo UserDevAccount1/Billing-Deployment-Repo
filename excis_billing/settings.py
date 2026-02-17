@@ -32,13 +32,10 @@ DEBUG = config("DEBUG_STATUS", default=False, cast=bool)
 OPENAI_API_KEY = config("OPENAI_API_KEY")
 
 
-ALLOWED_HOSTS = ['billing.pickfreshdevelopment.site', 'www.billing.pickfreshdevelopment.site', 'localhost',
-    "37.59.106.222",
-    "vps-f5f38f61.vps.ovh.net",
-    "127.0.0.1",
-    "82.163.176.114"
-]
+ALLOWED_HOSTS = ['billing-agent.dev-environment.site', 'www.billing-agent.dev-environment.site', 'sv70.billing-agent.dev-environment.site', 'localhost', '127.0.0.1']
 
+
+# Application definition
 
 # Application definition
 
@@ -63,7 +60,8 @@ INSTALLED_APPS = [
     'apps.billing',
     'apps.rate_cards',
     'apps.exchange_rates',
-    'apps.monitor'
+    'apps.monitor',
+    'apps.billing_api',
 ]
 
 MIDDLEWARE = [
@@ -103,25 +101,14 @@ WSGI_APPLICATION = 'excis_billing.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": config("MYSQL_DATABASE", default="test_pickfres_billing"),
-        "USER": config("MYSQL_USER", default="root"),
-        # "USER": config("MYSQL_USER", default="test_fres"),
-        "PASSWORD": config("MYSQL_PASSWORD", default="root"),
-        # "PASSWORD": config("MYSQL_PASSWORD", default="pA?ssWord1234."),
-        "HOST": config("MYSQL_HOST", default="localhost"),
-        "PORT": config("MYSQL_PORT", default="3306"),
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        "ENGINE": config("DB_ENGINE", default="django.db.backends.postgresql"),
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": config("DB_HOST", default="127.0.0.1"),
+        "PORT": config("DB_PORT", default="5432"),
     }
-# } if not DEBUG else {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
