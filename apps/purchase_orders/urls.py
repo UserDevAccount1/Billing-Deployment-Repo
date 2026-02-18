@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/<int:pk>/', views.get_purchase_order_api, name='get_po_api'),
     path('api/<int:pk>/update/', views.update_purchase_order_api, name='update_po_api'),
     path('api/po/<int:pk>/delete/', views.delete_purchase_order_api, name='delete_po_api'),
+    
     # Export
     path('export/', views.export_purchase_orders, name='export'),
 
@@ -31,4 +32,9 @@ urlpatterns = [
     path('api/notifications/', views.get_notifications_api, name='get_notifications'),
     path('api/notifications/<int:notification_id>/read/', views.mark_notification_read_api, name='mark_notification_read'),
     path('api/notifications/mark-all-read/', views.mark_all_notifications_read_api, name='mark_all_notifications_read'),
+
+    # ============================================================
+    # n8n AUTOMATION BRIDGE
+    # ============================================================
+    path('api/n8n-bridge/', views.n8n_po_bridge, name='n8n_po_bridge'),
 ]

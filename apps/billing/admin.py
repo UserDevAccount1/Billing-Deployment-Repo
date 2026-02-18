@@ -1,5 +1,55 @@
 from django.contrib import admin
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.urls import reverse, path
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Q
+from django.utils import timezone
+from decimal import Decimal  # 🔥 IMPORT ADDED
 from .models import BillingRun, BillingRunLineItem, BillingRunAttachment
+from apps.purchase_orders.models import PurchaseOrder
+
+# 🔥 CUSTOM REVIEW VIEWS FOR PENDING POS
+@staff_member_required
+def pending_review_view(request):
+    """Custom admin view for POs pending review"""
+    pending_pos = PurchaseOrder.objects.filter(
+        Q(review_status='pending_review') | Q(requires_review=True)
+    ).order_by('-created_at')
+    
+    context = {
+        'pending_pos': pending_pos,
+        'title': 'Purchase Orders Pending Review'
+    }
+    return render(request, 'admin/purchase_orders/pending_review.html', context)
+
+def review_action(request, po_id):
+    if request.method == 'POST':
+        po = PurchaseOrder.objects.get(id=po_id)
+        action = request.POST.get('action')
+        amount = request.POST.get('amount')
+        
+        if action == 'approve' and amount:
+            # 🔥 FIXED: Use Decimal instead of float
+            po.total_amount = Decimal(amount)
+            po.review_status = 'approved'
+            po.requires_review = False
+            po.reviewed_at = timezone.now()
+            po.reviewed_by = request.user
+            po.save()
+            
+            # Update any pending billing runs
+            po.billingrun_set.filter(status='pending_po_review').update(status='completed')
+            
+            messages.success(request, f'PO {po.po_number} approved with amount {amount}')
+        elif action == 'reject':
+            po.review_status = 'rejected'
+            po.save()
+            messages.warning(request, f'PO {po.po_number} rejected')
+            
+    return HttpResponseRedirect(reverse('admin:purchase_orders_pending_review'))
+
 
 class BillingRunLineItemInline(admin.TabularInline):
     model = BillingRunLineItem
@@ -75,6 +125,16 @@ class BillingRunAdmin(admin.ModelAdmin):
         if not change:
             obj.processed_by = request.user
         super().save_model(request, obj, form, change)
+
+    # 🔥 Add custom URLs to this admin class
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('pending-review/', self.admin_site.admin_view(pending_review_view), name='purchase_orders_pending_review'),
+            path('review/<int:po_id>/', self.admin_site.admin_view(review_action), name='purchase_orders_review_action'),
+        ]
+        return custom_urls + urls
+
 
 @admin.register(BillingRunLineItem)
 class BillingRunLineItemAdmin(admin.ModelAdmin):

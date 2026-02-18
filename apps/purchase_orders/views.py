@@ -311,7 +311,37 @@ def upload_po_attachment(request):
             'error': str(e)
         }, status=500)
 
+@require_http_methods(["GET"])
+def n8n_po_bridge(request):
+    """
+    API Bridge for n8n to fetch Master PO data.
+    Bypasses Port 5432 blocks by using Django's internal connection.
+    """
+    try:
+        # Fetch all POs. We use .values() to get a dictionary format n8n loves.
+        # select_related is not needed with .values(), making this very fast.
+        pos = list(PurchaseOrder.objects.values(
+            'po_number', 
+            'total_amount', 
+            'spent_amount', 
+            'currency', 
+            'project', 
+            'valid_from', 
+            'valid_until',
+            'status'
+        ).all())
 
+        return JsonResponse({
+            "success": True,
+            "count": len(pos),
+            "data": pos
+        }, safe=False)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False, 
+            "error": str(e)
+        }, status=500)
 @login_required
 @require_http_methods(["GET"])
 def download_po_attachment(request, attachment_id):

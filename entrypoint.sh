@@ -1,20 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Wait for MySQL if configured
-if [ -n "${MYSQL_HOST:-}" ]; then
-  echo "Waiting for MySQL at ${MYSQL_HOST}:${MYSQL_PORT:-3306}..."
-  until nc -z "${MYSQL_HOST}" "${MYSQL_PORT:-3306}"; do
-    sleep 1
-  done
-  echo "MySQL is up."
-fi
-
-# Apply migrations
+# Apply migrations to your PostgreSQL database
 python manage.py migrate --noinput
 
-# Collect static files
+# Collect static files for the UI
 python manage.py collectstatic --noinput
 
-# Run server
+# Run server (cPanel usually handles the port, but 8000 is standard)
 python manage.py runserver 0.0.0.0:8000

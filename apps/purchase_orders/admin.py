@@ -1,4 +1,11 @@
 from django.contrib import admin
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.urls import reverse, path
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Q
+from django.utils import timezone
 from .models import (
     PurchaseOrder, 
     PurchaseOrderCSV, 
@@ -6,6 +13,73 @@ from .models import (
     PurchaseOrderAttachment, 
     PurchaseOrderChangeLog
 )
+
+
+# 🔥 CUSTOM REVIEW VIEWS
+@staff_member_required
+def pending_review_view(request):
+    """Custom admin view for POs pending review"""
+    from .models import PurchaseOrder
+    
+    pending_pos = PurchaseOrder.objects.filter(
+        Q(review_status='pending_review') | Q(requires_review=True)
+    ).order_by('-created_at')
+    
+    context = {
+        'pending_pos': pending_pos,
+        'title': 'Purchase Orders Pending Review'
+    }
+    return render(request, 'admin/purchase_orders/pending_review.html', context)
+
+def review_action(request, po_id):
+    if request.method == 'POST':
+        from .models import PurchaseOrder
+        
+        po = PurchaseOrder.objects.get(id=po_id)
+        action = request.POST.get('action')
+        amount = request.POST.get('amount')
+        
+        if action == 'approve' and amount:
+            po.total_amount = float(amount)
+            po.review_status = 'approved'
+            po.requires_review = False
+            po.reviewed_at = timezone.now()
+            po.reviewed_by = request.user
+            po.save()
+            
+            # Update any pending billing runs
+            po.billingrun_set.filter(status='pending_po_review').update(status='completed')
+            
+            messages.success(request, f'PO {po.po_number} approved with amount {amount}')
+        elif action == 'reject':
+            po.review_status = 'rejected'
+            po.save()
+            messages.warning(request, f'PO {po.po_number} rejected')
+            
+    return HttpResponseRedirect(reverse('admin:purchase_orders_pending_review'))
+
+# 🔥 CUSTOM URLS
+from django.contrib import admin
+original_get_urls = admin.site.get_urls
+
+def get_urls():
+    # Get the default admin URLs first
+    from django.urls import path, include
+    from django.contrib.admin import site
+    
+    # Our custom URLs - these must come FIRST
+    custom_urls = [
+        path('pending-review/', pending_review_view, name='purchase_orders_pending_review'),
+        path('review/<int:po_id>/', review_action, name='purchase_orders_review_action'),
+    ]
+    
+    # Then include the default admin URLs
+    default_urls = original_get_urls()
+    
+    # Return custom URLs first, then default URLs
+    return custom_urls + default_urls
+
+admin.site.get_urls = get_urls
 
 
 @admin.register(PurchaseOrder)
@@ -19,11 +93,12 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
         'display_remaining_balance', 
         'display_utilization', 
         'status', 
+        'review_status',  # 🔥 Added review_status
         'valid_from', 
         'valid_until', 
         'created_at'
     ]
-    list_filter = ['status', 'currency', 'created_at', 'valid_from', 'valid_until']
+    list_filter = ['status', 'review_status', 'currency', 'created_at', 'valid_from', 'valid_until']  # 🔥 Added review_status
     search_fields = ['po_number', 'customer__name', 'account__name']
     readonly_fields = [
         'created_at', 
@@ -37,7 +112,11 @@ class PurchaseOrderAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ( 'po_number', 'customer', 'account', 'excis_entity')
+            'fields': ('po_number', 'customer', 'account', 'excis_entity')
+        }),
+        ('Review Status', {  # 🔥 New section for review fields
+            'fields': ('review_status', 'requires_review', 'reviewed_at', 'reviewed_by', 'review_notes'),
+            'classes': ('collapse',)
         }),
         ('Financial Details', {
             'fields': (

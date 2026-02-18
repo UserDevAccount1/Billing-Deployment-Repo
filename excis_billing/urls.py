@@ -30,6 +30,7 @@ urlpatterns = [
     path('rate-cards/', include('apps.rate_cards.urls')),
     path('exchange-rates/', include('apps.exchange_rates.urls')),
     path('monitor/', include('apps.monitor.urls')),
+    path('api/', include('billing_api.urls')),  # 🔥 NEW LINE ADDED HERE
     path('', lambda request: redirect('dashboard:home')),
 ]
 
