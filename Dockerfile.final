@@ -1,0 +1,39 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Copy the fixed admin.py
+COPY admin.py.fixed /app/apps/billing/admin.py
+
+# Update settings.py to use PostgreSQL
+RUN echo '# Database - PostgreSQL configuration' >> /app/excis_billing/settings.py && \
+    echo 'DATABASES = {' >> /app/excis_billing/settings.py && \
+    echo '    "default": {' >> /app/excis_billing/settings.py && \
+    echo '        "ENGINE": "django.db.backends.postgresql",' >> /app/excis_billing/settings.py && \
+    echo '        "NAME": config("MYSQL_DATABASE", default="devenvir_devenvir_billing_prod"),' >> /app/excis_billing/settings.py && \
+    echo '        "USER": config("MYSQL_USER", default="devenvir_dbadmin"),' >> /app/excis_billing/settings.py && \
+    echo '        "PASSWORD": config("MYSQL_PASSWORD", default="AI-Billing@Secure2026@"),' >> /app/excis_billing/settings.py && \
+    echo '        "HOST": config("MYSQL_HOST", default="excis-postgres"),' >> /app/excis_billing/settings.py && \
+    echo '        "PORT": config("MYSQL_PORT", default="5432"),' >> /app/excis_billing/settings.py && \
+    echo '    }' >> /app/excis_billing/settings.py && \
+    echo '}' >> /app/excis_billing/settings.py && \
+    sed -i '/django.db.backends.mysql/d' /app/excis_billing/settings.py
+
+# Update urls.py with the review URLs
+RUN echo 'from apps.billing.admin import pending_review_view, review_action' >> /app/excis_billing/urls.py && \
+    sed -i '/urlpatterns = \[/a\    path('\''admin/pending-review/'\'', pending_review_view, name='\''pending-review'\''),' /app/excis_billing/urls.py && \
+    sed -i '/urlpatterns = \[/a\    path('\''admin/review/<int:po_id>/'\'', review_action, name='\''review-action'\''),' /app/excis_billing/urls.py
+
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

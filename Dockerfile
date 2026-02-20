@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# System deps for Pillow, lxml, and tooling
+# System deps for Pillow, lxml, MySQL, and tooling
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        build-essential \
@@ -16,6 +16,8 @@ RUN apt-get update \
        libxml2-dev \
        libxslt1-dev \
        netcat-openbsd \
+       pkg-config \
+       default-libmysqlclient-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Workdir

@@ -17,7 +17,6 @@ httpx
 idna
 jiter
 lxml
-mysqlclient
 numpy
 openai
 openpyxl

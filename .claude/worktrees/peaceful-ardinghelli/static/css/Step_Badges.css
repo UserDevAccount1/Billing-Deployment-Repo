@@ -1,0 +1,38 @@
+  :root{
+        --bg:#ffffff;
+        --panel:#ffffff;
+        --panel-2:#f9f9f9;
+        --muted:#555;
+        --text:#111;
+        --line:#ddd;
+        --brand:#5335ff;
+        --brand-2:#c3b8fe;
+        --radius:10px;
+        --shadow:0 2px 6px rgba(0,0,0,.08);
+      }
+      *{box-sizing:border-box}
+     
+
+      .wrap{padding:20px}
+
+      .stepper{
+        display:flex; gap:10px; flex-wrap:wrap;
+        padding:10px; margin-bottom:14px; background:var(--panel-2);
+        border:1px solid var(--line); border-radius:var(--radius);
+      }
+      .step{
+        display:flex; align-items:center; gap:8px; padding:8px 12px;
+        border:1px solid var(--line); border-radius:8px; background:#fff; cursor:pointer;
+      }
+      .step.active{border-color:var(--brand); background:#f0f0ff}
+      .badge{
+        width:24px; height:24px; border-radius:6px; display:grid; place-items:center;
+        background:#f5f5f5; color:var(--text); font-weight:600; font-size:13px;
+      }
+      .step.active .badge{background:var(--brand); color:#fff}
+
+      /* Renamed to avoid conflict with your field label styles */
+      .step-label{font-weight:600; font-size:13px}
+
+      /* If you have form labels later, keep them as .field-label */
+      .field-label{font-size:13px; color:var(--muted); margin-bottom:6px}

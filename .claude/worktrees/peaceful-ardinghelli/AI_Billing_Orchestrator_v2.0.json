@@ -1,0 +1,279 @@
+{
+  "name": "AI Billing Orchestrator v2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://billing-agent.dev-environment.site/purchase-orders/api/n8n-bridge/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [912, 624],
+      "id": "45cfafc5-3664-468a-b4be-18eaa0e38c50",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process 699 Purchase Orders from API bridge\nconst httpResponse = $json;\nconst allPOs = httpResponse.data || [];\n\n// Create lookup map for fast access\nconst poMap = {};\nallPOs.forEach(po => {\n  poMap[po.po_number] = {\n    number: po.po_number,\n    amount: parseFloat(po.total_amount) || 0,\n    spent: parseFloat(po.spent_amount) || 0,\n    currency: po.currency,\n    status: po.status,\n    valid_from: po.valid_from,\n    valid_until: po.valid_until,\n    remaining: (parseFloat(po.total_amount) || 0) - (parseFloat(po.spent_amount) || 0)\n  };\n});\n\n// Status summary\nconst statusCount = {\n  active: allPOs.filter(p => p.status === 'active').length,\n  expiring_soon: allPOs.filter(p => p.status === 'expiring_soon').length,\n  low_balance: allPOs.filter(p => p.status === 'low_balance').length,\n  fully_utilized: allPOs.filter(p => p.status === 'fully_utilized').length\n};\n\n// Currency summary\nconst currencies = [...new Set(allPOs.map(p => p.currency))];\nconst currencyTotals = {};\nallPOs.forEach(po => {\n  const curr = po.currency || 'USD';\n  const amt = parseFloat(po.total_amount) || 0;\n  currencyTotals[curr] = (currencyTotals[curr] || 0) + amt;\n});\n\nreturn [{\n  json: {\n    summary: {\n      total_po_count: allPOs.length,\n      status_breakdown: statusCount,\n      currencies: currencies.length,\n      currency_list: currencies,\n      total_value_usd: currencyTotals.USD || 0,\n      timestamp: new Date().toISOString()\n    },\n    po_lookup: poMap,\n    all_pos: allPOs,\n    first_5: allPOs.slice(0, 5)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1136, 624],
+      "id": "059d4c7d-478e-4bad-a4a8-07a7eb45c523",
+      "name": "Process Master PO Data",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hcl-caterpillar-billing-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": " application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [528, 112],
+      "id": "55994cdb-6621-46cc-9563-4c8f2bdb6f39",
+      "name": "Webhook1",
+      "webhookId": "5840076f-e9ce-45a0-9f5f-8c23a3be9b1b",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [736, 112],
+      "id": "40ae774a-56c0-4e32-b576-dbf021646968",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [1040, 112],
+      "id": "a341cc0e-1cc4-444c-9966-65b6d82503e5",
+      "name": "EXCEL PARSER"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ==========================================\n// MERGE AI OUTPUT + EXCEL + PO DATA\n// Processes ALL items from multiplexed input\n// ==========================================\n\n// 1. GET DATA from multiplexed Merge node\nconst item = $input.item.json;\nconst aiAgentOutput = item.output || '';\n\n// 2. PARSE JSON FROM AI OUTPUT\nlet parsedAI = {};\ntry {\n  const jsonMatch = aiAgentOutput.match(/```json\\n([\\s\\S]*?)\\n```/);\n  if (jsonMatch) {\n    parsedAI = JSON.parse(jsonMatch[1]);\n  } else if (aiAgentOutput) {\n    parsedAI = JSON.parse(aiAgentOutput);\n  }\n} catch (e) {\n  parsedAI = {};\n}\n\n// 3. GET MATCHING EXCEL ROW\nconst allExcelRows = $('EXCEL PARSER').all();\nconst originalData = allExcelRows[$itemIndex]?.json || allExcelRows[0]?.json || {};\n\n// 4. GET PO LOOKUP DATA from multiplexed PO data\nconst poLookup = item.po_lookup || {};\n\n// 5. MATCH PO by Vendor PO field from Excel\nconst vendorPO = originalData[\"Vendor PO\"] || \"\";\nconst matchedPO = poLookup[vendorPO] || null;\n\n// 6. CONVERT TIME SPENT TO DECIMAL HOURS\nconst timeSpent = originalData[\"Time Spent\"] || \"00:00:00\";\nconst [hours, minutes, seconds] = timeSpent.split(\":\").map(Number);\nconst workHoursFromTime = hours + minutes / 60 + seconds / 3600;\nconst workHoursDecimal = parsedAI.work_hours || workHoursFromTime;\n\n// 7. RETURN MERGED DATA\nreturn {\n  json: {\n    request_id: originalData[\"Request ID\"],\n    subject: originalData[\"Subject\"],\n    site: originalData[\"Site\"],\n    technician: originalData[\"Assigned Technician\"],\n    status: originalData[\"Request Status\"],\n    account: originalData[\"Account\"],\n    comments: originalData[\"Comments\"],\n    country: parsedAI.country || originalData[\"COUNTRY\"] || \"\",\n    city: parsedAI.city || originalData[\"CITY OR TOWN\"] || \"\",\n    eta_dates: parsedAI.eta_dates || [],\n    priority: parsedAI.priority || originalData[\"Priority\"] || \"\",\n    ticket_number: parsedAI.ticket_number || \"\",\n    technician_name: parsedAI.technician_name || originalData[\"Assigned Technician\"] || \"\",\n    time_spent_raw: timeSpent,\n    work_hours: Number(workHoursDecimal.toFixed(3)),\n    excel_hourly_cost: parseFloat(originalData[\"Hourly cost\"]) || 0,\n    excel_revenue_rate: parseFloat(originalData[\"Revenue rate\"]) || 0,\n    excel_first_hour_rate: parseFloat(originalData[\"1st Hour Revenue Rate\"]) || 0,\n    excel_total_revenue: parseFloat(originalData[\"Total Revenue\"]) || 0,\n    excel_total_labor_cost: parseFloat(originalData[\"Total labor Cost\"]) || 0,\n    excel_currency: originalData[\"currency-cost\"] || \"GBP\",\n    excel_ooh_cost: parseFloat(originalData[\"OOH Cost\"]) || 0,\n    vendor_po: vendorPO,\n    po_number: matchedPO ? matchedPO.number : \"NOT_FOUND\",\n    po_remaining_balance: matchedPO ? matchedPO.remaining : 0,\n    po_total_amount: matchedPO ? matchedPO.amount : 0,\n    po_spent_amount: matchedPO ? matchedPO.spent : 0,\n    po_status: matchedPO ? matchedPO.status : \"unverified\",\n    po_currency: matchedPO ? matchedPO.currency : \"\",\n    region: originalData[\"REGION OF THE COUNTRY\"] || \"\",\n    customer_reference: originalData[\"CUSTOMER REFERENCE\"] || \"\",\n    external_po: originalData[\"External PO NUMBER\"] || \"\",\n    processed_at: new Date().toISOString(),\n    ai_source: \"claude-sonnet-4.5\",\n    item_index: $itemIndex\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2080, 80],
+      "id": "b67265d0-f8f8-44ef-baf1-9885ed9f48e9",
+      "name": " Merge AI Parsed Data with Original"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ==========================================\n// FETCH RATE CARD - Uses Excel rate data\n// ==========================================\n\nconst data = $input.item.json;\n\nconst hourlyRate = data.excel_hourly_cost || 0;\nconst revenueRate = data.excel_revenue_rate || 0;\nconst currency = data.excel_currency || \"GBP\";\n\nlet rateSource = \"default_fallback\";\nlet effectiveRate = 45.50;\n\nif (hourlyRate > 0) {\n  effectiveRate = hourlyRate;\n  rateSource = \"excel_hourly_cost\";\n} else if (revenueRate > 0) {\n  effectiveRate = revenueRate;\n  rateSource = \"excel_revenue_rate\";\n}\n\nreturn {\n  json: {\n    ...data,\n    rate_card: {\n      hourly_cost: effectiveRate,\n      revenue_rate: revenueRate,\n      first_hour_rate: data.excel_first_hour_rate,\n      ooh_cost: data.excel_ooh_cost,\n      total_labor_cost: data.excel_total_labor_cost,\n      currency: currency,\n      source: rateSource\n    },\n    rate_match_type: rateSource !== \"default_fallback\" ? \"excel_exact\" : \"default_fallback\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2304, 80],
+      "id": "a0fd2e62-e4c3-4e94-8686-1761b58bb33e",
+      "name": "FETCH RATE CARD"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ==========================================\n// CALCULATE FINAL BILLING AMOUNT\n// Uses Excel rates + PO balance validation\n// ==========================================\n\nconst data = $input.item.json;\nconst rateCard = data.rate_card || {};\nconst workHours = data.work_hours || 0;\n\nconst hourlyRate = rateCard.hourly_cost || 45.50;\nconst currency = rateCard.currency || \"GBP\";\n\nconst calculatedAmount = workHours * hourlyRate;\nconst finalAmount = Math.round(calculatedAmount * 100) / 100;\n\nconst poRemaining = data.po_remaining_balance || 0;\nconst poStatus = data.po_status || \"unverified\";\nconst hasValidPO = poStatus !== \"unverified\" && poStatus !== \"NOT_FOUND\";\nconst overBudget = hasValidPO && finalAmount > poRemaining;\n\nconst excelRevenue = data.excel_total_revenue || 0;\nconst revenueDeviation = excelRevenue > 0\n  ? ((finalAmount - excelRevenue) / excelRevenue) * 100\n  : 0;\nconst revenueAnomaly = Math.abs(revenueDeviation) > 10;\n\nreturn {\n  json: {\n    request_id: data.request_id,\n    ticket_number: data.ticket_number,\n    country: data.country,\n    city: data.city,\n    site: data.site,\n    technician: data.technician_name,\n    account: data.account,\n    priority: data.priority,\n    work_hours: workHours,\n    hourly_rate: Number(hourlyRate.toFixed(2)),\n    currency: currency,\n    final_amount: finalAmount,\n    excel_total_revenue: excelRevenue,\n    revenue_deviation_percent: Number(revenueDeviation.toFixed(2)),\n    revenue_anomaly: revenueAnomaly,\n    vendor_po: data.vendor_po,\n    po_status: poStatus,\n    po_remaining_balance: poRemaining,\n    over_budget: overBudget,\n    budget_warning: overBudget\n      ? `Amount ${finalAmount} exceeds PO remaining ${poRemaining}`\n      : null,\n    rate_source: rateCard.source || \"unknown\",\n    rate_match_type: data.rate_match_type,\n    calculated_at: new Date().toISOString(),\n    billing_step: \"8/8 Complete\",\n    item_index: data.item_index\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2512, 80],
+      "id": "07755de7-e60c-4148-8942-57bad590367a",
+      "name": " Calculate Final Billing Amount"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract these fields from the ticket data:\n- country\n- city  \n- eta_dates (array)\n- priority\n- ticket_number (SCTASK number)\n- technician_name\n- work_hours (convert Time Spent from HH:MM:SS to decimal hours)\n\nReturn ONLY valid JSON.\n\nTicket data: {{JSON.stringify($('EXCEL PARSER').item.json)}}",
+        "options": {
+          "systemMessage": "You are a helpful assistant"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [1328, 96],
+      "id": "e192e735-3b99-47ee-b429-4af5c5720500",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-5-20250929",
+          "cachedResultName": "Claude Sonnet 4.5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [1312, 272],
+      "id": "0b34d600-e7f6-4706-b4ce-fc685a9bfb6b",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "1tgc8SPQycoQdIiI",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "7f5114a7-49c3-46c5-bca3-c3a535eaa0fd",
+      "name": "Wait for PO and AI Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [1840, 80]
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Process Master PO Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXCEL PARSER": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " Merge AI Parsed Data with Original": {
+      "main": [
+        [
+          {
+            "node": "FETCH RATE CARD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FETCH RATE CARD": {
+      "main": [
+        [
+          {
+            "node": " Calculate Final Billing Amount",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "EXCEL PARSER",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait for PO and AI Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for PO and AI Data": {
+      "main": [
+        [
+          {
+            "node": " Merge AI Parsed Data with Original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Master PO Data": {
+      "main": [
+        [
+          {
+            "node": "Wait for PO and AI Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {}
+}

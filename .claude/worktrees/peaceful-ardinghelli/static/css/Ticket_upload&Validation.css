@@ -1,0 +1,1962 @@
+/* ============================================
+   TICKET UPLOAD & VALIDATION CSS - Smart Coded
+   ============================================ */
+
+/* CSS Variables for consistent theming */
+:root {
+  --tuv-primary: #4299e1;
+  --tuv-primary-dark: #3182ce;
+  --tuv-secondary: #718096;
+  --tuv-success: #48bb78;
+  --tuv-success-dark: #38a169;
+  --tuv-warning: #ed8936;
+  --tuv-danger: #f56565;
+  --tuv-info: #4299e1;
+
+  --tuv-bg-primary: #ffffff;
+  --tuv-bg-secondary: #f7fafc;
+  --tuv-bg-tertiary: #edf2f7;
+
+  --tuv-text-primary: #2d3748;
+  --tuv-text-secondary: #4a5568;
+  --tuv-text-muted: #718096;
+
+  --tuv-border: #e2e8f0;
+  --tuv-border-light: #eaeaea;
+  --tuv-border-dark: #cbd5e0;
+
+  --tuv-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.04);
+  --tuv-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --tuv-shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --tuv-shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  --tuv-radius-sm: 8px;
+  --tuv-radius-md: 12px;
+  --tuv-radius-lg: 16px;
+  --tuv-radius-xl: 20px;
+
+  --tuv-transition-fast: 0.2s ease;
+  --tuv-transition-normal: 0.3s ease;
+  --tuv-transition-slow: 0.5s ease;
+
+  --tuv-spacing-xs: 4px;
+  --tuv-spacing-sm: 8px;
+  --tuv-spacing-md: 12px;
+  --tuv-spacing-lg: 16px;
+  --tuv-spacing-xl: 20px;
+  --tuv-spacing-xxl: 24px;
+  --tuv-spacing-xxxl: 30px;
+}
+
+/* ============================================
+   MAIN CONTAINER & LAYOUT
+   ============================================ */
+#ticket-upload-section.ticket-upload-validation {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-lg);
+  padding: var(--tuv-spacing-xxxl);
+  margin-bottom: var(--tuv-spacing-xxxl);
+  box-shadow: var(--tuv-shadow-lg);
+  border: 1px solid var(--tuv-border-light);
+  position: relative;
+}
+
+/* Unique ID scoping for better specificity */
+#ticket-upload-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--tuv-spacing-xxxl);
+  padding-bottom: var(--tuv-spacing-xl);
+  border-bottom: 2px solid var(--tuv-bg-tertiary);
+}
+
+#ticket-upload-section .header-main h2 {
+  color: #1a365d;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: var(--tuv-spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-md);
+}
+
+#ticket-upload-section .header-main h2 i {
+  color: var(--tuv-primary);
+}
+
+#ticket-upload-section .header-subtitle {
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .step-badge {
+  background: linear-gradient(135deg, var(--tuv-primary), var(--tuv-primary-dark));
+  color: white;
+  padding: 6px var(--tuv-spacing-lg);
+  border-radius: var(--tuv-radius-xl);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#ticket-upload-section .header-subtitle p {
+  color: var(--tuv-text-muted);
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+#ticket-upload-section .header-actions {
+  display: flex;
+  gap: var(--tuv-spacing-lg);
+}
+
+/* ============================================
+   DATA SOURCES CARD
+   ============================================ */
+#ticket-upload-section .data-sources-card {
+  background: linear-gradient(135deg, var(--tuv-bg-secondary) 0%, var(--tuv-bg-tertiary) 100%);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xxl);
+  margin-bottom: var(--tuv-spacing-xxxl);
+  border: 1px solid var(--tuv-border);
+}
+
+#ticket-upload-section .data-sources-card h3 {
+  color: var(--tuv-text-primary);
+  font-size: 18px;
+  margin-bottom: var(--tuv-spacing-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+}
+
+#ticket-upload-section .sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .source-item {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xl);
+  display: flex;
+  gap: var(--tuv-spacing-xxxl);
+  align-items: flex-start;
+  border: 1px solid var(--tuv-border);
+  transition: all var(--tuv-transition-normal);
+  cursor: pointer;
+}
+
+#ticket-upload-section .source-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: var(--tuv-primary);
+}
+
+#ticket-upload-section .source-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--tuv-radius-md);
+  background: linear-gradient(135deg, var(--tuv-primary), var(--tuv-primary-dark));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+#ticket-upload-section .source-content h4 {
+  color: var(--tuv-text-primary);
+  font-size: 16px;
+  margin-bottom: var(--tuv-spacing-sm);
+  font-weight: 600;
+}
+
+#ticket-upload-section .source-content p {
+  color: var(--tuv-text-muted);
+  font-size: 13px;
+  margin-bottom: var(--tuv-spacing-xs);
+  line-height: 1.4;
+}
+
+#ticket-upload-section .source-content p strong {
+  color: var(--tuv-text-secondary);
+  font-weight: 600;
+}
+
+/* ============================================
+   DASHBOARD GRID LAYOUT
+   ============================================ */
+#ticket-upload-section .dashboard-grid {
+  display: grid;
+  grid-template-columns: 20% 78%;
+  gap: var(--tuv-spacing-xxxl);
+  min-height: 600px;
+}
+
+/* ============================================
+   LEFT PANEL COMPONENTS
+   ============================================ */
+#ticket-upload-section .left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .upload-card,
+#ticket-upload-section .validation-card,
+#ticket-upload-section {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xxl);
+  border: 1px solid var(--tuv-border);
+  box-shadow: var(--tuv-shadow-sm);
+  transition: transform var(--tuv-transition-normal), box-shadow var(--tuv-transition-normal);
+}
+
+#ticket-upload-section .upload-card:hover,
+#ticket-upload-section .validation-card:hover,
+#ticket-upload-section {
+  transform: translateY(-2px);
+  box-shadow: var(--tuv-shadow-md);
+}
+
+#ticket-upload-section .upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .upload-header h3 {
+  color: var(--tuv-text-primary);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  margin: 0;
+}
+
+#ticket-upload-section .upload-info {
+  background: #e6f7ff;
+  color: #1890ff;
+  padding: 4px 10px;
+  border-radius: var(--tuv-radius-xl);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+#ticket-upload-section .upload-area {
+  border: 2px dashed var(--tuv-border-dark);
+  border-radius: var(--tuv-radius-md);
+  padding: 40px var(--tuv-spacing-xl);
+  text-align: center;
+  background: #fafbfc;
+  margin-bottom: var(--tuv-spacing-xl);
+  transition: all var(--tuv-transition-normal);
+  cursor: pointer;
+  position: relative;
+}
+
+#ticket-upload-section .upload-area:hover,
+#ticket-upload-section .upload-area.drag-over {
+  border-color: var(--tuv-primary);
+  background: #f0f9ff;
+  transform: translateY(-2px);
+}
+
+#ticket-upload-section .upload-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+  color: #234e52;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--tuv-spacing-xl);
+  font-size: 28px;
+}
+
+#ticket-upload-section .upload-area h4 {
+  color: var(--tuv-text-primary);
+  margin-bottom: var(--tuv-spacing-sm);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#ticket-upload-section .upload-area p {
+  color: var(--tuv-text-muted);
+  margin-bottom: var(--tuv-spacing-xl);
+  font-size: 14px;
+}
+
+/* ============================================
+   BUTTON COMPONENTS
+   ============================================ */
+#ticket-upload-section .btn-icon-outline {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--tuv-radius-md);
+  border: 1.5px solid var(--tuv-border);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .btn-icon-outline:hover {
+  border-color: var(--tuv-primary);
+  color: var(--tuv-primary);
+  transform: translateY(-2px);
+}
+
+#ticket-upload-section .btn-primary {
+  background: linear-gradient(135deg, var(--tuv-primary), var(--tuv-primary-dark));
+  color: white;
+  border: none;
+  padding: var(--tuv-spacing-md) var(--tuv-spacing-xxl);
+  border-radius: var(--tuv-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tuv-spacing-sm);
+  transition: all var(--tuv-transition-normal);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#ticket-upload-section .btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(66, 153, 225, 0.3);
+}
+
+#ticket-upload-section .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: grayscale(0.5);
+}
+
+#ticket-upload-section .btn-secondary {
+  background: var(--tuv-secondary);
+  color: white;
+  border: none;
+  padding: var(--tuv-spacing-md) var(--tuv-spacing-xxl);
+  border-radius: var(--tuv-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tuv-spacing-sm);
+  transition: all var(--tuv-transition-normal);
+  width: 100%;
+  justify-content: center;
+}
+
+#ticket-upload-section .btn-secondary:hover:not(:disabled) {
+  background: var(--tuv-text-secondary);
+  transform: translateY(-2px);
+}
+
+#ticket-upload-section .btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#ticket-upload-section .btn-tertiary {
+  background: var(--tuv-bg-tertiary);
+  color: var(--tuv-text-secondary);
+  border: 1px solid var(--tuv-border-dark);
+  padding: var(--tuv-spacing-md) var(--tuv-spacing-xxl);
+  border-radius: var(--tuv-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tuv-spacing-sm);
+  transition: all var(--tuv-transition-normal);
+  width: 100%;
+  justify-content: center;
+}
+
+#ticket-upload-section .btn-tertiary:hover {
+  background: var(--tuv-border);
+  border-color: var(--tuv-text-muted);
+  transform: translateY(-2px);
+}
+
+#ticket-upload-section .btn-success {
+  background: linear-gradient(135deg, var(--tuv-success), var(--tuv-success-dark));
+  color: white;
+  border: none;
+  padding: var(--tuv-spacing-md) var(--tuv-spacing-xxl);
+  border-radius: var(--tuv-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tuv-spacing-sm);
+  transition: all var(--tuv-transition-normal);
+}
+
+#ticket-upload-section .btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.3);
+}
+
+#ticket-upload-section .btn-icon-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--tuv-radius-sm);
+  border: 1px solid var(--tuv-border);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .btn-icon-sm:hover {
+  border-color: var(--tuv-primary);
+  color: var(--tuv-primary);
+}
+
+#ticket-upload-section .btn-icon-xs {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--tuv-radius-sm);
+  border: 1px solid var(--tuv-border);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .btn-icon-xs:hover {
+  border-color: var(--tuv-primary);
+  color: var(--tuv-primary);
+}
+
+/* ============================================
+   FILE UPLOAD COMPONENTS
+   ============================================ */
+#ticket-upload-section .file-types {
+  display: flex;
+  justify-content: center;
+  gap: var(--tuv-spacing-lg);
+  margin-top: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .file-types span {
+  background: var(--tuv-bg-tertiary);
+  padding: 4px 12px;
+  border-radius: var(--tuv-radius-xl);
+  font-size: 12px;
+  color: var(--tuv-text-secondary);
+  font-weight: 500;
+}
+
+#ticket-upload-section .upload-progress {
+  margin: var(--tuv-spacing-xl) 0;
+}
+
+#ticket-upload-section .progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--tuv-spacing-sm);
+  font-size: 14px;
+  color: var(--tuv-text-secondary);
+}
+
+#ticket-upload-section .progress-bar {
+  height: 6px;
+  background: var(--tuv-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#ticket-upload-section .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tuv-success), var(--tuv-success-dark));
+  transition: width var(--tuv-transition-slow);
+}
+
+#ticket-upload-section .uploaded-files {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: var(--tuv-spacing-xl);
+  border-top: 1px solid var(--tuv-border);
+  padding-top: var(--tuv-spacing-md);
+}
+
+#ticket-upload-section .file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--tuv-spacing-md);
+  background: var(--tuv-bg-secondary);
+  border-radius: var(--tuv-radius-sm);
+  margin-bottom: var(--tuv-spacing-sm);
+  border: 1px solid var(--tuv-border);
+  transition: all var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .file-item:hover {
+  background: var(--tuv-bg-tertiary);
+  border-color: var(--tuv-border-dark);
+}
+
+#ticket-upload-section .file-info {
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+}
+
+#ticket-upload-section .file-icon {
+  color: var(--tuv-primary);
+  font-size: 16px;
+}
+
+#ticket-upload-section .file-name {
+  font-weight: 500;
+  color: var(--tuv-text-primary);
+  font-size: 14px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#ticket-upload-section .file-size {
+  font-size: 12px;
+  color: var(--tuv-text-muted);
+}
+
+#ticket-upload-section .file-status {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: var(--tuv-radius-xl);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+#ticket-upload-section .status-uploaded {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+#ticket-upload-section .status-error {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+/* ============================================
+   VALIDATION COMPONENTS
+   ============================================ */
+#ticket-upload-section .validation-options {
+  margin: var(--tuv-spacing-xl) 0;
+}
+
+#ticket-upload-section .option-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  margin-bottom: var(--tuv-spacing-md);
+  padding: var(--tuv-spacing-sm) 0;
+}
+
+#ticket-upload-section .option-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--tuv-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#ticket-upload-section .option-item label {
+  color: var(--tuv-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  flex-grow: 1;
+}
+
+#ticket-upload-section .validation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tuv-spacing-lg);
+  margin-bottom: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .validation-stats {
+  margin-top: var(--tuv-spacing-xl);
+  padding-top: var(--tuv-spacing-xl);
+  border-top: 1px solid var(--tuv-border);
+}
+
+#ticket-upload-section .stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--tuv-spacing-sm);
+  font-size: 14px;
+  align-items: center;
+}
+
+#ticket-upload-section .stat-value {
+  font-weight: 600;
+  color: var(--tuv-text-primary);
+}
+
+/* ============================================
+   DISTRIBUTION OPTIONS
+   ============================================ */
+#ticket-upload-section .distribution-options {
+  margin: var(--tuv-spacing-xl) 0;
+}
+
+#ticket-upload-section .dist-option {
+  margin-bottom: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .dist-option label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--tuv-text-secondary);
+  font-size: 14px;
+}
+
+#ticket-upload-section select {
+  width: 100%;
+  padding: var(--tuv-spacing-lg) var(--tuv-spacing-md);
+  border: 1px solid var(--tuv-border-dark);
+  border-radius: var(--tuv-radius-sm);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-primary);
+  font-size: 14px;
+  transition: all var(--tuv-transition-fast);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234a5568' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  padding-right: 36px;
+}
+
+#ticket-upload-section select:focus {
+  outline: none;
+  border-color: var(--tuv-primary);
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+/* ============================================
+   RIGHT PANEL - TABS & CONTENT
+   ============================================ */
+#ticket-upload-section .right-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+#ticket-upload-section .results-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--tuv-bg-tertiary);
+  padding: 4px;
+  border-radius: var(--tuv-radius-md);
+  margin-bottom: var(--tuv-spacing-xxl);
+  flex-wrap: wrap;
+}
+
+#ticket-upload-section .tab-btn {
+  flex: 1;
+  padding: var(--tuv-spacing-md) var(--tuv-spacing-lg);
+  border: none;
+  background: transparent;
+  color: var(--tuv-text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--tuv-radius-sm);
+  transition: all var(--tuv-transition-fast);
+  font-size: 14px;
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#ticket-upload-section .tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--tuv-text-secondary);
+}
+
+#ticket-upload-section .tab-btn.active {
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-primary);
+  box-shadow: var(--tuv-shadow-sm);
+}
+
+#ticket-upload-section .tab-content {
+  display: none;
+  flex: 1;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: tuvFadeIn 0.3s ease forwards;
+}
+
+#ticket-upload-section .tab-content.active {
+  display: block;
+}
+
+@keyframes tuvFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   VALIDATION RESULTS TAB
+   ============================================ */
+#ticket-upload-section .results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tuv-spacing-xl);
+  flex-wrap: wrap;
+  gap: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .results-header h3 {
+  color: var(--tuv-text-primary);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  margin: 0;
+}
+
+#ticket-upload-section .results-actions {
+  display: flex;
+  gap: var(--tuv-spacing-xxxl);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#ticket-upload-section .view-toggle {
+  display: flex;
+  background: var(--tuv-bg-tertiary);
+  padding: 4px;
+  border-radius: var(--tuv-radius-sm);
+}
+
+#ticket-upload-section .view-btn {
+  padding: var(--tuv-spacing-sm) var(--tuv-spacing-lg);
+  border: none;
+  background: transparent;
+  color: var(--tuv-text-muted);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--tuv-transition-fast);
+  font-size: 13px;
+}
+
+#ticket-upload-section .view-btn:hover:not(.active) {
+  color: var(--tuv-text-secondary);
+}
+
+#ticket-upload-section .view-btn.active {
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+#ticket-upload-section .table-controls {
+  display: flex;
+  gap: var(--tuv-spacing-sm);
+  align-items: center;
+}
+
+#ticket-upload-section .search-box {
+  position: relative;
+  width: 200px;
+}
+
+#ticket-upload-section .search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tuv-text-muted);
+  font-size: 14px;
+}
+
+#ticket-upload-section .search-box input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid var(--tuv-border-dark);
+  border-radius: var(--tuv-radius-sm);
+  font-size: 14px;
+  transition: all var(--tuv-transition-fast);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-primary);
+}
+
+#ticket-upload-section .search-box input:focus {
+  outline: none;
+  border-color: var(--tuv-primary);
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+/* ============================================
+   VALIDATION SUMMARY CARDS
+   ============================================ */
+#ticket-upload-section .validation-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--tuv-spacing-xxxl);
+  margin-bottom: var(--tuv-spacing-xxl);
+}
+
+#ticket-upload-section .summary-item {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xl);
+  text-align: center;
+  border: 1px solid var(--tuv-border);
+  transition: transform var(--tuv-transition-normal);
+}
+
+#ticket-upload-section .summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tuv-shadow-md);
+}
+
+#ticket-upload-section .summary-item.success {
+  border-top: 4px solid var(--tuv-success);
+}
+
+#ticket-upload-section .summary-item.warning {
+  border-top: 4px solid var(--tuv-warning);
+}
+
+#ticket-upload-section .summary-item.error {
+  border-top: 4px solid var(--tuv-danger);
+}
+
+#ticket-upload-section .summary-item.total {
+  border-top: 4px solid var(--tuv-primary);
+}
+
+#ticket-upload-section .summary-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  line-height: 1;
+}
+
+#ticket-upload-section .summary-item.success .summary-value {
+  color: var(--tuv-success);
+}
+
+#ticket-upload-section .summary-item.warning .summary-value {
+  color: var(--tuv-warning);
+}
+
+#ticket-upload-section .summary-item.error .summary-value {
+  color: var(--tuv-danger);
+}
+
+#ticket-upload-section .summary-item.total .summary-value {
+  color: var(--tuv-primary);
+}
+
+#ticket-upload-section .summary-label {
+  color: var(--tuv-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   DATA VIEWS
+   ============================================ */
+#ticket-upload-section .data-view {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: tuvFadeIn 0.3s ease forwards;
+}
+
+#ticket-upload-section .data-view.active {
+  display: block;
+}
+
+/* ============================================
+   TABLE VIEW COMPONENTS
+   ============================================ */
+#ticket-upload-section .table-container-wrapper {
+  overflow-x: auto;
+  border-radius: var(--tuv-radius-md);
+  border: 1px solid var(--tuv-border);
+  background: var(--tuv-bg-primary);
+  margin-bottom: var(--tuv-spacing-xl);
+  max-height: 500px;
+  overflow-y: auto;
+  position: relative;
+}
+
+#ticket-upload-section .validation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 1200px;
+}
+
+#ticket-upload-section .validation-table thead {
+  background: var(--tuv-bg-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+#ticket-upload-section .validation-table th {
+  padding: var(--tuv-spacing-lg) var(--tuv-spacing-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--tuv-text-secondary);
+  border-bottom: 2px solid var(--tuv-border);
+  white-space: nowrap;
+  position: relative;
+  user-select: none;
+}
+
+#ticket-upload-section .validation-table th.sortable {
+  cursor: pointer;
+  transition: background-color var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .validation-table th.sortable:hover {
+  background: var(--tuv-bg-tertiary);
+}
+
+#ticket-upload-section .validation-table th .sort-icon {
+  margin-left: 4px;
+  opacity: 0.5;
+  font-size: 12px;
+  transition: opacity var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .validation-table th.sort-asc .sort-icon,
+#ticket-upload-section .validation-table th.sort-desc .sort-icon {
+  opacity: 1;
+  color: var(--tuv-primary);
+}
+
+#ticket-upload-section .validation-table td {
+  padding: var(--tuv-spacing-md);
+  border-bottom: 1px solid var(--tuv-border);
+  vertical-align: top;
+  color: var(--tuv-text-primary);
+}
+
+#ticket-upload-section .validation-table tbody tr {
+  transition: background-color var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .validation-table tbody tr:hover {
+  background: var(--tuv-bg-secondary);
+}
+
+#ticket-upload-section .status-cell {
+  padding: 4px 8px;
+  border-radius: var(--tuv-radius-xl);
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+  min-width: 60px;
+}
+
+#ticket-upload-section .status-valid {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+#ticket-upload-section .status-warning {
+  background: #feebc8;
+  color: #744210;
+}
+
+#ticket-upload-section .status-error {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+#ticket-upload-section .pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--tuv-spacing-xxxl) var(--tuv-spacing-xl);
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  border: 1px solid var(--tuv-border);
+  flex-wrap: wrap;
+  gap: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .pagination-info {
+  color: var(--tuv-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#ticket-upload-section .pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#ticket-upload-section .pagination-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--tuv-radius-sm);
+  border: 1px solid var(--tuv-border);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--tuv-transition-fast);
+  font-size: 14px;
+}
+
+#ticket-upload-section .pagination-btn:hover:not(:disabled) {
+  border-color: var(--tuv-primary);
+  color: var(--tuv-primary);
+  background: var(--tuv-bg-secondary);
+}
+
+#ticket-upload-section .pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--tuv-bg-tertiary);
+}
+
+#ticket-upload-section .page-numbers {
+  display: flex;
+  gap: 2px;
+}
+
+#ticket-upload-section .page-number {
+  min-width: 36px;
+  height: 36px;
+  border-radius: var(--tuv-radius-sm);
+  border: 1px solid var(--tuv-border);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all var(--tuv-transition-fast);
+}
+
+#ticket-upload-section .page-number:hover {
+  border-color: var(--tuv-primary);
+  color: var(--tuv-primary);
+  background: var(--tuv-bg-secondary);
+}
+
+#ticket-upload-section .page-number.active {
+  background: var(--tuv-primary);
+  color: white;
+  border-color: var(--tuv-primary);
+}
+
+#ticket-upload-section .rows-per-page select {
+  width: auto;
+  padding: 8px 12px;
+  min-width: 100px;
+}
+
+/* ============================================
+   FORM VIEW COMPONENTS
+   ============================================ */
+#ticket-upload-section .form-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tuv-spacing-xl);
+  padding: var(--tuv-spacing-xxxl) var(--tuv-spacing-xl);
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  border: 1px solid var(--tuv-border);
+}
+
+#ticket-upload-section .form-nav-btn {
+  padding: var(--tuv-spacing-lg) var(--tuv-spacing-xl);
+  border: 1px solid var(--tuv-border-dark);
+  background: var(--tuv-bg-primary);
+  color: var(--tuv-text-secondary);
+  border-radius: var(--tuv-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-sm);
+  transition: all var(--tuv-transition-fast);
+  font-size: 14px;
+}
+
+#ticket-upload-section .form-nav-btn:hover:not(:disabled) {
+  border-color: var(--tuv-primary);
+  color: var(--tuv-primary);
+  background: var(--tuv-bg-secondary);
+}
+
+#ticket-upload-section .form-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--tuv-bg-tertiary);
+}
+
+#ticket-upload-section .form-counter {
+  font-weight: 600;
+  color: var(--tuv-text-primary);
+  font-size: 16px;
+}
+
+#ticket-upload-section .ticket-form {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  border: 1px solid var(--tuv-border);
+  padding: var(--tuv-spacing-xxl);
+}
+
+#ticket-upload-section .form-section {
+  margin-bottom: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .form-section h4 {
+  color: var(--tuv-text-primary);
+  margin-bottom: var(--tuv-spacing-xl);
+  padding-bottom: var(--tuv-spacing-lg);
+  border-bottom: 2px solid var(--tuv-bg-tertiary);
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#ticket-upload-section .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .form-field {
+  margin-bottom: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .form-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--tuv-text-secondary);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#ticket-upload-section .form-field .field-value {
+  padding: var(--tuv-spacing-lg) var(--tuv-spacing-md);
+  background: var(--tuv-bg-secondary);
+  border-radius: var(--tuv-radius-sm);
+  border: 1px solid var(--tuv-border);
+  color: var(--tuv-text-primary);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#ticket-upload-section .form-field .field-value.empty {
+  color: var(--tuv-text-muted);
+  font-style: italic;
+  background: var(--tuv-bg-tertiary);
+}
+
+/* ============================================
+   MODAL COMPONENTS
+   ============================================ */
+#ticket-upload-section .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: tuvFadeIn 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+
+#ticket-upload-section .modal-container {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-lg);
+  width: 800px;
+  max-width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--tuv-shadow-xl);
+  animation: tuvModalAppear 0.3s ease;
+}
+
+@keyframes tuvModalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#ticket-upload-section .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--tuv-spacing-xl) var(--tuv-spacing-xxl);
+  background: linear-gradient(135deg, #1a365d, #2d3748);
+  color: white;
+}
+
+#ticket-upload-section .modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  font-weight: 600;
+}
+
+#ticket-upload-section .modal-body {
+  padding: var(--tuv-spacing-xxl);
+  overflow-y: auto;
+  flex: 1;
+}
+
+#ticket-upload-section .modal-footer {
+  padding: var(--tuv-spacing-xl) var(--tuv-spacing-xxl);
+  border-top: 1px solid var(--tuv-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tuv-spacing-md);
+}
+
+#ticket-upload-section .column-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tuv-spacing-xxl);
+}
+
+#ticket-upload-section .category-section h4 {
+  color: var(--tuv-text-primary);
+  margin-bottom: var(--tuv-spacing-xxxl);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  font-weight: 600;
+}
+
+#ticket-upload-section .column-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--tuv-spacing-md);
+}
+
+#ticket-upload-section .column-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  padding: var(--tuv-spacing-lg) var(--tuv-spacing-xxxl);
+  background: var(--tuv-bg-secondary);
+  border-radius: var(--tuv-radius-sm);
+  border: 1px solid var(--tuv-border);
+  transition: all var(--tuv-transition-fast);
+  cursor: pointer;
+}
+
+#ticket-upload-section .column-item:hover {
+  background: var(--tuv-bg-tertiary);
+  border-color: var(--tuv-border-dark);
+}
+
+#ticket-upload-section .column-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--tuv-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#ticket-upload-section .column-item label {
+  flex: 1;
+  color: var(--tuv-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ============================================
+   ANALYTICS TAB
+   ============================================ */
+#ticket-upload-section .analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tuv-spacing-xxl);
+}
+
+#ticket-upload-section .analytics-header h3 {
+  color: var(--tuv-text-primary);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  margin: 0;
+  font-weight: 600;
+}
+
+#ticket-upload-section .analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--tuv-spacing-xxl);
+}
+
+#ticket-upload-section .chart-container {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xl);
+  border: 1px solid var(--tuv-border);
+  box-shadow: var(--tuv-shadow-sm);
+  transition: transform var(--tuv-transition-normal);
+}
+
+#ticket-upload-section .chart-container:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tuv-shadow-md);
+}
+
+#ticket-upload-section .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .chart-header h4 {
+  color: var(--tuv-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+#ticket-upload-section .chart-wrapper {
+  height: 250px;
+  position: relative;
+  min-height: 250px;
+}
+
+#ticket-upload-section .stats-container {
+  grid-column: span 2;
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xl);
+  border: 1px solid var(--tuv-border);
+  box-shadow: var(--tuv-shadow-sm);
+}
+
+#ticket-upload-section .stats-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .stat-item-large {
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-xxxl);
+  padding: var(--tuv-spacing-xl);
+  background: var(--tuv-bg-secondary);
+  border-radius: var(--tuv-radius-md);
+  border: 1px solid var(--tuv-border);
+  transition: transform var(--tuv-transition-normal);
+}
+
+#ticket-upload-section .stat-item-large:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tuv-shadow-sm);
+}
+
+#ticket-upload-section .stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--tuv-radius-md);
+  background: linear-gradient(135deg, var(--tuv-primary), var(--tuv-primary-dark));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+#ticket-upload-section .stat-icon.success {
+  background: linear-gradient(135deg, var(--tuv-success), var(--tuv-success-dark));
+}
+
+#ticket-upload-section .stat-icon.pending {
+  background: linear-gradient(135deg, var(--tuv-warning), #dd6b20);
+}
+
+#ticket-upload-section .stat-icon.warning {
+  background: linear-gradient(135deg, #ecc94b, #d69e2e);
+}
+
+#ticket-upload-section .stat-content .stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tuv-text-primary);
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+#ticket-upload-section .stat-content .stat-label {
+  color: var(--tuv-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ============================================
+   DISTRIBUTION PROGRESS
+   ============================================ */
+#ticket-upload-section .distribution-progress {
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-md);
+  padding: var(--tuv-spacing-xxl);
+  margin-bottom: var(--tuv-spacing-xxl);
+  border: 1px solid var(--tuv-border);
+  box-shadow: var(--tuv-shadow-sm);
+}
+
+#ticket-upload-section .progress-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .progress-title span:first-child {
+  color: var(--tuv-text-primary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+#ticket-upload-section .progress-percent-large {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tuv-primary);
+}
+
+#ticket-upload-section .progress-bar-large {
+  height: 10px;
+  background: var(--tuv-border);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: var(--tuv-spacing-xxxl);
+}
+
+#ticket-upload-section .progress-fill-large {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tuv-primary), var(--tuv-primary-dark));
+  transition: width var(--tuv-transition-slow);
+}
+
+#ticket-upload-section .progress-details {
+  display: flex;
+  justify-content: space-between;
+  color: var(--tuv-text-muted);
+  font-size: 14px;
+  flex-wrap: wrap;
+  gap: var(--tuv-spacing-xl);
+}
+
+#ticket-upload-section .progress-details strong {
+  color: var(--tuv-text-primary);
+  font-weight: 600;
+}
+
+/* ============================================
+   FLOATING WINDOW
+   ============================================ */
+#ticket-upload-section .floating-window {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  max-width: 90%;
+  max-height: 80vh;
+  background: var(--tuv-bg-primary);
+  border-radius: var(--tuv-radius-lg);
+  box-shadow: var(--tuv-shadow-xl);
+  z-index: 1001;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: tuvWindowAppear 0.3s ease;
+}
+
+@keyframes tuvWindowAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+#ticket-upload-section .floating-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--tuv-spacing-xl) var(--tuv-spacing-xxl);
+  background: linear-gradient(135deg, #1a365d, #2d3748);
+  color: white;
+}
+
+#ticket-upload-section .floating-header h3 {
+  margin: 0;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: var(--tuv-spacing-lg);
+  font-weight: 600;
+}
+
+#ticket-upload-section .close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--tuv-transition-fast);
+  font-size: 14px;
+}
+
+#ticket-upload-section .close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+#ticket-upload-section .floating-content {
+  padding: var(--tuv-spacing-xxl);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+#ticket-upload-section .full-width {
+  width: 100%;
+}
+
+#ticket-upload-section .text-center {
+  text-align: center;
+}
+
+#ticket-upload-section .text-right {
+  text-align: right;
+}
+
+#ticket-upload-section .text-left {
+  text-align: left;
+}
+
+#ticket-upload-section .hidden {
+  display: none !important;
+}
+
+#ticket-upload-section .visible {
+  display: block !important;
+}
+
+#ticket-upload-section .flex {
+  display: flex;
+}
+
+#ticket-upload-section .flex-column {
+  flex-direction: column;
+}
+
+#ticket-upload-section .items-center {
+  align-items: center;
+}
+
+#ticket-upload-section .justify-between {
+  justify-content: space-between;
+}
+
+#ticket-upload-section .gap-sm {
+  gap: var(--tuv-spacing-sm);
+}
+
+#ticket-upload-section .gap-md {
+  gap: var(--tuv-spacing-md);
+}
+
+#ticket-upload-section .gap-lg {
+  gap: var(--tuv-spacing-lg);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1300px) {
+  #ticket-upload-section .dashboard-grid {
+    grid-template-columns: 100%;
+  }
+
+  #ticket-upload-section .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #ticket-upload-section .validation-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  #ticket-upload-section .results-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #ticket-upload-section .table-controls {
+    flex: 1;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 768px) {
+  .upload-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--tuv-spacing-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  #ticket-upload-section.ticket-upload-validation {
+    padding: var(--tuv-spacing-xl);
+    margin-bottom: var(--tuv-spacing-xl);
+  }
+
+  #ticket-upload-section .section-header {
+    flex-direction: column;
+    gap: var(--tuv-spacing-xxxl);
+    align-items: stretch;
+  }
+
+  #ticket-upload-section .header-subtitle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--tuv-spacing-lg);
+  }
+
+  #ticket-upload-section .header-actions {
+    justify-content: flex-end;
+    margin-top: var(--tuv-spacing-md);
+  }
+
+  #ticket-upload-section .sources-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #ticket-upload-section .validation-summary {
+    grid-template-columns: 1fr;
+    gap: var(--tuv-spacing-xl);
+  }
+
+  #ticket-upload-section .stats-list {
+    grid-template-columns: 1fr;
+  }
+
+  #ticket-upload-section .results-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--tuv-spacing-xl);
+  }
+
+  #ticket-upload-section .results-actions {
+    flex-direction: column;
+    gap: var(--tuv-spacing-lg);
+    width: 100%;
+  }
+
+  #ticket-upload-section .table-controls {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  #ticket-upload-section .search-box {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  #ticket-upload-section .pagination-controls {
+    flex-direction: column;
+    gap: var(--tuv-spacing-xxxl);
+  }
+
+  #ticket-upload-section .pagination-buttons {
+    order: 1;
+  }
+
+  #ticket-upload-section .pagination-info {
+    order: 2;
+    text-align: center;
+  }
+
+  #ticket-upload-section .rows-per-page {
+    order: 3;
+  }
+
+  #ticket-upload-section .form-navigation {
+    flex-direction: column;
+    gap: var(--tuv-spacing-lg);
+  }
+
+  #ticket-upload-section .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #ticket-upload-section .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #ticket-upload-section .stats-container {
+    grid-column: span 1;
+  }
+}
+
+/* Print Styles */
+@media print {
+
+  #ticket-upload-section .btn-primary,
+  #ticket-upload-section .btn-secondary,
+  #ticket-upload-section .btn-tertiary,
+  #ticket-upload-section .btn-success,
+  #ticket-upload-section .btn-icon-outline,
+  #ticket-upload-section .btn-icon-sm,
+  #ticket-upload-section .btn-icon-xs,
+  #ticket-upload-section .pagination-btn,
+  #ticket-upload-section .page-number,
+  #ticket-upload-section .form-nav-btn,
+  #ticket-upload-section .tab-btn,
+  #ticket-upload-section .view-btn,
+  #ticket-upload-section .close-btn,
+  #ticket-upload-section .upload-area,
+  #ticket-upload-section .upload-progress {
+    display: none !important;
+  }
+
+  #ticket-upload-section.ticket-upload-validation {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+
+  #ticket-upload-section .validation-table {
+    min-width: auto;
+    font-size: 12px;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  #ticket-upload-section {
+    --tuv-border: #000;
+    --tuv-border-dark: #000;
+    --tuv-border-light: #000;
+    --tuv-text-primary: #000;
+    --tuv-text-secondary: #333;
+    --tuv-text-muted: #666;
+  }
+
+  #ticket-upload-section .btn-primary,
+  #ticket-upload-section .btn-secondary,
+  #ticket-upload-section .btn-success {
+    border: 2px solid #000;
+  }
+
+  #ticket-upload-section .upload-area {
+    border: 2px dashed #000;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+  #ticket-upload-section *,
+  #ticket-upload-section *::before,
+  #ticket-upload-section *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.record-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    border-left: 4px solid var(--primary-color);
+}
+
+.nav-counter {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-left: 10px;
+    color: var(--dark);
+}
+
+.btn-nav {
+    background: var(--primary-dark);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 5px;
+    transition: background 0.2s;
+}
+
+.btn-nav:hover {
+    background: var(--primary-dark);
+}
+
+.btn-nav-outline {
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    padding: 6px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-nav-outline:hover {
+    background: #dc3545;
+    color: white;
+}
+
+
+/* Status Colors */
+.status-valid { background-color: rgba(76, 175, 80, 0.05); }
+.status-warning { background-color: rgba(255, 152, 0, 0.05); }
+.status-error { background-color: rgba(244, 67, 54, 0.05); }
+
+/* Text Colors */
+.text-success { color: #4caf50; }
+.text-warning { color: #ff9800; }
+.text-danger { color: #f44336; }
+
+/* Message List in Table */
+.msg-list {
+    margin: 0;
+    padding-left: 15px;
+    font-size: 0.85rem;
+    color: #d32f2f;
+}
+
+/* Card Borders */
+.ticket-card.border-danger { border-left: 4px solid #f44336; }
+.ticket-card.border-warning { border-left: 4px solid #ff9800; }
+.ticket-card.border-success { border-left: 4px solid #4caf50; }
+
+/* Details Modal Table */
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.details-table th, .details-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    text-transform: capitalize;
+}
+.details-table th {
+    text-align: left;
+    color: #666;
+    width: 40%;
+}
+
+/* Modal Active State */
+.modal-window.active, .modal-overlay.active {
+    display: block; /* Or flex depending on your modal CSS */
+    opacity: 1;
+    pointer-events: all;
+}
