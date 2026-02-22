@@ -326,4 +326,236 @@
     </div>
 </div>
 
+<!-- Ticket Manager Modal -->
+<div class="modal" id="ticketManagerModal">
+    <div class="modal-content" style="width: 80%; height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h2><i class="fas fa-ticket"></i> Ticket Manager</h2>
+            <button class="close-modal" id="closeTicketManagerModal">&times;</button>
+        </div>
+        <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+            <div id="ticketManagerContent">
+                <div class="modal-tabs">
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tm-tab="available">Available Files</button>
+                        <button class="tab-btn" data-tm-tab="calculated">Calculated Files</button>
+                        <button class="tab-btn" data-tm-tab="approved">Approved Files</button>
+                        <button class="tab-btn" data-tm-tab="invoice">Invoice Files</button>
+                    </div>
+
+                    <div class="tab-content active" id="tmAvailableTab">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Versions</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
+                                        <th><i class="fas fa-file"></i> File Name</th>
+                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>Sample_Available_File.csv</td>
+                                        <td><span class="tm-status-badge amount">250</span></td>
+                                        <td>v1</td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn pink"><i class="fas fa-envelope"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-check"></i> PROCESS</button>
+                                <button class="control-btn" disabled><i class="fas fa-trash"></i> DELETE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tmCalculatedTab" style="display: none;">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Versions</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
+                                        <th><i class="fas fa-file"></i> File Name</th>
+                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
+                                            No calculated files found.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-thumbs-up"></i> APPROVE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tmApprovedTab" style="display: none;">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Versions</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
+                                        <th><i class="fas fa-file"></i> File Name</th>
+                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
+                                            No approved files found.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-file-invoice"></i> GENERATE
+                                    INVOICE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tmInvoiceTab" style="display: none;">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Versions</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
+                                        <th><i class="fas fa-file"></i> File Name</th>
+                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
+                                            No invoice files found.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-paper-plane"></i> SEND TO
+                                    CLIENT</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="closeTicketManagerBtn">Close</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

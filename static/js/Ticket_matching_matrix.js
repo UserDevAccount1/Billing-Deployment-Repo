@@ -588,43 +588,21 @@ function handleFiles(files) {
   const uuidSelect = document.getElementById('versionUUIDSelect');
   const selectedUuid = uuidSelect ? uuidSelect.value : "";
 
+  // Store globally for upload after parsing
+  window.CURRENT_UPLOAD_FILE = file;
+  window.CURRENT_UPLOAD_UUID = selectedUuid;
+
   window.showToast(`Processing ${file.name}...`, 'info');
 
-  // 1. Upload to Versioned File Backend API FIRST
-  const formData = new FormData();
-  formData.append('file', file);
-  if (selectedUuid) {
-    formData.append('uuid', selectedUuid);
+  if (ext === 'csv') {
+    parseCSV(file);
+  } else if (['xls', 'xlsx'].includes(ext)) {
+    parseExcel(file);
+  } else if (ext === 'pdf') {
+    parsePDF(file);
+  } else {
+    window.showToast("Invalid format for parsing. Supported: CSV, Excel, PDF", "error");
   }
-
-  fetch('/billing/api/upload-versioned-file/', {
-    method: 'POST',
-    body: formData
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        window.lastUploadedFileData = data;
-        console.log("File uploaded and versioned successfully:", data);
-
-        // Proceed to parse the file for UI usage (CSV/Excel/PDF)
-        if (ext === 'csv') {
-          parseCSV(file);
-        } else if (['xls', 'xlsx'].includes(ext)) {
-          parseExcel(file);
-        } else if (ext === 'pdf') {
-          parsePDF(file);
-        } else {
-          window.showToast("Invalid format for parsing. Supported: CSV, Excel, PDF", "error");
-        }
-      } else {
-        window.showToast(`Upload Error: ${data.error}`, 'error');
-      }
-    })
-    .catch(err => {
-      console.error("Upload Error:", err);
-      window.showToast("An error occurred during file upload.", "error");
-    });
 }
 
 function parseCSV(file) {
@@ -804,7 +782,46 @@ function normalizeBatch(rawData) {
 
 function initializeImportData(rawArray) {
   const newNormalizedData = normalizeBatch(rawArray);
+  console.log("newNormalizedData", newNormalizedData);
+  const ticketCount = newNormalizedData.length;
 
+  if (window.CURRENT_UPLOAD_FILE) {
+    window.showToast("Uploading file to server...", "info");
+    const formData = new FormData();
+    formData.append('file', window.CURRENT_UPLOAD_FILE);
+    if (window.CURRENT_UPLOAD_UUID) {
+      formData.append('uuid', window.CURRENT_UPLOAD_UUID);
+    }
+    formData.append('ticket_count', ticketCount);
+
+    fetch('/billing/api/upload-versioned-file/', {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.lastUploadedFileData = data;
+          console.log("File uploaded and versioned successfully:", data);
+          proceedWithImportData(newNormalizedData);
+        } else {
+          window.showToast(`Upload Error: ${data.error}`, 'error');
+        }
+      })
+      .catch(err => {
+        console.error("Upload Error:", err);
+        window.showToast("An error occurred during file upload.", "error");
+      })
+      .finally(() => {
+        window.CURRENT_UPLOAD_FILE = null;
+        window.CURRENT_UPLOAD_UUID = null;
+      });
+  } else {
+    proceedWithImportData(newNormalizedData);
+  }
+}
+
+function proceedWithImportData(newNormalizedData) {
   // 1. VALIDATION PATH
   if (window.IS_VALIDATION_MODE) {
     window.showToast("Generating Validation Report...", "info");

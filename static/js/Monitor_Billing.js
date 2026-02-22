@@ -147,6 +147,46 @@ function initBillingColumnToggle() {
     });
 }
 
+function initTicketManagerModal() {
+    const tmBtn = document.getElementById('ticketManagerBtn');
+    const tmModal = document.getElementById('ticketManagerModal');
+    const closeBtn1 = document.getElementById('closeTicketManagerModal');
+    const closeBtn2 = document.getElementById('closeTicketManagerBtn');
+
+    if (tmBtn && tmModal) {
+        tmBtn.addEventListener('click', () => {
+            tmModal.classList.add('active');
+        });
+    }
+
+    if (closeBtn1) closeBtn1.addEventListener('click', () => tmModal.classList.remove('active'));
+    if (closeBtn2) closeBtn2.addEventListener('click', () => tmModal.classList.remove('active'));
+
+    // Tab switching for Ticket Manager modal
+    document.querySelectorAll('#ticketManagerModal .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tm-tab');
+
+            // Update button states
+            document.querySelectorAll('#ticketManagerModal .tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update content states 
+            document.querySelectorAll('#ticketManagerModal .tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+
+            // Capitalize first letter logic (available -> Available)
+            const activeTab = document.getElementById(`tm${tabId.charAt(0).toUpperCase() + tabId.slice(1)}Tab`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                activeTab.style.display = 'block';
+            }
+        });
+    });
+}
+
 // ==================== TABLE RENDERING ====================
 
 function renderBillingTable() {
@@ -916,6 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchBillingTickets();
     initBillingColumnToggle();
     initQuickView();
+    initTicketManagerModal();
 
     document.getElementById('billingRegionFilter')?.addEventListener('change', applyBillingFilters);
     document.getElementById('billingCustomerFilter')?.addEventListener('change', applyBillingFilters);

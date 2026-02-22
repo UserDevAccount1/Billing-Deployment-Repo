@@ -847,9 +847,7 @@ def upload_versioned_file(request):
             highest_version = 0
             
             # Regex to match: uuid_vX_...
-            # Note: We look for the exact UUID prefix followed by _v and then digits.
-            pattern = re.compile(rf"^{re.escape(file_uuid)}_v(\d+)_")
-            
+            pattern = re.compile(rf"^{file_uuid}_v(\d+)(?:_\d+)?_.*$")
             for filename in os.listdir(upload_dir):
                 match = pattern.match(filename)
                 if match:
@@ -861,13 +859,13 @@ def upload_versioned_file(request):
 
         # Extract extension and construct new filename
         original_name = uploaded_file.name
-        name_part, ext_part = os.path.splitext(original_name)
-        
-        # Clean the original filename slightly just to avoid double underscores or weird chars
-        clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', name_part)
-        
-        new_filename = f"{file_uuid}_v{version}_{clean_name}{ext_part}"
-        
+        # Get ticket count
+        ticket_count = request.POST.get("ticket_count", "0")
+
+        # Determine new filename
+        name, ext = os.path.splitext(original_name)
+        new_filename = f"{file_uuid}_v{version}_{ticket_count}_{original_name}"
+
         # Save the file
         fs = FileSystemStorage(location=upload_dir)
         saved_filename = fs.save(new_filename, uploaded_file)
@@ -896,12 +894,12 @@ def get_available_versioned_files(request):
         return JsonResponse({"files": []})
         
     files_dict = {}
-    pattern = re.compile(r"^([a-f0-9\-]+)_v(\d+)_(.+)$")
+    pattern = re.compile(r"^([a-f0-9\-]+)_v(\d+)(?:_(\d+))?_(.+)$")
     
     for filename in os.listdir(upload_dir):
         match = pattern.match(filename)
         if match:
-            file_uuid, version_str, original_name = match.groups()
+            file_uuid, version_str, ticket_count_str, original_name = match.groups()
             version = int(version_str)
             
             if file_uuid not in files_dict or files_dict[file_uuid]["latest_version"] < version:
