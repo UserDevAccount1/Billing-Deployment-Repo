@@ -7,7 +7,8 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-dev-key')
 DEBUG = config('DEBUG', default=True, cast=bool) 
 ALLOWED_HOSTS = ['*', 'localhost', '127.0.0.1'] 
  
-INSTALLED_APPS = [ 
+INSTALLED_APPS = [
+    'django.contrib.humanize', 
     'django.contrib.admin', 
     'django.contrib.auth', 
     'django.contrib.contenttypes', 
@@ -68,3 +69,4 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/' 
 MEDIA_ROOT = BASE_DIR / 'media' 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 
+
