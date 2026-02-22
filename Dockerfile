@@ -18,6 +18,8 @@ RUN apt-get update \
        netcat-openbsd \
        pkg-config \
        default-libmysqlclient-dev \
+       libmariadb-dev-compat \
+       libmariadb-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Workdir

@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+  <style>
+    .pending-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .pending-table th {
+      background: #79aec8;
+      color: white;
+      padding: 10px;
+      text-align: left;
+    }
+    .pending-table td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .pending-table tr:hover {
+      background: #f5f5f5;
+    }
+    .approve-btn {
+      background: #5cb85c;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .reject-btn {
+      background: #d9534f;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .amount-input {
+      width: 120px;
+      padding: 5px;
+      margin-right: 5px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <h1>Purchase Orders Pending Review</h1>
+    
+    <div class="module">
+      <table class="pending-table">
+        <thead>
+          <tr>
+            <th>PO Number</th>
+            <th>Customer</th>
+            <th>Account</th>
+            <th>Ticket Amount</th>
+            <th>Current Amount</th>
+            <th>Currency</th>
+            <th>Uploaded</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for po in pending_pos %}
+          <tr>
+            <td>{{ po.po_number }}</td>
+            <td>{{ po.customer.name }}</td>
+            <td>{{ po.account.name|default:"-" }}</td>
+            <td>£1,716.00</td>
+            <td>£{{ po.total_amount|floatformat:2 }}</td>
+            <td>{{ po.currency }}</td>
+            <td>{{ po.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <form method="post" action="{% url 'admin:purchase_orders_review_action' po.id %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="number" name="amount" class="amount-input" placeholder="Enter amount" step="0.01" required>
+                <button type="submit" name="action" value="approve" class="approve-btn">✓ Approve</button>
+                <button type="submit" name="action" value="reject" class="reject-btn">✗ Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align:center; padding:20px;">No POs pending review</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

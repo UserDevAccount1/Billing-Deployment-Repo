@@ -17,14 +17,12 @@ class PurchaseOrder(models.Model):
         ('fully_utilized', 'Fully Utilized'),
     ]
 
-    # UUID for external reference/tracking (keep integer pk as default)
-    # uuid = models.UUIDField(
-    #     default=uuid.uuid4,
-    #     editable=False,
-    #     unique=True,
-    #     db_index=True,
-    #     help_text='Unique identifier for API and external references'
-    # )
+    REVIEW_STATUS_CHOICES = [
+        ('approved', 'Approved'),
+        ('pending_review', 'Pending Review'),
+        ('rejected', 'Rejected'),
+        ('active', 'Active'),
+    ]
 
     # Core fields
     po_number = models.CharField(max_length=100, unique=True)
@@ -70,7 +68,7 @@ class PurchaseOrder(models.Model):
     expiration_days = models.IntegerField(blank=True, null=True)
     payment_terms = models.CharField(max_length=100, blank=True, null=True)
     client_year = models.CharField(max_length=4, blank=True, null=True)
-    excis_entity = models.CharField(max_length=50, blank=True, null=True) # New column
+    excis_entity = models.CharField(max_length=50, blank=True, null=True)
 
     # Additional fields
     notes = models.TextField(blank=True, null=True)
@@ -154,6 +152,42 @@ class PurchaseOrder(models.Model):
         help_text='Person who requested the PO'
     )
 
+    # 🔥 NEW REVIEW FIELDS
+    review_status = models.CharField(
+        max_length=20,
+        choices=REVIEW_STATUS_CHOICES,
+        default='active',
+        blank=True,
+        null=True,
+        help_text='Review status for manual verification'
+    )
+    
+    requires_review = models.BooleanField(
+        default=False,
+        blank=True,
+        help_text='Flag indicating this PO needs manual review'
+    )
+    
+    reviewed_at = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text='When this PO was reviewed'
+    )
+    
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_purchase_orders',
+        help_text='User who reviewed this PO'
+    )
+    
+    review_notes = models.TextField(
+        blank=True,
+        help_text='Notes from the review process'
+    )
+
     # Status and Metadata
     status = models.CharField(
         max_length=20,
@@ -223,28 +257,11 @@ class PurchaseOrder(models.Model):
         """Get formatted remaining balance with currency"""
         return f"{self.currency} {self.remaining_balance:,.2f}"
 
-    @property
-    def remaining_balance(self):
-        """Calculate remaining balance from total_amount and spent_amount"""
-        return self.total_amount - self.spent_amount
-
-    @property
-    def utilization_percentage(self):
-        """Calculate utilization percentage"""
-        if self.total_amount > 0:
-            return (self.spent_amount / self.total_amount) * 100
-        return 0
-
-    @property
-    def formatted_balance(self):
-        """Get formatted remaining balance with currency"""
-        return f"{self.currency} {self.remaining_balance:,.2f}"
-
     # Helper Methods
     def get_customer_account_display(self):
         """Get display string for customer and account"""
         if self.account:
-            return f"{self.customer.name} â†’ {self.account.name}"
+            return f"{self.customer.name} → {self.account.name}"
         return self.customer.name
 
     def update_status(self):
@@ -351,11 +368,6 @@ class PurchaseOrderCSV(models.Model):
     def extract_csv_data(self):
         """
         Extract data from HCL PO Report CSV file
-        Structure:
-        - Row 1: Customer name (e.g., "HCL")
-        - Row 6: Headers (PROJECT, SDM, PO NUMBER, etc.)
-        - Row 7+: Data rows
-        - PROJECT column = Account name
         """
         from datetime import datetime
 
@@ -396,7 +408,7 @@ class PurchaseOrderCSV(models.Model):
             if all_rows[0] and all_rows[0][0]:
                 extracted_data['customer_name'] = all_rows[0][0].strip()
 
-            # Find header row (should be around row 5-6)
+            # Find header row
             header_row_idx = None
             headers = []
 
@@ -411,11 +423,10 @@ class PurchaseOrderCSV(models.Model):
             if header_row_idx is None:
                 raise ValueError("Could not find header row with PROJECT and PO NUMBER columns")
 
-            # Map column positions - use exact header names
+            # Map column positions
             col_map = {}
             for idx, header in enumerate(headers):
                 if header and header.strip():
-                    # Clean header (remove BOM and extra whitespace)
                     clean_header = header.strip().replace('\ufeff', '').replace('ï¿½', '')
                     col_map[clean_header] = idx
 
@@ -459,13 +470,13 @@ class PurchaseOrderCSV(models.Model):
                     if start_date_str:
                         parsed_date = self._parse_date(start_date_str)
                         if parsed_date:
-                            record['valid_from'] = parsed_date.strftime('%Y-%m-%d')  # Convert to string for JSON
+                            record['valid_from'] = parsed_date.strftime('%Y-%m-%d')
 
                     end_date_str = get_cell('END DATE')
                     if end_date_str:
                         parsed_date = self._parse_date(end_date_str)
                         if parsed_date:
-                            record['valid_until'] = parsed_date.strftime('%Y-%m-%d')  # Convert to string for JSON
+                            record['valid_until'] = parsed_date.strftime('%Y-%m-%d')
 
                     exp_str = get_cell('EXPIRATION DAYS')
                     if exp_str:
@@ -533,7 +544,7 @@ class PurchaseOrderCSV(models.Model):
         for fmt in date_formats:
             try:
                 from datetime import datetime
-                return datetime.strptime(date_str.strip(), fmt).date()  # Return date object, not string
+                return datetime.strptime(date_str.strip(), fmt).date()
             except:
                 continue
         return None
@@ -553,7 +564,7 @@ class PurchaseOrderCSV(models.Model):
         # Remove common formatting characters
         cleaned = cleaned.replace(',', '').replace(' ', '').replace('\xa0', '')
 
-        # Remove currency symbols (including unicode variants)
+        # Remove currency symbols
         for symbol in ['$', '€', '£', 'RM', 'USD', 'EUR', 'GBP', '₹', '¥', 'â‚¬', 'Â£']:
             cleaned = cleaned.replace(symbol, '')
 

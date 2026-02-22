@@ -27,8 +27,10 @@ def dashboard_home(request):
         billing_date__gte=thirty_days_ago
     ).aggregate(total=Sum('amount'))['total'] or 0
 
-    # Pending approvals
-    pending_approvals = BillingRun.objects.filter(status='pending').count()
+    # 🔥 FIXED: Pending approvals - count POs needing review, NOT billing runs
+    pending_approvals = PurchaseOrder.objects.filter(
+        Q(review_status='pending_review') | Q(requires_review=True)
+    ).count()
 
     # Low balance POs (less than 20% remaining)
     # remaining_balance = total_amount - spent_amount
@@ -69,6 +71,11 @@ def dashboard_home(request):
         'customer'
     ).order_by('-created_at')[:5]
 
+    # 🔥 NEW: Get pending POs for the review table
+    pending_pos = PurchaseOrder.objects.filter(
+        Q(review_status='pending_review') | Q(requires_review=True)
+    ).select_related('customer').order_by('-created_at')[:10]
+
     # Low balance PO details for alerts
     low_balance_pos_details = PurchaseOrder.objects.filter(
         status='active',
@@ -92,6 +99,7 @@ def dashboard_home(request):
         'kpis': kpis,
         'recent_billing': recent_billing,
         'recent_pos': recent_pos,
+        'pending_pos': pending_pos,  # 🔥 ADDED for the pending reviews table
         'low_balance_pos_details': low_balance_pos_details,
         'expiring_soon': expiring_soon,
     }
