@@ -74,4 +74,14 @@ urlpatterns = [
         views.get_initial_tickets_filtered,
         name="get_initial_tickets_filtered",
     ),
+    path(
+        "api/upload-versioned-file/",
+        views.upload_versioned_file,
+        name="upload_versioned_file",
+    ),
+    path(
+        "api/available-versioned-files/",
+        views.get_available_versioned_files,
+        name="get_available_versioned_files",
+    ),
 ]

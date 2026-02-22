@@ -180,6 +180,7 @@ class FinalTicket(models.Model):
     """Stores the final processed ticket data"""
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    file_uuid = models.UUIDField(null=True, blank=True)
 
     # Link to the InitialTicket
     initial_ticket = models.ForeignKey(
@@ -225,6 +226,7 @@ class InitialTicket(models.Model):
     """Stores the initial raw ticket data (same schema as FinalTicket)"""
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    file_uuid = models.UUIDField(null=True, blank=True)
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     account = models.ForeignKey(

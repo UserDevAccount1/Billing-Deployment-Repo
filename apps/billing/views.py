@@ -11,6 +11,9 @@ from django.http import JsonResponse
 from django.db.models.functions import Lower
 from django.utils.dateformat import format
 from django.views import View
+import os
+import re
+from django.core.files.storage import FileSystemStorage
 
 from excis_billing import settings
 
@@ -474,6 +477,7 @@ def get_all_final_data(request):
                     "account": entry.account.name if entry.account else None,
                     "data_table": entry.data_table,
                     "created_at": entry.created_at,
+                    "file_uuid": entry.file_uuid,
                 }
             )
 
@@ -640,6 +644,7 @@ class BatchStoreFinalTicketView(View):
                             instance.data_table = item.get("data_table", {})
                             instance.initial_ticket = initial_ticket_instance
                             instance.band = band_instance
+                            instance.file_uuid = item.get("file_uuid")
                             instance.save()
                             updated_count += 1
                         except FinalTicket.DoesNotExist:
@@ -655,6 +660,7 @@ class BatchStoreFinalTicketView(View):
                             data_table=item.get("data_table", {}),
                             initial_ticket=initial_ticket_instance,
                             band=band_instance,
+                            file_uuid=item.get("file_uuid"),
                         )
                         saved_count += 1
 
@@ -766,6 +772,7 @@ class BatchStoreInitialTicketView(View):
                             instance.ticket_number = item["ticket_number"]
                             instance.request_id = item["request_id"]
                             instance.data_table = item.get("data_table", {})
+                            instance.file_uuid = item.get("file_uuid")
                             instance.save()
                             updated_count += 1
                         except InitialTicket.DoesNotExist:
@@ -779,6 +786,7 @@ class BatchStoreInitialTicketView(View):
                             ticket_number=item["ticket_number"],
                             request_id=item["request_id"],
                             data_table=item.get("data_table", {}),
+                            file_uuid=item.get("file_uuid"),
                         )
                         saved_count += 1
 
@@ -807,6 +815,105 @@ class BatchStoreInitialTicketView(View):
             )
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@csrf_exempt
+def upload_versioned_file(request):
+    """
+    Endpoint to receive a file and save it with a version number.
+    Format: <uuid>_v<version>_<original_name>.<ext>
+    If uuid is provided, check existing files and increment version.
+    If no uuid is provided, generate a new uuid and set version to 1.
+    """
+    if request.method == "POST":
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+
+        provided_uuid = request.POST.get("uuid", "").strip()
+        
+        # Determine base directory
+        upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_uuid = provided_uuid
+        version = 1
+
+        if not file_uuid:
+            # Generate new UUID
+            file_uuid = str(uuid.uuid4())
+        else:
+            # Check for existing versions
+            highest_version = 0
+            
+            # Regex to match: uuid_vX_...
+            # Note: We look for the exact UUID prefix followed by _v and then digits.
+            pattern = re.compile(rf"^{re.escape(file_uuid)}_v(\d+)_")
+            
+            for filename in os.listdir(upload_dir):
+                match = pattern.match(filename)
+                if match:
+                    ver = int(match.group(1))
+                    if ver > highest_version:
+                        highest_version = ver
+            
+            version = highest_version + 1
+
+        # Extract extension and construct new filename
+        original_name = uploaded_file.name
+        name_part, ext_part = os.path.splitext(original_name)
+        
+        # Clean the original filename slightly just to avoid double underscores or weird chars
+        clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', name_part)
+        
+        new_filename = f"{file_uuid}_v{version}_{clean_name}{ext_part}"
+        
+        # Save the file
+        fs = FileSystemStorage(location=upload_dir)
+        saved_filename = fs.save(new_filename, uploaded_file)
+        
+        return JsonResponse({
+            "success": True,
+            "uuid": file_uuid,
+            "version": version,
+            "filename": saved_filename,
+            "message": "File uploaded successfully"
+        })
+
+    return JsonResponse({"success": False, "error": "Only POST requests are allowed"}, status=405)
+
+
+def get_available_versioned_files(request):
+    """
+    Returns a list of all uniquely grouped files based on their UUIDs.
+    It determines the latest version for each UUID and returns:
+    [
+        {"uuid": "...", "latest_version": X, "latest_filename": "..."}
+    ]
+    """
+    upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
+    if not os.path.exists(upload_dir):
+        return JsonResponse({"files": []})
+        
+    files_dict = {}
+    pattern = re.compile(r"^([a-f0-9\-]+)_v(\d+)_(.+)$")
+    
+    for filename in os.listdir(upload_dir):
+        match = pattern.match(filename)
+        if match:
+            file_uuid, version_str, original_name = match.groups()
+            version = int(version_str)
+            
+            if file_uuid not in files_dict or files_dict[file_uuid]["latest_version"] < version:
+                files_dict[file_uuid] = {
+                    "uuid": file_uuid,
+                    "latest_version": version,
+                    "latest_filename": filename,
+                    "original_name": original_name
+                }
+                
+    files_list = list(files_dict.values())
+    return JsonResponse({"files": files_list})
 
 
 @method_decorator(csrf_exempt, name="dispatch")

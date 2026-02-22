@@ -433,7 +433,7 @@ function initValidationViewToggles() {
   }
 }
 function initRecordValidationButton() {
-  const btn = document.getElementById('saveRecordBtn'); 
+  const btn = document.getElementById('saveRecordBtn');
   if (!btn) return;
 
   btn.addEventListener('click', function () {
@@ -471,10 +471,11 @@ function initRecordValidationButton() {
 
       return {
         // --- KEY CHANGE: Include Final Ticket UUID if it exists ---
-        uuid: record._final_uuid || null, 
-        
+        uuid: record._final_uuid || null,
+        file_uuid: window.lastUploadedFileData ? window.lastUploadedFileData.uuid : null,
+
         customer: customerId,
-        account: accountId, 
+        account: accountId,
         ticket_number: record.ticket_number || "UNKNOWN",
         request_id: record.request_id || "UNKNOWN",
         data_table: jsonStorage,
@@ -511,14 +512,14 @@ function initRecordValidationButton() {
 
         // --- KEY CHANGE: Map Final Ticket UUIDs back to Master Data ---
         if (data.created_items && Array.isArray(data.created_items)) {
-            data.created_items.forEach(item => {
-                // We use ticket_number to find the record in Master Data
-                const record = window.MASTER_DATA.find(r => r.ticket_number === item.ticket_number);
-                if (record) {
-                    record._final_uuid = item.uuid; // <--- Store for next update
-                }
-            });
-            console.log("Updated Master Data with Final UUIDs.");
+          data.created_items.forEach(item => {
+            // We use ticket_number to find the record in Master Data
+            const record = window.MASTER_DATA.find(r => r.ticket_number === item.ticket_number);
+            if (record) {
+              record._final_uuid = item.uuid; // <--- Store for next update
+            }
+          });
+          console.log("Updated Master Data with Final UUIDs.");
         }
         // -------------------------------------------------------------
 
@@ -584,17 +585,46 @@ function handleFiles(files) {
   const file = files[0];
   const ext = file.name.split('.').pop().toLowerCase();
 
+  const uuidSelect = document.getElementById('versionUUIDSelect');
+  const selectedUuid = uuidSelect ? uuidSelect.value : "";
+
   window.showToast(`Processing ${file.name}...`, 'info');
 
-  if (ext === 'csv') {
-    parseCSV(file);
-  } else if (['xls', 'xlsx'].includes(ext)) {
-    parseExcel(file);
-  } else if (ext === 'pdf') {
-    parsePDF(file);
-  } else {
-    window.showToast("Invalid format. Supported: CSV, Excel, PDF", "error");
+  // 1. Upload to Versioned File Backend API FIRST
+  const formData = new FormData();
+  formData.append('file', file);
+  if (selectedUuid) {
+    formData.append('uuid', selectedUuid);
   }
+
+  fetch('/billing/api/upload-versioned-file/', {
+    method: 'POST',
+    body: formData
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        window.lastUploadedFileData = data;
+        console.log("File uploaded and versioned successfully:", data);
+
+        // Proceed to parse the file for UI usage (CSV/Excel/PDF)
+        if (ext === 'csv') {
+          parseCSV(file);
+        } else if (['xls', 'xlsx'].includes(ext)) {
+          parseExcel(file);
+        } else if (ext === 'pdf') {
+          parsePDF(file);
+        } else {
+          window.showToast("Invalid format for parsing. Supported: CSV, Excel, PDF", "error");
+        }
+      } else {
+        window.showToast(`Upload Error: ${data.error}`, 'error');
+      }
+    })
+    .catch(err => {
+      console.error("Upload Error:", err);
+      window.showToast("An error occurred during file upload.", "error");
+    });
 }
 
 function parseCSV(file) {
@@ -1336,6 +1366,7 @@ function initSaveButton() {
 
       return {
         uuid: record._initial_uuid || null, // <--- KEY CHANGE: Send UUID if we have it
+        file_uuid: window.lastUploadedFileData ? window.lastUploadedFileData.uuid : null,
         customer: customerId,
         account: accountId,
         ticket_number: cleanTicketNum,
@@ -2093,11 +2124,11 @@ function initLoadDataButton() {
   const btn = document.getElementById('loadDataButton');
   if (!btn) return;
 
-  btn.addEventListener('click', function() {
+  btn.addEventListener('click', function () {
     // 1. Get Context values
     const customerSelect = document.getElementById('tmm_customerSelect');
     const accountSelect = document.getElementById('tmm_accountSelect');
-    
+
     // Get values (default to 'all' if not found)
     const custVal = customerSelect ? customerSelect.value : 'all';
     const accVal = accountSelect ? accountSelect.value : 'all';
@@ -2121,7 +2152,7 @@ function initLoadDataButton() {
       })
       .then(resp => {
         if (resp.success && Array.isArray(resp.data)) {
-          
+
           if (resp.data.length === 0) {
             window.showToast("No records found for this selection.", "warning");
             return;
@@ -2133,15 +2164,15 @@ function initLoadDataButton() {
             // Flatten the structure: Take the data_table object
             const record = {
               ...(apiRecord.data_table || {}), // Spread the stored data fields
-              
+
               // Ensure critical keys from the wrapper exist/override if missing in data_table
               ticket_number: apiRecord.ticket_number,
               request_id: apiRecord.request_id,
-              
+
               // Store the UUID internally so we can update this record later instead of creating new
-              _initial_uuid: apiRecord.uuid 
+              _initial_uuid: apiRecord.uuid
             };
-            
+
             // Ensure fields defined in FIELD_DEFINITIONS exist (fill defaults)
             Object.keys(window.FIELD_DEFINITIONS).forEach(field => {
               if (record[field] === undefined) record[field] = "";
@@ -2152,7 +2183,7 @@ function initLoadDataButton() {
 
           // 6. Refresh UI using existing finalizeLoad logic
           finalizeLoad(); // This handles counters, navigation display, and loading the first record
-          
+
           window.showToast(`Successfully loaded ${window.MASTER_DATA.length} records from database.`, "success");
         } else {
           throw new Error(resp.message || "Failed to load data");

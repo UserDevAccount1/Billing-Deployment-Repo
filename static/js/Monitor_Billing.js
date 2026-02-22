@@ -18,8 +18,10 @@ let filteredBillingData = [];
 
 const billingTableConfig = {
     columns: [
+        { id: 'selection', label: '<input type="checkbox" id="selectAllTickets" onclick="toggleAllTickets(this)">', visible: true, sortable: false },
         { id: 'request_id', label: 'Request ID', visible: true, sortable: true },
         { id: 'ticket_number', label: 'Ticket Number', visible: true, sortable: true },
+        { id: 'version', label: 'Version', visible: true, sortable: true },
         { id: 'customer', label: 'Customer', visible: true, sortable: true },
         { id: 'customer_reference', label: 'Customer Reference', visible: true, sortable: true },
         { id: 'requester', label: 'Requester', visible: true, sortable: true },
@@ -64,7 +66,7 @@ async function fetchBillingTickets() {
         const response = await fetch('/billing/api/final-data/');
         const result = await response.json();
         if (result.success) {
-            finalTickets = result.data;
+            finalTickets = (result.data || []).filter(t => t.band != null);
             populateBillingFilterDropdowns();
             applyBillingFilters();
         }
@@ -156,7 +158,11 @@ function renderBillingTable() {
     billingTableConfig.columns.forEach(column => {
         if (!column.visible) return;
         const th = document.createElement('th');
-        th.textContent = column.label;
+        if (column.id === 'selection') {
+            th.innerHTML = column.label;
+        } else {
+            th.textContent = column.label;
+        }
         if (column.sortable) {
             th.className = 'sortable';
             if (billingTableConfig.sortColumn === column.id) th.classList.add(billingTableConfig.sortDirection);
@@ -180,6 +186,8 @@ function renderBillingTable() {
             const td = document.createElement('td');
             let val = '-';
             switch (column.id) {
+                case 'selection': val = `<input type="checkbox" class="ticket-checkbox" value="${ticket.uuid}" onclick="event.stopPropagation()">`; break;
+                case 'version': val = '-'; break;
                 case 'request_id': val = ticket.request_id || dataTable.request_id || '-'; break;
                 case 'ticket_number': val = `<strong>${ticket.ticket_number || dataTable.ticket_number || '-'}</strong>`; break;
                 case 'customer': val = ticket.customer || dataTable.customer || '-'; break;
@@ -895,6 +903,11 @@ function initBillingStepTracker() {
     });
 }
 
+window.toggleAllTickets = function (source) {
+    const checkboxes = document.querySelectorAll('.ticket-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+};
+
 // ==================== INIT ====================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -909,4 +922,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('billingAccountFilter')?.addEventListener('change', applyBillingFilters);
     document.getElementById('billingSearchInput')?.addEventListener('input', applyBillingFilters);
     document.getElementById('refreshTable')?.addEventListener('click', fetchBillingTickets);
+
+    document.getElementById('playPipeline')?.addEventListener('click', () => {
+        const selectedIds = Array.from(document.querySelectorAll('.ticket-checkbox:checked')).map(cb => cb.value);
+        console.log("Selected UUIDs:", selectedIds);
+        alert("Selected UUIDs printed to console:\n" + selectedIds.join('\n'));
+    });
 });
