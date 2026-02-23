@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import datetime
 import uuid
 import logging
 import json
@@ -883,17 +884,24 @@ def upload_versioned_file(request):
 
 def get_available_versioned_files(request):
     """
-    Returns a list of all uniquely grouped files based on their UUIDs.
-    It determines the latest version for each UUID and returns:
+    Returns a list of all uniquely grouped files based on their UUIDs and captures their metadata.
     [
-        {"uuid": "...", "latest_version": X, "latest_filename": "..."}
+        {
+            "uuid": "...", 
+            "version": X, 
+            "filename": "...", 
+            "original_name": "...", 
+            "ticket_count": "...", 
+            "creation_date": "...",
+            "file_type": "..."
+        }
     ]
     """
     upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
     if not os.path.exists(upload_dir):
         return JsonResponse({"files": []})
         
-    files_dict = {}
+    files_list = []
     pattern = re.compile(r"^([a-f0-9\-]+)_v(\d+)(?:_(\d+))?_(.+)$")
     
     for filename in os.listdir(upload_dir):
@@ -901,17 +909,60 @@ def get_available_versioned_files(request):
         if match:
             file_uuid, version_str, ticket_count_str, original_name = match.groups()
             version = int(version_str)
+            ticket_count = int(ticket_count_str) if ticket_count_str else 0
             
-            if file_uuid not in files_dict or files_dict[file_uuid]["latest_version"] < version:
-                files_dict[file_uuid] = {
-                    "uuid": file_uuid,
-                    "latest_version": version,
-                    "latest_filename": filename,
-                    "original_name": original_name
-                }
-                
-    files_list = list(files_dict.values())
+            filepath = os.path.join(upload_dir, filename)
+            creation_timestamp = os.path.getctime(filepath)
+            
+            # Format creation date to a readable string (e.g. 15/01/2024 9:00:00 am)
+            dt = datetime.datetime.fromtimestamp(creation_timestamp)
+            creation_date = dt.strftime("%d/%m/%Y %I:%M:%S %p").lower()
+            
+            file_type = os.path.splitext(original_name)[1].lower().replace('.', '')
+            if not file_type:
+                file_type = "unknown"
+
+            files_list.append({
+                "uuid": file_uuid,
+                "version": version,
+                "filename": filename,
+                "original_name": original_name,
+                "ticket_count": ticket_count,
+                "creation_date": creation_date,
+                "file_type": file_type
+            })
+
+    # Sort files by newest first
+    files_list.sort(key=lambda x: x["creation_date"], reverse=True)
     return JsonResponse({"files": files_list})
+
+
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+@xframe_options_exempt
+def serve_versioned_file(request, filename):
+    """
+    Serves a file from the versioned uploads directory. 
+    If ?download=1 is appended to the request, the file is returned as an attachment.
+    """
+    upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
+    filepath = os.path.join(upload_dir, filename)
+    
+    if not os.path.exists(filepath):
+        from django.http import Http404
+        raise Http404("File does not exist")
+        
+    download = request.GET.get('download') == '1'
+    
+    from django.http import FileResponse
+    response = FileResponse(open(filepath, 'rb'))
+    
+    if download:
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    else:
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        
+    return response
 
 
 @method_decorator(csrf_exempt, name="dispatch")

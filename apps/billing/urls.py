@@ -84,4 +84,9 @@ urlpatterns = [
         views.get_available_versioned_files,
         name="get_available_versioned_files",
     ),
+    path(
+        "api/file-serve/<path:filename>/",
+        views.serve_versioned_file,
+        name="serve_versioned_file",
+    ),
 ]

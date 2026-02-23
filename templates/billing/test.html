@@ -1777,7 +1777,7 @@
                     data.files.forEach(f => {
                         const option = document.createElement('option');
                         option.value = f.uuid;
-                        option.textContent = `v${f.latest_version} - ${f.original_name}`;
+                        option.textContent = `v${f.version} - ${f.original_name}`;
                         selectElement.appendChild(option);
                     });
                 }

@@ -352,8 +352,12 @@
                             </div>
                             <div class="tm-filter-group">
                                 <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Upload Date</label>
                                 <select class="tm-filter-input">
-                                    <option value="">All Versions</option>
+                                    <option value="">All Dates</option>
                                 </select>
                             </div>
                             <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
@@ -364,19 +368,40 @@
                             <table class="tm-data-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
                                         <th><i class="fas fa-file"></i> File Name</th>
-                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
                                         <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Upload Date</th>
+                                        <th><i class="fas fa-calendar-check"></i> Last Date For Calculation</th>
+                                        <th><i class="fas fa-ticket-alt"></i> Ticket Count</th>
+                                        <th><i class="fas fa-list"></i> Status</th>
                                         <th><i class="fas fa-cog"></i> Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td><input type="checkbox" class="tm-radio"></td>
-                                        <td>Sample_Available_File.csv</td>
-                                        <td><span class="tm-status-badge amount">250</span></td>
-                                        <td>v1</td>
+                                        <td>HCL_Tickets_Jan</td>
+                                        <td><span class="tm-status-badge sent">V1.0</span></td>
+                                        <td>15/01/2024 9:00:00 am</td>
+                                        <td>2024-01-25</td>
+                                        <td><span class="tm-status-badge amount">125</span></td>
+                                        <td><span class="tm-status-badge sent">AVAILABLE</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn pink"><i class="fas fa-envelope"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>LexCorp_Tickets</td>
+                                        <td><span class="tm-status-badge sent">V2.1</span></td>
+                                        <td>16/01/2024 9:30:00 am</td>
+                                        <td>2024-01-26</td>
+                                        <td><span class="tm-status-badge sent">AVAILABLE</span></td>
                                         <td>
                                             <div class="tm-actions">
                                                 <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
@@ -387,6 +412,13 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 2 of 2 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Footer Actions -->
@@ -395,8 +427,13 @@
                                 <i class="fas fa-info-circle"></i> No file selected
                             </div>
                             <div class="tm-footer-actions">
-                                <button class="control-btn" disabled><i class="fas fa-check"></i> PROCESS</button>
-                                <button class="control-btn" disabled><i class="fas fa-trash"></i> DELETE</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> LOAD
+                                    TICKETS</button>
+                                <button class="control-btn" disabled><i class="fas fa-calculator"></i>
+                                    CALCULATE</button>
+                                <button class="control-btn" disabled><i class="fas fa-file-download"></i>
+                                    DOWNLOAD</button>
+                                <button class="control-btn" disabled><i class="fas fa-eye"></i> PREVIEW</button>
                             </div>
                         </div>
                     </div>
@@ -410,8 +447,12 @@
                             </div>
                             <div class="tm-filter-group">
                                 <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Calculation Date</label>
                                 <select class="tm-filter-input">
-                                    <option value="">All Versions</option>
+                                    <option value="">All Dates</option>
                                 </select>
                             </div>
                             <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
@@ -422,21 +463,43 @@
                             <table class="tm-data-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
-                                        <th><i class="fas fa-file"></i> File Name</th>
-                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
+                                        <th><i class="fas fa-file"></i> Source File</th>
+                                        <th><i class="fas fa-file-invoice"></i> Calculated File</th>
                                         <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Calculation Date</th>
+                                        <th><i class="fas fa-ticket-alt"></i> Tickets Processed</th>
                                         <th><i class="fas fa-cog"></i> Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
-                                            No calculated files found.
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>HCL_Tickets_Jan</td>
+                                        <td>HCL_Tickets_Jan_Calculated</td>
+                                        <td><span class="tm-status-badge sent">V1.0</span></td>
+                                        <td>18/02/2026 2:07:35 pm</td>
+                                        <td><span class="tm-status-badge amount">125</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-chart-line"></i></button>
+                                                <button class="tm-act-btn" style="background: #f59e0b; color: white;"><i
+                                                        class="fas fa-file-export"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn" style="background: #3b82f6; color: white;"><i
+                                                        class="fas fa-paper-plane"></i></button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 1 of 1 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Footer Actions -->
@@ -445,7 +508,10 @@
                                 <i class="fas fa-info-circle"></i> No file selected
                             </div>
                             <div class="tm-footer-actions">
-                                <button class="control-btn" disabled><i class="fas fa-thumbs-up"></i> APPROVE</button>
+                                <button class="control-btn" disabled><i class="fas fa-chart-bar"></i> VIEW
+                                    RESULTS</button>
+                                <button class="control-btn" disabled><i class="fas fa-file-export"></i> EXPORT</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> DOWNLOAD</button>
                             </div>
                         </div>
                     </div>
@@ -459,8 +525,12 @@
                             </div>
                             <div class="tm-filter-group">
                                 <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Approval Date</label>
                                 <select class="tm-filter-input">
-                                    <option value="">All Versions</option>
+                                    <option value="">All Dates</option>
                                 </select>
                             </div>
                             <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
@@ -471,21 +541,44 @@
                             <table class="tm-data-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
                                         <th><i class="fas fa-file"></i> File Name</th>
-                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
                                         <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Approval Date</th>
+                                        <th><i class="fas fa-user-check"></i> Approved By</th>
+                                        <th><i class="fas fa-info-circle"></i> Status</th>
                                         <th><i class="fas fa-cog"></i> Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
-                                            No approved files found.
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>Stark_Approved</td>
+                                        <td><span class="tm-status-badge sent">V1.0</span></td>
+                                        <td>17/01/2024 9:30:00 am</td>
+                                        <td><span class="tm-status-badge amount">MANAGER</span></td>
+                                        <td><span class="tm-status-badge"
+                                                style="background:#fef3c7; color:#d97706;">PENDING</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
+                                                <button class="tm-act-btn" style="background: #10b981; color: white;"><i
+                                                        class="fas fa-check"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn" style="background: #ef4444; color: white;"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 1 of 1 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Footer Actions -->
@@ -494,8 +587,10 @@
                                 <i class="fas fa-info-circle"></i> No file selected
                             </div>
                             <div class="tm-footer-actions">
-                                <button class="control-btn" disabled><i class="fas fa-file-invoice"></i> GENERATE
-                                    INVOICE</button>
+                                <button class="control-btn" disabled><i class="fas fa-eye"></i> VIEW</button>
+                                <button class="control-btn" disabled><i class="fas fa-check"></i> APPROVE</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> DOWNLOAD</button>
+                                <button class="control-btn" disabled><i class="fas fa-times"></i> REJECT</button>
                             </div>
                         </div>
                     </div>
@@ -509,8 +604,12 @@
                             </div>
                             <div class="tm-filter-group">
                                 <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Invoice Date</label>
                                 <select class="tm-filter-input">
-                                    <option value="">All Versions</option>
+                                    <option value="">All Dates</option>
                                 </select>
                             </div>
                             <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
@@ -521,21 +620,41 @@
                             <table class="tm-data-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"></th>
-                                        <th><i class="fas fa-file"></i> File Name</th>
-                                        <th><i class="fas fa-ticket-alt"></i> No. Of Tickets</th>
-                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
+                                        <th><i class="fas fa-receipt"></i> Invoice Number</th>
+                                        <th><i class="fas fa-file"></i> Source File</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Invoice Date</th>
+                                        <th><i class="fas fa-dollar-sign"></i> Amount</th>
+                                        <th><i class="fas fa-info-circle"></i> Status</th>
                                         <th><i class="fas fa-cog"></i> Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
-                                            No invoice files found.
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>INV-2024-001</td>
+                                        <td>Umbrella_Tickets</td>
+                                        <td>17/01/2024</td>
+                                        <td><span class="tm-status-badge amount">$4,250.00</span></td>
+                                        <td><span class="tm-status-badge sent">SENT</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-file-invoice"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn pink"><i class="fas fa-envelope"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-print"></i></button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 1 of 1 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Footer Actions -->
@@ -544,8 +663,9 @@
                                 <i class="fas fa-info-circle"></i> No file selected
                             </div>
                             <div class="tm-footer-actions">
-                                <button class="control-btn" disabled><i class="fas fa-paper-plane"></i> SEND TO
-                                    CLIENT</button>
+                                <button class="control-btn" disabled><i class="fas fa-eye"></i> VIEW INVOICE</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> DOWNLOAD</button>
+                                <button class="control-btn" disabled><i class="fas fa-envelope"></i> EMAIL</button>
                             </div>
                         </div>
                     </div>
@@ -557,5 +677,26 @@
         </div>
     </div>
 </div>
+
+<!-- File Preview Modal -->
+<div class="modal" id="filePreviewModal" style="z-index: 9999;">
+    <div class="modal-content" style="width: 90%; height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h2 id="filePreviewTitle"><i class="fas fa-eye"></i> File Preview</h2>
+            <button class="close-modal" id="closeFilePreviewModal">&times;</button>
+        </div>
+        <div class="modal-body" id="filePreviewBody"
+            style="flex: 1; overflow: auto; padding: 20px; background: #f8fafc;">
+            <!-- Content injected via JS: iframe for PDF, HTML table for XLS/CSV -->
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="closeFilePreviewBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="{% static 'js/Monitor_Billing.js' %}"></script>
+<script src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
 
 {% endblock %}

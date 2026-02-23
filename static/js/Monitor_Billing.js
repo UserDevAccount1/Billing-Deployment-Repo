@@ -156,6 +156,7 @@ function initTicketManagerModal() {
     if (tmBtn && tmModal) {
         tmBtn.addEventListener('click', () => {
             tmModal.classList.add('active');
+            fetchAvailableVersionedFiles();
         });
     }
 
@@ -185,7 +186,159 @@ function initTicketManagerModal() {
             }
         });
     });
+
+    // Setup filter inputs inside each tab
+    setupTicketManagerFilters();
 }
+
+function setupTicketManagerFilters() {
+    const tabs = document.querySelectorAll('#ticketManagerModal .tab-content');
+    tabs.forEach(tab => {
+        const searchInput = Array.from(tab.querySelectorAll('.tm-filter-input')).find(el => el.placeholder === 'Search files...');
+        const versionInput = Array.from(tab.querySelectorAll('.tm-filter-input')).find(el => el.placeholder === 'Enter version (e.g. v1)');
+        const clearBtn = tab.querySelector('.tm-btn-clear');
+        const tableRows = tab.querySelectorAll('tbody tr');
+
+        function filterRows() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const versionTerm = versionInput ? versionInput.value.toLowerCase() : '';
+
+            tableRows.forEach(row => {
+                // Ignore "no files found" placeholder rows
+                if (row.cells.length === 1 && row.cells[0].colSpan > 1) return;
+
+                const textContent = row.textContent.toLowerCase();
+
+                let matchesSearch = textContent.includes(searchTerm);
+                let matchesVersion = !versionTerm || textContent.includes(versionTerm);
+
+                if (matchesSearch && matchesVersion) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterRows);
+        if (versionInput) versionInput.addEventListener('input', filterRows);
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                if (searchInput) searchInput.value = '';
+                if (versionInput) versionInput.value = '';
+                filterRows();
+            });
+        }
+    });
+}
+
+// ==================== TICKET MANAGER API ====================
+function fetchAvailableVersionedFiles() {
+    fetch('/billing/api/available-versioned-files/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.files) {
+                renderAvailableFilesTab(data.files);
+            }
+        })
+        .catch(err => console.error("Error fetching available files:", err));
+}
+
+function renderAvailableFilesTab(files) {
+    const tbody = document.querySelector('#tmAvailableTab tbody');
+    if (!tbody) return;
+
+    if (files.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: #64748b;">No available files found.</td></tr>`;
+        return;
+    }
+
+    let rowsHtml = '';
+    files.forEach(f => {
+        rowsHtml += `
+            <tr>
+                <td><input type="checkbox" class="tm-radio" value="${f.filename}"></td>
+                <td>${f.original_name}</td>
+                <td><span class="tm-status-badge sent">V${f.version}.0</span></td>
+                <td>${f.creation_date}</td>
+                <td>-</td>
+                <td><span class="tm-status-badge amount">${f.ticket_count}</span></td>
+                <td><span class="tm-status-badge sent">AVAILABLE</span></td>
+                <td>
+                    <div class="tm-actions">
+                        <button class="tm-act-btn" onclick="previewFile('${f.filename}', '${f.file_type}')" title="Preview File"><i class="fas fa-eye"></i></button>
+                        <button class="tm-act-btn" onclick="downloadFile('${f.filename}')" title="Download File"><i class="fas fa-download"></i></button>
+                        <button class="tm-act-btn pink" onclick="sendForCalculation('${f.filename}')" title="Send for Calculation"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+}
+
+function previewFile(filename, fileType) {
+    const modal = document.getElementById('filePreviewModal');
+    const body = document.getElementById('filePreviewBody');
+    const title = document.getElementById('filePreviewTitle');
+    if (!modal || !body) return;
+
+    title.innerHTML = `<i class="fas fa-eye"></i> Preview: ${filename}`;
+    body.innerHTML = '<div style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-3x"></i><p>Loading preview...</p></div>';
+    modal.classList.add('active');
+
+    const fileUrl = `/billing/api/file-serve/${filename}/`;
+
+    if (fileType === 'pdf') {
+        body.innerHTML = `<iframe src="${fileUrl}" style="width: 100%; height: 100%; border: none;"></iframe>`;
+    } else if (fileType === 'csv' || fileType === 'xlsx' || fileType === 'xls') {
+        // Fetch binary and pass to SheetJS
+        fetch(fileUrl)
+            .then(res => res.arrayBuffer())
+            .then(ab => {
+                const workbook = XLSX.read(ab, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                // Convert to HTML string
+                const htmlStr = XLSX.utils.sheet_to_html(worksheet, { id: "previewExcelTable", editable: false });
+                body.innerHTML = `
+                    <style>
+                        #previewExcelTable { width: 100%; border-collapse: collapse; background: white; }
+                        #previewExcelTable td, #previewExcelTable th { border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 14px; }
+                        #previewExcelTable tr:nth-child(even) { background-color: #f8fafc; }
+                    </style>
+                    <div style="overflow: auto; max-height: 100%; padding: 10px;">${htmlStr}</div>
+                `;
+            })
+            .catch(err => {
+                console.error("Error previewing excel:", err);
+                body.innerHTML = `<div style="text-align:center; color: red; padding: 40px;">Failed to load preview.</div>`;
+            });
+    } else {
+        body.innerHTML = `<div style="text-align:center; padding: 40px;">Preview not supported for this file type.</div>`;
+    }
+}
+
+function downloadFile(filename) {
+    window.location.href = `/billing/api/file-serve/${filename}/?download=1`;
+}
+
+function sendForCalculation(filename) {
+    alert("Sending " + filename + " for calculation! (Backend connection pending)");
+    // TODO: Wire up actual calculation API here
+}
+
+// Bind the modal close buttons for File Preview Modal
+document.addEventListener('DOMContentLoaded', () => {
+    const closeBtn1 = document.getElementById('closeFilePreviewModal');
+    const closeBtn2 = document.getElementById('closeFilePreviewBtn');
+    const modal = document.getElementById('filePreviewModal');
+
+    if (closeBtn1) closeBtn1.addEventListener('click', () => modal.classList.remove('active'));
+    if (closeBtn2) closeBtn2.addEventListener('click', () => modal.classList.remove('active'));
+});
 
 // ==================== TABLE RENDERING ====================
 

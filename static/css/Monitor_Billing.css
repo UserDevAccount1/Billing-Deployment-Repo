@@ -2171,6 +2171,41 @@
     background: #db2777;
 }
 
+/* TM Pagination */
+.tm-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+}
+
+.tm-pagination span {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.tm-pagination div {
+    display: flex;
+    gap: 10px;
+}
+
+.tm-pagination .control-btn {
+    border-radius: 6px;
+    padding: 6px 16px;
+    background: #e2e8f0;
+    color: #334155;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.tm-pagination .control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Footer Section Bar */
 .tm-footer-bar {
     display: flex;
