@@ -871,6 +871,16 @@ def upload_versioned_file(request):
         fs = FileSystemStorage(location=upload_dir)
         saved_filename = fs.save(new_filename, uploaded_file)
         
+        # Save Notes to sidecar JSON
+        notes = request.POST.get("notes", "").strip()
+        if notes:
+            sidecar_path = os.path.join(upload_dir, f"{saved_filename}.json")
+            try:
+                with open(sidecar_path, "w", encoding="utf-8") as f:
+                    json.dump({"notes": notes}, f)
+            except Exception as e:
+                logger.error(f"Failed to write sidecar JSON for {saved_filename}: {e}")
+
         return JsonResponse({
             "success": True,
             "uuid": file_uuid,
@@ -922,6 +932,17 @@ def get_available_versioned_files(request):
             if not file_type:
                 file_type = "unknown"
 
+            # Parse optional sidecar notes JSON
+            notes = ""
+            sidecar_path = f"{filepath}.json"
+            if os.path.exists(sidecar_path):
+                try:
+                    with open(sidecar_path, 'r', encoding='utf-8') as sf:
+                        sidecar_data = json.load(sf)
+                        notes = sidecar_data.get("notes", "")
+                except Exception as e:
+                    logger.error(f"Failed to read sidecar JSON for {filename}: {e}")
+
             files_list.append({
                 "uuid": file_uuid,
                 "version": version,
@@ -929,7 +950,8 @@ def get_available_versioned_files(request):
                 "original_name": original_name,
                 "ticket_count": ticket_count,
                 "creation_date": creation_date,
-                "file_type": file_type
+                "file_type": file_type,
+                "notes": notes
             })
 
     # Sort files by newest first

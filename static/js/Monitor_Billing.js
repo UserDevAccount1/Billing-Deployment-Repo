@@ -250,7 +250,7 @@ function renderAvailableFilesTab(files) {
     if (!tbody) return;
 
     if (files.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: #64748b;">No available files found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: #64748b;">No available files found.</td></tr>`;
         return;
     }
 
@@ -261,6 +261,7 @@ function renderAvailableFilesTab(files) {
                 <td><input type="checkbox" class="tm-radio" value="${f.filename}"></td>
                 <td>${f.original_name}</td>
                 <td><span class="tm-status-badge sent">V${f.version}.0</span></td>
+                <td><span class="tm-status-badge amount" style="background:#f1f5f9; color:#475569; font-weight:normal;">${f.notes || '-'}</span></td>
                 <td>${f.creation_date}</td>
                 <td>-</td>
                 <td><span class="tm-status-badge amount">${f.ticket_count}</span></td>

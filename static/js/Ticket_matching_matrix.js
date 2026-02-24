@@ -587,10 +587,13 @@ function handleFiles(files) {
 
   const uuidSelect = document.getElementById('versionUUIDSelect');
   const selectedUuid = uuidSelect ? uuidSelect.value : "";
+  const notesInput = document.getElementById('tmm_notesInput');
+  const notesValue = notesInput ? notesInput.value.trim() : "";
 
   // Store globally for upload after parsing
   window.CURRENT_UPLOAD_FILE = file;
   window.CURRENT_UPLOAD_UUID = selectedUuid;
+  window.CURRENT_UPLOAD_NOTES = notesValue;
 
   window.showToast(`Processing ${file.name}...`, 'info');
 
@@ -792,6 +795,9 @@ function initializeImportData(rawArray) {
     if (window.CURRENT_UPLOAD_UUID) {
       formData.append('uuid', window.CURRENT_UPLOAD_UUID);
     }
+    if (window.CURRENT_UPLOAD_NOTES) {
+      formData.append('notes', window.CURRENT_UPLOAD_NOTES);
+    }
     formData.append('ticket_count', ticketCount);
 
     fetch('/billing/api/upload-versioned-file/', {
@@ -815,6 +821,9 @@ function initializeImportData(rawArray) {
       .finally(() => {
         window.CURRENT_UPLOAD_FILE = null;
         window.CURRENT_UPLOAD_UUID = null;
+        window.CURRENT_UPLOAD_NOTES = null;
+        const notesInput = document.getElementById('tmm_notesInput');
+        if (notesInput) notesInput.value = '';
       });
   } else {
     proceedWithImportData(newNormalizedData);
