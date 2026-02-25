@@ -1,0 +1,11 @@
+# Database - PostgreSQL configuration
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("MYSQL_DATABASE", default="devenvir_devenvir_billing_prod"),
+        "USER": config("MYSQL_USER", default="devenvir_dbadmin"),
+        "PASSWORD": config("MYSQL_PASSWORD", default="AI-Billing@Secure2026@"),
+        "HOST": config("MYSQL_HOST", default="excis-postgres"),
+        "PORT": config("MYSQL_PORT", default="5432"),
+    }
+}

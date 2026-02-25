@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.utils import timezone
-from decimal import Decimal  # 🔥 IMPORT ADDED
+from decimal import Decimal
 from .models import BillingRun, BillingRunLineItem, BillingRunAttachment
 from apps.purchase_orders.models import PurchaseOrder
 
@@ -16,7 +16,7 @@ def pending_review_view(request):
     """Custom admin view for POs pending review"""
     pending_pos = PurchaseOrder.objects.filter(
         Q(review_status='pending_review') | Q(requires_review=True)
-    ).order_by('-created_at')
+    ).select_related('customer', 'account').order_by('-created_at')
     
     context = {
         'pending_pos': pending_pos,
@@ -66,7 +66,7 @@ class BillingRunAttachmentInline(admin.TabularInline):
 @admin.register(BillingRun)
 class BillingRunAdmin(admin.ModelAdmin):
     list_display = [
-        'run_id', 'get_customer_account_display', 'amount', 
+        'run_id', 'get_customer_account_display', 'amount',
         'billing_period', 'status', 'billing_type', 'created_at'
     ]
     list_filter = [
@@ -79,18 +79,18 @@ class BillingRunAdmin(admin.ModelAdmin):
         'purchase_order__po_number'
     ]
     readonly_fields = [
-        'created_at', 'processed_by', 'processed_at', 
+        'created_at', 'processed_by', 'processed_at',
         'period_days', 'billing_period'
     ]
     raw_id_fields = ['customer', 'account', 'purchase_order', 'rate_card_applied']
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('run_id', 'customer', 'account', 'purchase_order')
         }),
         ('Billing Details', {
             'fields': (
-                'amount', 'billing_date', 'billing_start_date', 
+                'amount', 'billing_date', 'billing_start_date',
                 'billing_end_date', 'billing_period', 'period_days'
             )
         }),
@@ -113,14 +113,14 @@ class BillingRunAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     inlines = [BillingRunLineItemInline, BillingRunAttachmentInline]
-    
+
     def get_customer_account_display(self, obj):
         return obj.get_customer_account_display()
     get_customer_account_display.short_description = 'Customer / Account'
     get_customer_account_display.admin_order_field = 'customer__name'
-    
+
     def save_model(self, request, obj, form, change):
         if not change:
             obj.processed_by = request.user
@@ -139,24 +139,24 @@ class BillingRunAdmin(admin.ModelAdmin):
 @admin.register(BillingRunLineItem)
 class BillingRunLineItemAdmin(admin.ModelAdmin):
     list_display = [
-        'billing_run', 'description', 'quantity', 
+        'billing_run', 'description', 'quantity',
         'unit_rate', 'total_amount', 'work_date'
     ]
     list_filter = ['work_date', 'category', 'created_at']
     search_fields = [
-        'billing_run__run_id', 'description', 
+        'billing_run__run_id', 'description',
         'ticket_reference', 'category'
     ]
     readonly_fields = ['created_at']
     raw_id_fields = ['billing_run']
-    
+
     fieldsets = (
         ('Billing Run', {
             'fields': ('billing_run',)
         }),
         ('Line Item Details', {
             'fields': (
-                'description', 'quantity', 'unit_rate', 
+                'description', 'quantity', 'unit_rate',
                 'total_amount', 'category'
             )
         }),
@@ -181,7 +181,7 @@ class BillingRunAttachmentAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ['uploaded_at', 'file_type']
     raw_id_fields = ['billing_run', 'uploaded_by']
-    
+
     def save_model(self, request, obj, form, change):
         if not change:
             obj.uploaded_by = request.user

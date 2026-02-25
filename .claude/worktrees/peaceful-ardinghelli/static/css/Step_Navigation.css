@@ -1,0 +1,151 @@
+/* ════════════════════════════════════════════════════════════
+   STEP NAVIGATION SYSTEM - Scoped Styles
+   ════════════════════════════════════════════════════════════ */
+
+/* Scope all styles under #billing-run-container */
+#billing-run-container .step-badges-container .step {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+  position: relative;
+}
+
+#billing-run-container .step-badges-container .step:hover {
+  opacity: 0.8;
+  transform: translateY(-2px);
+}
+
+#billing-run-container .step-badges-container .step.active {
+  opacity: 1;
+}
+
+#billing-run-container .step-badges-container .step.active .badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transform: scale(1.1);
+  animation: stepPulse 2s ease-in-out infinite;
+}
+
+#billing-run-container .step-badges-container .step.active .step-label {
+  color: #667eea;
+  font-weight: 700;
+}
+
+#billing-run-container .step-badges-container .step.completed .badge::after {
+  content: '✓';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #10b981;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Step Content Visibility */
+#billing-run-container .step-content {
+  display: none;
+  opacity: 0;
+}
+
+#billing-run-container .step-content.active {
+  display: block;
+  opacity: 1;
+  animation: stepFadeIn 0.4s ease;
+}
+
+/* Progress Bar Animation */
+#billing-run-container .progress-bar {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Animations */
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stepPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 25px rgba(102, 126, 234, 0.6);
+  }
+}
+
+/* Navigation Buttons (if you add them) */
+#billing-run-container .step-nav-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+#billing-run-container .step-nav-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+#billing-run-container .step-nav-btn.prev {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+#billing-run-container .step-nav-btn.prev:hover {
+  background: #e5e7eb;
+}
+
+#billing-run-container .step-nav-btn.next {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+#billing-run-container .step-nav-btn.next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+#billing-run-container .step-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  #billing-run-container .step-badges-container .step {
+    margin: 0 8px;
+  }
+  
+  #billing-run-container .step-badges-container .step .badge {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  #billing-run-container .step-badges-container .step .step-label {
+    font-size: 11px;
+  }
+}

@@ -1,0 +1,105 @@
+/* ===== Block 1 ONLY: Quick Input (no Field/Value) ===== */
+
+/* Block container spacing */
+.tmm-additional-content .qdi-block--input {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/* Block title */
+.tmm-additional-content .qdi-block--input .qdi-block-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+/* Layout: single-column stack (Target table -> Name field -> button) */
+.tmm-additional-content .qdi-block--input .qdi-input-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+/* “Cell” container */
+.tmm-additional-content .qdi-block--input .qdi-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #eef2f7;
+  background: #fbfdff;
+  border-radius: 12px;
+}
+
+.tmm-additional-content .qdi-block--input .qdi-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+/* Controls */
+.tmm-additional-content .qdi-block--input .qdi-control {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  font-size: 0.95rem;
+}
+
+/* Make sure text inputs don't look like dropdowns */
+.tmm-additional-content .qdi-block--input input.qdi-control {
+  appearance: auto;
+  -webkit-appearance: none;
+  background-image: none !important;
+}
+
+.tmm-additional-content .qdi-block--input .qdi-control:focus {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+/* Center Add button below last input */
+.tmm-additional-content .qdi-block--input .qdi-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 6px;
+}
+
+.tmm-additional-content .qdi-block--input .btn-add {
+  min-height: 40px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 220px;
+}
+
+/* Helper text */
+.tmm-additional-content .qdi-block--input .tmm-helper-text {
+  margin: 10px 0 0 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile: full-width button */
+@media (max-width: 640px) {
+  .tmm-additional-content .qdi-block--input .qdi-actions {
+    justify-content: stretch;
+  }
+  .tmm-additional-content .qdi-block--input .btn-add {
+    width: 100%;
+    min-width: 0;
+  }
+}

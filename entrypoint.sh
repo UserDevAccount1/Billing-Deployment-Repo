@@ -1,11 +1,9 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Apply migrations to your PostgreSQL database
+#!/bin/bash
+set -e
+echo "Starting Django container..."
+echo "Running migrations..."
 python manage.py migrate --noinput
-
-# Collect static files for the UI
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
-
-# Run server (cPanel usually handles the port, but 8000 is standard)
+echo "Starting development server..."
 python manage.py runserver 0.0.0.0:8000

@@ -126,6 +126,101 @@
   .period-option.selected {
     border-color:var(--brand); background:#f0f0ff;
   }
+
+  /* PO Review Section Styles */
+  .po-review-section {
+    margin-top:20px; 
+    padding:16px; 
+    background:#f8f9fa; 
+    border:1px solid var(--line); 
+    border-radius:var(--radius);
+  }
+  
+  .po-review-header {
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    margin-bottom:12px;
+  }
+  
+  .po-review-title {
+    margin:0; 
+    font-size:16px; 
+    font-weight:600;
+  }
+  
+  .po-review-badge {
+    background:#ffc107; 
+    color:#000; 
+    padding:4px 10px; 
+    border-radius:20px; 
+    font-size:12px; 
+    font-weight:600;
+  }
+  
+  .po-table-container {
+    max-height:300px; 
+    overflow-y:auto; 
+    border:1px solid var(--line); 
+    border-radius:6px;
+  }
+  
+  .po-table {
+    width:100%; 
+    border-collapse:collapse; 
+    background:#fff; 
+    font-size:13px;
+  }
+  
+  .po-table th {
+    background:#e9ecef; 
+    padding:10px; 
+    text-align:left; 
+    position:sticky; 
+    top:0; 
+    z-index:10;
+  }
+  
+  .po-table td {
+    padding:10px; 
+    border-top:1px solid #eee;
+  }
+  
+  .po-table tr:hover {
+    background:#f5f5f5;
+  }
+  
+  .amount-input {
+    width:90px; 
+    padding:6px; 
+    border:1px solid #ddd; 
+    border-radius:4px;
+  }
+  
+  .approve-btn {
+    background:#28a745; 
+    color:white; 
+    border:none; 
+    padding:4px 10px; 
+    border-radius:4px; 
+    cursor:pointer; 
+    font-size:12px;
+  }
+  
+  .reject-btn {
+    background:#dc3545; 
+    color:white; 
+    border:none; 
+    padding:4px 10px; 
+    border-radius:4px; 
+    cursor:pointer; 
+    font-size:12px;
+  }
+  
+  .btn-small {
+    padding:4px 8px; 
+    font-size:12px;
+  }
 </style>
 {% endblock %}
 
@@ -142,7 +237,7 @@
   </div>
 
   <div class="wrap">
-    <form method="post" id="billingRunForm">
+    <form method="post" id="billingRunForm" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="stepper" id="stepper">
         <div class="step active" data-step="1"><div class="badge">1</div><div class="label">Select Customer & Account</div></div>
@@ -249,6 +344,7 @@
           <h3>Step 4: Apply Rates & Purchase Order</h3>
           <div class="hint">Review and apply rate cards and purchase order allocations</div>
           
+          <!-- Rate Card Selection -->
           <div class="field">
             <div class="field-label">Rate Card</div>
             <select name="rate_card" class="input">
@@ -256,7 +352,58 @@
             </select>
           </div>
           
-          <div class="placeholder">
+          <!-- PO REVIEW SECTION - NEW -->
+          <div class="po-review-section">
+            <div class="po-review-header">
+              <h4 class="po-review-title">Purchase Orders Pending Review</h4>
+              <span class="po-review-badge">{{ pending_pos|length }} Need Review</span>
+            </div>
+            
+            <div class="po-table-container">
+              <table class="po-table">
+                <thead>
+                  <tr>
+                    <th>PO Number</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Uploaded</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for po in pending_pos %}
+                  <tr id="po-row-{{ po.id }}">
+                    <td><strong>{{ po.po_number }}</strong></td>
+                    <td>{{ po.customer.name }}</td>
+                    <td>{{ po.currency }} {{ po.total_amount }}</td>
+                    <td>{{ po.created_at|date:"Y-m-d" }}</td>
+                    <td>
+                      <div style="display:flex; gap:4px;">
+                        <input type="number" id="amount-{{ po.id }}" class="amount-input" placeholder="Amount" step="0.01" min="0">
+                        <button type="button" class="approve-btn btn-small" onclick="approvePO({{ po.id }})">Approve</button>
+                        <button type="button" class="reject-btn btn-small" onclick="rejectPO({{ po.id }})">Reject</button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">
+                      <span class="material-symbols-outlined" style="font-size:24px; display:block; margin-bottom:8px;">info</span>
+                      No POs pending review
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            
+            <div style="margin-top:12px; font-size:12px; color:var(--muted);">
+              <span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">info</span>
+              Approve POs with the correct amount to continue with billing
+            </div>
+          </div>
+          
+          <div class="placeholder" style="margin-top:16px;">
             Rate calculation and PO allocation summary will appear here
           </div>
         </section>
@@ -361,6 +508,73 @@ function selectAccount(accountId) {
       `;
     })
     .catch(error => console.error('Error loading account details:', error));
+}
+
+// PO Review Functions
+function approvePO(poId) {
+  const amount = document.getElementById(`amount-${poId}`).value;
+  if (!amount || amount <= 0) {
+    alert('Please enter a valid amount');
+    return;
+  }
+  
+  fetch(`/api/approve-po/${poId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({ amount: amount })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Remove the row
+      document.getElementById(`po-row-${poId}`).remove();
+      // Update the badge count
+      updatePendingCount();
+    } else {
+      alert('Error: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Failed to approve PO');
+  });
+}
+
+function rejectPO(poId) {
+  if (!confirm('Reject this PO?')) return;
+  
+  fetch(`/api/reject-po/${poId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({ notes: 'Rejected during billing run' })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById(`po-row-${poId}`).remove();
+      updatePendingCount();
+    } else {
+      alert('Error: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Failed to reject PO');
+  });
+}
+
+function updatePendingCount() {
+  const remainingRows = document.querySelectorAll('#steps [data-step="4"] tbody tr').length;
+  const badge = document.querySelector('.po-review-badge');
+  if (badge) {
+    badge.textContent = remainingRows + ' Need Review';
+  }
 }
 
 function saveDraft() {

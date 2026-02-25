@@ -4,18 +4,17 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: excis-billing-web
-        env_file: 
+        env_file:
             - .env
         environment:
-            MYSQL_HOST: "${MYSQL_HOST:-host.docker.internal}"
-            MYSQL_PORT: "${MYSQL_PORT:-3306}"
-            MYSQL_DATABASE: "${MYSQL_DATABASE}"
-            MYSQL_USER: "${MYSQL_USER}"
-            MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-
+            MYSQL_HOST: "${MYSQL_HOST:-excis-postgres}"
+            MYSQL_PORT: "${MYSQL_PORT:-5432}"
+            MYSQL_DATABASE: "${MYSQL_DATABASE:-devenvir_devenvir_billing_prod}"
+            MYSQL_USER: "${MYSQL_USER:-devenvir_dbadmin}"
+            MYSQL_PASSWORD: "${MYSQL_PASSWORD:-AI-Billing@Secure2026@}"
             N8N_DASHBOARD_KPI_WEBHOOK: "https://exciscloud.app.n8n.cloud/webhook/dashboard-kpi-notification"
         extra_hosts:
-            - "host.docker.internal:host-gateway" # maps host.docker.internal -> host gateway (works on modern Docker)
+            - "host.docker.internal:host-gateway"
         volumes:
             - .:/app:cached
             - static_volume:/app/staticfiles
@@ -25,12 +24,63 @@ services:
             - "8000:8000"
         networks:
             - excis-net
+        depends_on:
+            - postgres
 
-# (db service removed)
+    n8n:
+        image: docker.n8n.io/n8nio/n8n:latest
+        container_name: excis-n8n
+        restart: unless-stopped
+        environment:
+            - N8N_PORT=5678
+            - N8N_HOST=localhost
+            - N8N_PROTOCOL=http
+            - N8N_BASIC_AUTH_ACTIVE=true
+            - N8N_BASIC_AUTH_USER=admin
+            - N8N_BASIC_AUTH_PASSWORD=ExcisN8n@2026
+            - WEBHOOK_URL=http://localhost:5679/
+            - DB_TYPE=postgresdb
+            - DB_POSTGRESDB_HOST=excis-postgres
+            - DB_POSTGRESDB_PORT=5432
+            - DB_POSTGRESDB_DATABASE=devenvir_devenvir_billing_prod
+            - DB_POSTGRESDB_USER=devenvir_dbadmin
+            - DB_POSTGRESDB_PASSWORD=AI-Billing@Secure2026@
+        ports:
+            - "5679:5678"
+        volumes:
+            - n8n_data:/home/node/.n8n
+            - ./AI_Billing_Orchestrator_v2.0.json:/home/node/workflows/AI_Billing_Orchestrator_v2.0.json:ro
+        networks:
+            - excis-net
+        depends_on:
+            - postgres
+
+    postgres:
+        image: postgres:16-alpine
+        container_name: excis-postgres
+        restart: unless-stopped
+        environment:
+            - POSTGRES_USER=devenvir_dbadmin
+            - POSTGRES_PASSWORD=AI-Billing@Secure2026@
+            - POSTGRES_DB=devenvir_devenvir_billing_prod
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - excis-net
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U devenvir_dbadmin -d devenvir_devenvir_billing_prod"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
 volumes:
     static_volume:
     media_volume:
     logs_volume:
+    n8n_data:
+    postgres_data:
 
 networks:
     excis-net:

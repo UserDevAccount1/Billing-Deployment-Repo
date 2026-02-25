@@ -1,0 +1,1921 @@
+/* ============================================= */
+/* BILLING AUTOMATION MONITORING DASHBOARD CSS   */
+/* ============================================= */
+
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #8b5cf6;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --info-color: #3b82f6;
+    --bg-color: #f8fafc;
+    --card-color: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --step-width: 100px;
+    --manual-color: #8b5cf6;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+#billingDashboard * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+#billingDashboard {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+#billingDashboard .container {
+    max-width: 100%;
+    padding: 20px;
+}
+
+/* Header */
+#billingDashboard .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+#billingDashboard .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#billingDashboard .header h1 i {
+    color: var(--primary-color);
+}
+
+#billingDashboard .header-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Global Controls */
+#billingDashboard .global-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--card-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+}
+
+#billingDashboard .control-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    font-size: 14px;
+    min-width: 140px;
+    justify-content: center;
+}
+
+#billingDashboard .control-btn.primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#billingDashboard .control-btn.secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+#billingDashboard .control-btn.success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+#billingDashboard .control-btn.warning {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+#billingDashboard .control-btn.danger {
+    background-color: var(--error-color);
+    color: white;
+}
+
+#billingDashboard .control-btn.info {
+    background-color: var(--info-color);
+    color: white;
+}
+
+#billingDashboard .control-btn.manual {
+    background-color: var(--manual-color);
+    color: white;
+}
+
+#billingDashboard .control-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+#billingDashboard .filter-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: auto;
+}
+
+#billingDashboard select,
+#billingDashboard input[type="search"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    min-width: 180px;
+}
+
+/* Enhanced filter group with icons */
+#billingDashboard .filter-group.enhanced {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 12px;
+    background: var(--card-color);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+}
+
+#billingDashboard .filter-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 180px;
+}
+
+#billingDashboard .filter-with-icon i {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    z-index: 2;
+}
+
+#billingDashboard .filter-with-icon select,
+#billingDashboard .filter-with-icon input[type="search"] {
+    padding: 10px 12px 10px 36px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: white;
+    width: 100%;
+    transition: all 0.2s;
+    color: var(--text-primary);
+}
+
+#billingDashboard .filter-with-icon select:hover,
+#billingDashboard .filter-with-icon input[type="search"]:hover {
+    border-color: var(--primary-color);
+}
+
+#billingDashboard .filter-with-icon select:focus,
+#billingDashboard .filter-with-icon input[type="search"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Step Tracker */
+#billingDashboard .step-tracker-container {
+    background: var(--card-color);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+}
+
+#billingDashboard .step-tracker {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    min-width: 1100px;
+}
+
+#billingDashboard .step-tracker::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 50px;
+    right: 50px;
+    height: 3px;
+    background: var(--border-color);
+    z-index: 1;
+}
+
+#billingDashboard .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: var(--step-width);
+}
+
+#billingDashboard .step:hover {
+    transform: translateY(-5px);
+}
+
+#billingDashboard .step.active {
+    transform: scale(1.05);
+}
+
+#billingDashboard .step.requires-manual .step-icon {
+    border-style: dashed;
+    border-color: var(--manual-color);
+}
+
+#billingDashboard .step-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 12px;
+    background: white;
+    border: 3px solid var(--border-color);
+    color: var(--text-secondary);
+    transition: all 0.3s;
+    position: relative;
+}
+
+#billingDashboard .step.active .step-icon {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+#billingDashboard .step.completed .step-icon {
+    border-color: var(--success-color);
+    background-color: var(--success-color);
+    color: white;
+}
+
+#billingDashboard .step.failed .step-icon {
+    border-color: var(--error-color);
+    background-color: var(--error-color);
+    color: white;
+}
+
+#billingDashboard .step-manual-indicator {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    background-color: var(--manual-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    border: 2px solid white;
+    z-index: 3;
+}
+
+#billingDashboard .step-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+}
+
+#billingDashboard .step.active .step-label {
+    color: var(--primary-color);
+}
+
+#billingDashboard .step-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+#billingDashboard .step-status.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+#billingDashboard .step-status.in-progress {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+#billingDashboard .step-status.completed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+#billingDashboard .step-status.failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+#billingDashboard .step-status.manual-pending {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+}
+
+#billingDashboard .step-status.manual-in-progress {
+    background-color: #ede9fe;
+    color: #5b21b6;
+}
+
+/* Main Content */
+#billingDashboard .main-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 24px;
+}
+
+/* Management Table */
+#billingDashboard .management-table-container {
+    background: var(--card-color);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+    position: relative;
+}
+
+#billingDashboard .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#billingDashboard .table-title {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#billingDashboard .table-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#billingDashboard table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+#billingDashboard th {
+    text-align: left;
+    padding: 16px 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+#billingDashboard th.sortable:hover {
+    background-color: #f1f5f9;
+}
+
+#billingDashboard th.sortable::after {
+    content: '↕';
+    margin-left: 8px;
+    opacity: 0.5;
+    font-size: 12px;
+}
+
+#billingDashboard th.sortable.asc::after {
+    content: '↑';
+    opacity: 1;
+}
+
+#billingDashboard th.sortable.desc::after {
+    content: '↓';
+    opacity: 1;
+}
+
+#billingDashboard td {
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#billingDashboard tr:hover {
+    background-color: #f8fafc;
+}
+
+#billingDashboard tr.requires-manual {
+    background-color: #faf5ff;
+    border-left: 3px solid var(--manual-color);
+}
+
+#billingDashboard tr.requires-manual:hover {
+    background-color: #f3e8ff;
+}
+
+#billingDashboard .status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+#billingDashboard .status-success {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+#billingDashboard .status-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+#billingDashboard .status-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+#billingDashboard .status-info {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+#billingDashboard .status-manual {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+}
+
+#billingDashboard .action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+#billingDashboard .action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+#billingDashboard .action-btn:hover {
+    transform: translateY(-2px);
+}
+
+#billingDashboard .btn-view {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+#billingDashboard .btn-retry {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+#billingDashboard .btn-pause {
+    background-color: #e0e7ff;
+    color: #4f46e5;
+}
+
+#billingDashboard .btn-ai {
+    background-color: #f0f9ff;
+    color: #0369a1;
+}
+
+#billingDashboard .btn-override {
+    background-color: #fce7f3;
+    color: #be185d;
+}
+
+#billingDashboard .btn-manual {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+}
+
+/* Step Detail Panel */
+#billingDashboard .step-detail-panel {
+    background: var(--card-color);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+#billingDashboard .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+#billingDashboard .panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#billingDashboard .step-info {
+    margin-bottom: 24px;
+}
+
+#billingDashboard .info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+#billingDashboard .info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+#billingDashboard .info-value {
+    font-weight: 600;
+}
+
+#billingDashboard .panel-section {
+    margin-bottom: 24px;
+}
+
+#billingDashboard .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#billingDashboard .manual-workflow-section {
+    background-color: #faf5ff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border-left: 4px solid var(--manual-color);
+}
+
+#billingDashboard .manual-workflow-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--manual-color);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#billingDashboard .manual-workflow-details {
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+#billingDashboard .manual-workflow-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+#billingDashboard .manual-action-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: white;
+    border: 1px solid var(--manual-color);
+    color: var(--manual-color);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+#billingDashboard .manual-action-btn:hover {
+    background-color: var(--manual-color);
+    color: white;
+}
+
+#billingDashboard .log-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#billingDashboard .log-item {
+    padding: 12px;
+    border-left: 3px solid var(--border-color);
+    margin-bottom: 8px;
+    background-color: #f8fafc;
+    border-radius: 0 8px 8px 0;
+}
+
+#billingDashboard .log-item.error {
+    border-left-color: var(--error-color);
+    background-color: #fef2f2;
+}
+
+#billingDashboard .log-item.warning {
+    border-left-color: var(--warning-color);
+    background-color: #fffbeb;
+}
+
+#billingDashboard .log-item.success {
+    border-left-color: var(--success-color);
+    background-color: #f0fdf4;
+}
+
+#billingDashboard .log-item.manual {
+    border-left-color: var(--manual-color);
+    background-color: #faf5ff;
+}
+
+#billingDashboard .log-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+#billingDashboard .log-message {
+    font-size: 13px;
+}
+
+/* Table Controls */
+#billingDashboard .columns-dropdown {
+    position: relative;
+}
+
+#billingDashboard .columns-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    display: none;
+}
+
+#billingDashboard .columns-menu.active {
+    display: block;
+}
+
+#billingDashboard .columns-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+}
+
+#billingDashboard .columns-menu-item input {
+    cursor: pointer;
+}
+
+#billingDashboard .columns-menu-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+#billingDashboard .pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+#billingDashboard .pagination-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+#billingDashboard .pagination-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#billingDashboard .page-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+#billingDashboard .page-btn:hover {
+    background-color: #f1f5f9;
+}
+
+#billingDashboard .page-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+#billingDashboard .page-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#billingDashboard .page-size-selector {
+    margin-left: 16px;
+}
+
+#billingDashboard .page-size-selector select {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+}
+
+/* Table Filters in Management Table */
+#billingDashboard .table-filters {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+#billingDashboard .table-filters .filter-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 180px;
+}
+
+#billingDashboard .table-filters .filter-with-icon i {
+    position: absolute;
+    left: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    z-index: 2;
+}
+
+#billingDashboard .table-filters .filter-with-icon select,
+#billingDashboard .table-filters .filter-with-icon input {
+    padding: 8px 10px 8px 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background-color: white;
+    width: 100%;
+}
+
+#billingDashboard .table-filters .filter-with-icon input {
+    min-width: 200px;
+}
+
+#billingDashboard .table-action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ============================================= */
+/* ENHANCED MODAL STYLES - PROGRESSIVE & LARGE   */
+/* ============================================= */
+
+/* Modal Base Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+    overflow: auto;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    width: 95%;
+    max-width: 1400px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Quick Setup Modal Specific - Extra Large Size */
+.quick-setup-modal {
+    max-width: 1600px;
+    width: 98%;
+    height: 90vh;
+}
+
+/* Modal Header */
+.modal-header {
+    padding: 25px 35px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #10b981, var(--secondary-color), var(--primary-color));
+    z-index: 1;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    z-index: 2;
+}
+
+.modal-header h2 i {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.5rem;
+}
+
+.close-modal {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s;
+    position: relative;
+    z-index: 2;
+}
+
+.close-modal:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal Body */
+.modal-body {
+    padding: 30px 35px;
+    overflow-y: auto;
+    flex: 1;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* Modal Footer with Enhanced Button Styles */
+.modal-footer {
+    padding: 25px 35px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 0 0 20px 20px;
+}
+
+.modal-footer-left {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-footer-right {
+    display: flex;
+    gap: 15px;
+}
+
+/* Enhanced Modal Buttons */
+.modal-btn {
+    padding: 13px 26px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 15px;
+    min-width: 140px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.modal-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+}
+
+.modal-btn:hover::before {
+    left: 100%;
+}
+
+.modal-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Cancel Button - Modern Style */
+#cancelQuickSetup {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+}
+
+#cancelQuickSetup:hover {
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    color: #475569;
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 20px rgba(203, 213, 225, 0.4);
+}
+
+/* Save Button - Elegant Style */
+#saveQuickSetup {
+    background: linear-gradient(135deg, var(--secondary-color), #7c3aed);
+    color: white;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+#saveQuickSetup:hover {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    transform: translateY(-3px);
+}
+
+/* Apply & Close Button - Premium Style */
+#applyQuickSetup {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    color: white;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    padding: 13px 30px;
+    min-width: 160px;
+}
+
+#applyQuickSetup:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+    transform: translateY(-3px);
+}
+
+/* Quick Setup Modal Tabs Enhancement */
+.modal-tabs {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+}
+
+.tabs-header {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 25px;
+    position: sticky;
+    top: -30px; /* Aligned with modal-body padding */
+    background: white;
+    z-index: 100;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) #f1f5f9;
+    padding-bottom: 5px;
+}
+
+.tabs-header::-webkit-scrollbar {
+    height: 6px;
+}
+
+.tabs-header::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.tabs-header::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+.tabs-header::-webkit-scrollbar-thumb:hover {
+    background: #1d4ed8;
+}
+
+.tab-btn {
+    padding: 16px 28px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 15px;
+    min-width: max-content;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.tab-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(135deg, transparent, rgba(37, 99, 235, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tab-btn:hover {
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.tab-btn:hover::before {
+    opacity: 1;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(139, 92, 246, 0.05));
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.tab-btn i {
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.tab-btn.active i {
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* Tab Content Enhancement */
+.tab-content {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    animation: tabFadeIn 0.4s ease-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content h3 {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: var(--text-primary);
+    font-size: 22px;
+    font-weight: 700;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border-color);
+    position: relative;
+}
+
+.tab-content h3::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    border-radius: 2px;
+}
+
+.tab-content-inner {
+    max-height: calc(90vh - 300px);
+    overflow-y: auto;
+    padding-right: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) #f1f5f9;
+}
+
+.tab-content-inner::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tab-content-inner::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.tab-content-inner::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.tab-content-inner::-webkit-scrollbar-thumb:hover {
+    background: #1d4ed8;
+}
+
+/* Config Section Enhancement */
+.config-section {
+    margin-bottom: 35px;
+    padding: 25px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.config-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+    border-radius: 4px 0 0 4px;
+}
+
+.config-section:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.config-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.config-section h4 i {
+    color: var(--primary-color);
+    font-size: 18px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(139, 92, 246, 0.1));
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+}
+
+.config-item label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-item label::before {
+    content: '•';
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.config-item select,
+.config-item input {
+    padding: 14px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 15px;
+    background: white;
+    width: 100%;
+    transition: all 0.3s;
+    color: var(--text-primary);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+    padding-right: 45px;
+}
+
+.config-item input[type="date"] {
+    background-image: none;
+    padding-right: 16px;
+}
+
+.config-item select:focus,
+.config-item input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    transform: translateY(-2px);
+}
+
+.config-item select:hover,
+.config-item input:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+/* Other Modal Content */
+.modal-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.filter-with-label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-with-label label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-with-label select {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: white;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.filter-with-label select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Advanced Search Modal */
+.search-condition {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+.search-condition select,
+.search-condition input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.remove-condition {
+    background: none;
+    border: none;
+    color: var(--error-color);
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* AI Fix Modal */
+.ai-suggestion {
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.confidence-score {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #10b981;
+    color: white;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.suggestion-diff {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.diff-added {
+    color: #10b981;
+    background-color: #d1fae5;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.diff-removed {
+    color: #ef4444;
+    background-color: #fee2e2;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-decoration: line-through;
+}
+
+/* Animations */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes tabFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================= */
+/* RESPONSIVE DESIGN - PROGRESSIVE ENHANCEMENT   */
+/* ============================================= */
+
+/* Ultra Large Screens (4K and above) */
+@media (min-width: 2000px) {
+    .quick-setup-modal {
+        max-width: 1800px;
+        width: 80%;
+    }
+
+    .config-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 30px;
+    }
+
+    .modal-content {
+        max-width: 1800px;
+    }
+}
+
+/* Large Desktop (1600px - 2000px) */
+@media (min-width: 1600px) and (max-width: 1999px) {
+    .quick-setup-modal {
+        max-width: 1500px;
+        width: 90%;
+    }
+
+    .config-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+    }
+}
+
+/* Desktop (1200px - 1600px) */
+@media (min-width: 1200px) and (max-width: 1599px) {
+    #billingDashboard .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    #billingDashboard .step-detail-panel {
+        position: static;
+    }
+
+    .modal-content {
+        max-width: 1200px;
+    }
+
+    .config-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .tab-btn {
+        padding: 14px 22px;
+        font-size: 14px;
+    }
+}
+
+/* Tablet Landscape (992px - 1200px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    #billingDashboard .table-filters {
+        flex-wrap: wrap;
+    }
+
+    #billingDashboard .table-filters .filter-with-icon {
+        min-width: 160px;
+    }
+
+    .modal-content {
+        width: 96%;
+        max-width: 1100px;
+    }
+
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Tablet Portrait (768px - 992px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    #billingDashboard .header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    #billingDashboard .header-controls {
+        width: 100%;
+    }
+
+    #billingDashboard .global-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #billingDashboard .control-btn {
+        min-width: 100%;
+        justify-content: flex-start;
+    }
+
+    #billingDashboard .filter-group.enhanced {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #billingDashboard .filter-with-icon {
+        min-width: 100%;
+    }
+
+    #billingDashboard .step-tracker-container {
+        padding: 16px;
+    }
+
+    #billingDashboard .step {
+        width: 80px;
+    }
+
+    #billingDashboard .step-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    #billingDashboard .table-controls {
+        flex-wrap: wrap;
+    }
+
+    #billingDashboard .pagination-controls {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .modal-content {
+        width: 98%;
+        max-width: 900px;
+        max-height: 85vh;
+    }
+
+    .quick-setup-modal {
+        max-width: 900px;
+        height: 85vh;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .modal-footer-left,
+    .modal-footer-right {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .modal-btn {
+        min-width: 180px;
+        flex: 1;
+    }
+
+    .tabs-header {
+        flex-direction: column;
+    }
+
+    .tab-btn {
+        width: 100%;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn.active::after {
+        display: none;
+    }
+}
+
+/* Mobile Landscape (576px - 768px) */
+@media (max-width: 767px) {
+    .modal.active {
+        padding: 10px;
+        align-items: flex-start;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-height: 95vh;
+        border-radius: 16px;
+    }
+
+    .quick-setup-modal {
+        height: 95vh;
+        max-width: 100%;
+    }
+
+    .modal-header {
+        padding: 20px;
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .modal-header h2 {
+        font-size: 1.5rem;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        gap: 10px;
+    }
+
+    .modal-footer-left,
+    .modal-footer-right {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .modal-btn {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .tabs-header {
+        flex-direction: column;
+        overflow-x: visible;
+        overflow-y: auto;
+        max-height: 200px;
+        border-bottom: none;
+        gap: 5px;
+    }
+
+    .tab-btn {
+        width: 100%;
+        text-align: left;
+        padding: 14px 20px;
+        border-bottom: none;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 5px;
+    }
+
+    .tab-btn.active {
+        border-bottom: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    .config-section {
+        padding: 20px;
+    }
+
+    .tab-content h3 {
+        font-size: 20px;
+    }
+
+    .search-condition {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Mobile Portrait (under 576px) */
+@media (max-width: 575px) {
+    #billingDashboard .table-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #billingDashboard .table-filters .filter-with-icon {
+        min-width: 100%;
+    }
+
+    #billingDashboard .table-action-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .modal-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    .config-section {
+        padding: 15px;
+    }
+
+    .config-item select,
+    .config-item input {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+
+    .tab-content h3 {
+        font-size: 18px;
+    }
+
+    .modal-btn {
+        padding: 12px 20px;
+        font-size: 14px;
+        min-width: unset;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .modal-footer button {
+        width: 100%;
+    }
+}
+
+/* Touch Device Optimization */
+@media (hover: none) and (pointer: coarse) {
+    .modal-btn:hover {
+        transform: none;
+    }
+
+    .tab-btn:hover {
+        transform: none;
+    }
+
+    .config-section:hover {
+        transform: none;
+    }
+
+    .config-item select:hover,
+    .config-item input:hover {
+        transform: none;
+    }
+
+    .modal-btn,
+    .tab-btn,
+    .config-item select,
+    .config-item input {
+        min-height: 48px;
+    }
+
+    .modal-btn::before,
+    .tab-btn::before {
+        display: none;
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-color: #0044cc;
+        --secondary-color: #5c2d91;
+        --border-color: #000000;
+        --text-primary: #000000;
+        --text-secondary: #333333;
+    }
+
+    .modal-header {
+        background: var(--primary-color);
+        border: 2px solid #000000;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .modal,
+    .modal-content,
+    .tab-content,
+    .modal-btn,
+    .tab-btn,
+    .config-section,
+    .config-item select,
+    .config-item input {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .modal {
+        position: static;
+        background: white;
+        display: block !important;
+    }
+
+    .modal-content {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        max-width: 100%;
+        max-height: none;
+    }
+
+    .modal-header {
+        background: #f1f5f9 !important;
+        color: var(--text-primary);
+    }
+
+    .close-modal,
+    .modal-footer {
+        display: none !important;
+    }
+}

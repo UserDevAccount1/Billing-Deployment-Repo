@@ -17,7 +17,6 @@ httpx
 idna
 jiter
 lxml
-mysqlclient
 numpy
 openai
 openpyxl
@@ -46,4 +45,5 @@ typing_extensions
 tzdata
 urllib3
 wheel
-whitenoise
+whitenoisedjango-crispy-forms 
+crispy-bootstrap5 

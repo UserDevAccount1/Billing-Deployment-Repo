@@ -1,0 +1,57 @@
+---
+deployment:
+  tasks:
+    # Redirect all output (stdout & stderr) to deploy.log so we can debug easily
+    - mkdir -p /home/jayant/tempo
+    - export DEPLOYPATH=/home/jayant/tempo/current
+    - LOGFILE=$DEPLOYPATH/deploy.log
+    - echo "=== DEPLOY START $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" > $LOGFILE
+
+    # Catch-all to log environment and python info (useful debug lines)
+    - echo "---- PATH ----" >> $LOGFILE 2>&1
+    - echo "$PATH" >> $LOGFILE 2>&1
+    - echo "---- python versions ----" >> $LOGFILE 2>&1
+    - command -v python3 || true >> $LOGFILE 2>&1
+    - python3 --version >> $LOGFILE 2>&1 || true
+    - command -v python || true >> $LOGFILE 2>&1
+    - python --version >> $LOGFILE 2>&1 || true
+
+    # Copy repository into deploy path
+    - echo "Copying repository to $DEPLOYPATH" >> $LOGFILE 2>&1
+    - mkdir -p $DEPLOYPATH >> $LOGFILE 2>&1
+    - /bin/cp -a --preserve=mode,timestamps --no-dereference . $DEPLOYPATH >> $LOGFILE 2>&1 || echo "cp returned $?" >> $LOGFILE 2>&1
+
+    # Copy .env
+    - if [ -f ".env" ]; then /bin/cp .env $DEPLOYPATH/.env >> $LOGFILE 2>&1 || echo "copy .env failed" >> $LOGFILE 2>&1; else echo ".env not in repo — ensure you create $DEPLOYPATH/.env via cPanel" >> $LOGFILE 2>&1; fi
+
+    # Create venv if missing
+    - echo "Creating / reusing venv at $DEPLOYPATH/venv" >> $LOGFILE 2>&1
+    - if [ ! -d "$DEPLOYPATH/venv" ]; then python3 -m venv $DEPLOYPATH/venv >> $LOGFILE 2>&1 || python -m venv $DEPLOYPATH/venv >> $LOGFILE 2>&1 || echo "venv creation failed (check python path)" >> $LOGFILE 2>&1; else echo "venv exists" >> $LOGFILE 2>&1; fi
+
+    # Activate venv, install requirements
+    - echo "Activating venv and installing requirements" >> $LOGFILE 2>&1
+    - source $DEPLOYPATH/venv/bin/activate && python -m pip install --upgrade pip setuptools wheel >> $LOGFILE 2>&1 || echo "pip upgrade failed" >> $LOGFILE 2>&1
+    - if [ -f "$DEPLOYPATH/requirements.txt" ]; then source $DEPLOYPATH/venv/bin/activate && pip install -r $DEPLOYPATH/requirements.txt >> $LOGFILE 2>&1 || echo "pip install returned $?" >> $LOGFILE 2>&1; else echo "No requirements.txt found in repo" >> $LOGFILE 2>&1; fi
+
+    # Ensure directories exist
+    - mkdir -p $DEPLOYPATH/staticfiles $DEPLOYPATH/media $DEPLOYPATH/tmp $DEPLOYPATH/logs >> $LOGFILE 2>&1
+    - chown -R $(whoami) $DEPLOYPATH/staticfiles $DEPLOYPATH/media $DEPLOYPATH/tmp $DEPLOYPATH/logs 2>> $LOGFILE || true
+    - chmod -R 755 $DEPLOYPATH/staticfiles $DEPLOYPATH/media $DEPLOYPATH/tmp $DEPLOYPATH/logs 2>> $LOGFILE || true
+
+    # Load .env for migrate/collectstatic
+    - if [ -f "$DEPLOYPATH/.env" ]; then echo "Loading .env for this run" >> $LOGFILE 2>&1 && set -a && . $DEPLOYPATH/.env && set +a; else echo ".env missing at $DEPLOYPATH/.env" >> $LOGFILE 2>&1; fi
+
+    # Run Django management commands
+    - echo "Running migrate" >> $LOGFILE 2>&1
+    - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && python manage.py migrate --noinput >> $LOGFILE 2>&1 || echo "migrate failed with exit $? (see above)" >> $LOGFILE 2>&1
+    - echo "Running collectstatic" >> $LOGFILE 2>&1
+    - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && python manage.py collectstatic --noinput >> $LOGFILE 2>&1 || echo "collectstatic failed with exit $? (see above)" >> $LOGFILE 2>&1
+
+    # Run Gunicorn
+    - echo "Starting Gunicorn server" >> $LOGFILE 2>&1
+    - source $DEPLOYPATH/venv/bin/activate && cd $DEPLOYPATH && nohup gunicorn excis_billing.wsgi:application --bind 127.0.0.1:8000 --daemon --reload >> $LOGFILE 2>&1 || echo "gunicorn failed to start" >> $LOGFILE 2>&1
+
+    # Finalize deployment
+    - mkdir -p $DEPLOYPATH/tmp >> $LOGFILE 2>&1
+    - touch $DEPLOYPATH/tmp/restart.txt >> $LOGFILE 2>&1 || echo "touch restart failed" >> $LOGFILE 2>&1
+    - echo "=== DEPLOY END $(date -u +"%Y-%m-%d %H:%M:%SZ") ===" >> $LOGFILE 2>&1

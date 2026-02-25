@@ -1,0 +1,1784 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Rate Cards - Excis Billing System{% endblock %}
+{% block page_title %}Rate Cards{% endblock %}
+
+{% block header_js %}
+<script src="{% static 'js/rate_cards/lists.js' %}" type="script"></script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Fix dropdown visibility issues */
+  .dropdown-menu {
+    z-index: 1050 !important;
+  }
+
+  .table-responsive {
+    overflow: visible !important;
+  }
+
+  .table-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.01rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow-x: scroll;
+  }
+
+
+  /* Ensure table doesn't clip dropdowns on smaller screens */
+  @media (max-width: 768px) {
+    .table-responsive {
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+  }
+
+  /* Fix dropdown positioning */
+  .dropdown {
+    position: static;
+  }
+
+  @media (min-width: 768px) {
+    .dropdown {
+      position: relative;
+    }
+  }
+
+  /* .w-100.text-center.m-20:hover { */
+
+  /* border-width: 2px;  */
+  /* border-color: #ebebf9; */
+  /* border-color: #3e3691; */
+  /* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); */
+  /* } */
+  .nav>.nav-item {
+    border-style: dashed;
+    border-width: 10px;
+    border-radius: 5px;
+  }
+
+  .cards>.active {
+    /* border-color: #ebebf9; */
+    border-color: #3e3691;
+    background: #ebebf9;
+  }
+
+  .w-100.text-center.m-20 {
+    height: 50px;
+    border-width: 1px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0px 20px;
+    border-style: solid;
+  }
+
+  #cardsth:hover {
+    cursor: pointer;
+    border-width: 2px;
+    /* border-color: #ebebf9; */
+    background: #ebebf9;
+    border-color: #3e3691;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .pagination button {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+  }
+
+  .pagination button:hover:not(:disabled) {
+    background: #f2f2f2;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .pagination .current {
+    background: #5335ff;
+    border-color: #5335ff;
+    color: white;
+  }
+  
+  .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 13px;
+      color: var(--muted);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  /* ---------- keep your original style variables ---------- */
+  :root {
+    --bg: #fff;
+    --text: #000;
+    --muted: #555;
+    --line: #ddd;
+    --panel: #fafafa;
+    --chip: #f3f4f6;
+    --brand: #5335ff;
+    --btn: #f5f5f5;
+    --btn-h: #ececec;
+  }
+
+  * {
+    box-sizing: border-box
+  }
+
+  html,
+  body {
+    height: 100%
+  }
+
+  body {
+    margin: 0;
+    font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    color: var(--text);
+    background: var(--bg);
+  }
+
+  .wrap {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column
+  }
+
+  /* top/title */
+  .titlebar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel)
+  }
+
+  .spacer {
+    flex: 1
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--btn);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600
+  }
+
+  .btn:hover {
+    background: var(--btn-h)
+  }
+
+  .btn.primary {
+    background: #e9e7ff;
+    border-color: #c3b8fe
+  }
+
+  /* cards */
+  .cards {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    background: #fafafa
+  }
+
+  .card {
+    flex: 1;
+    min-width: 160px;
+    padding: 16px;
+    text-align: center;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: .18s
+  }
+
+  .card:hover {
+    border-color: var(--brand)
+  }
+
+  .card.active {
+    border-color: var(--brand);
+    background: #e9e7ff;
+    font-weight: 700
+  }
+
+  /* filters */
+  .filters {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+    flex-wrap: wrap
+  }
+
+  .rc-input {
+    border: 1px solid var(--line);
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fff
+  }
+
+  .rc-select {
+    border: 1px solid var(--line);
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fff
+  }
+
+  /* table */
+  .list {
+    flex: 1;
+    overflow: auto;
+    padding: 12px
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    padding: 10px;
+    background: #f3f3f3;
+    color: #333;
+    font-size: 12px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--line)
+  }
+
+  tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle
+  }
+
+  tbody tr:hover {
+    background: #fafafa
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px
+  }
+
+  .iconbtn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 14px
+  }
+
+  .iconbtn:hover {
+    background: #eee
+  }
+
+  .footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  /* dedicated / band headers */
+  thead tr.rc-band-group th {
+    background: #102a43;
+    color: #fff;
+    text-align: center
+  }
+
+  thead tr.rc-band-sub th {
+    background: #243b53;
+    color: #fff;
+    text-align: center;
+    font-weight: 600
+  }
+
+  /* modal (scoped) */
+  #rcModalBackdrop {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999
+  }
+
+  #rcModalBackdrop.show {
+    display: flex
+  }
+
+  .rcModal {
+    background: #fff;
+    padding: 18px;
+    border-radius: 10px;
+    min-width: 360px;
+    max-width: 900px;
+    max-height: 85vh;
+    overflow: auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45)
+  }
+
+  .rcModal h3 {
+    margin: 0 0 10px 0
+  }
+
+  .rcFormRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px
+  }
+
+  .rcFormRow label {
+    min-width: 120px;
+    font-weight: 600
+  }
+
+  .rcFormRow input,
+  .rcFormRow select,
+  .rcFormRow textarea {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px
+  }
+
+  .rcModal .rcActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px
+  }
+
+  .small {
+    font-size: 12px;
+    color: var(--muted)
+  }
+
+  /* Combined Table Styles */
+  table.combinedTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  table.combinedTable th,
+  table.combinedTable td {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    text-align: center;
+  }
+
+  table.combinedTable th {
+    background: #f0f0f0;
+  }
+
+  /* Column toggle dropdown */
+  .col-toggle-dropdown {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  .col-toggle-dropdown-content {
+    display: none;
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    z-index: 10;
+    width: 200px;
+    max-height: 300px;
+    overflow: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .col-toggle-dropdown.show .col-toggle-dropdown-content {
+    display: block;
+  }
+
+  .col-toggle-dropdown-content label {
+    display: block;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+
+  /* Modal Grid for Service Rate Edit */
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .modal-grid .full {
+    grid-column: 1 / 3;
+  }
+
+  .modal-grid label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .modal-grid input,
+  .modal-grid textarea,
+  .modal-grid select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  .modal-grid textarea {
+    min-height: 60px;
+    resize: vertical;
+  }
+</style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- cards -->
+    <div class="d-flex flex-wrap gap-2" id="rcCards">
+      <div class="card p-2 active flex-shrink-0" data-type="default" style="cursor:pointer; max-width:200px;">📋 Rate
+        Cards</div>
+      <div class="card p-2 flex-shrink-0" data-type="service-rate" style="cursor:pointer; max-width:200px;">🧾 Service
+        Rate Card</div>
+      <div class="card p-2 flex-shrink-0" data-type="dedicated" style="cursor:pointer; max-width:200px;">🧑‍💻 Dedicated
+        Services</div>
+      <div class="card p-2 flex-shrink-0" data-type="scheduled" style="cursor:pointer; max-width:200px;">📅 Scheduled
+        Services</div>
+      <div class="card p-2 flex-shrink-0" data-type="dispatch" style="cursor:pointer; max-width:200px;">🚚 Dispatch
+        Services</div>
+      <div class="card p-2 flex-shrink-0" data-type="projects" style="cursor:pointer; max-width:200px;">🏗️ Projects
+      </div>
+    </div>
+
+
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="sub small">Manage pricing by customer, region, and service type</div>
+      <div class="spacer"></div>
+      
+      <button class="btn" id="rcNewBtn">＋ New Rate Card</button>
+    </div>
+
+    <!-- filters -->
+    <div class="filters" id="rcFilters">
+      <input id="rc_search" class="rc-input" placeholder="Search customer/ country..." />
+      <select id="rc_region" class="rc-select">
+        <option value="">All Regions</option>
+        <option>EMEA</option>
+        <option>APAC</option>
+        <option>NA</option>
+      </select>
+      <select id="rc_currency" class="rc-select">
+        <option value="">All Currencies</option>
+        <option>USD</option>
+        <option>EUR</option>
+        <option>GBP</option>
+      </select>
+      <select id="rc_supplier" class="rc-select">
+        <option value="">All Suppliers</option>
+      </select>
+    </div>
+
+    <!-- table container -->
+    <!-- table container -->
+    <div class="list" id="rcTableContainer"></div>
+    
+    <div class="footer">
+        <div id="footerText">Select a filter to view rate cards</div>
+        <div class="pagination" id="rcPagination"></div>
+    </div>
+
+
+  </div>
+
+  <!-- Modal (scoped unique IDs) -->
+  <div id="rcModalBackdrop" aria-hidden="true">
+    <div class="rcModal" role="dialog" aria-modal="true" aria-labelledby="rcModalTitle">
+      <h3 id="rcModalTitle">Rate Card</h3>
+      <div id="rcModalBody"></div>
+      <div class="rcActions">
+        <button class="btn" id="rcCancelBtn">Cancel</button>
+        <button class="btn primary" id="rcSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function RateCardApp() {
+      const ns = {};
+      ns.services = {};
+
+      // CSRF helper
+      function getCookie(name) {
+        const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+        return v ? decodeURIComponent(v.split('=')[1]) : null;
+      }
+      const csrftoken = getCookie('csrftoken');
+
+      // Endpoints (adjust if you included app_name in urls)
+      const API_BASE = '/rate-cards/api';
+
+      // load service rates for a single ratecard and svcType
+      async function loadServiceRatesForType(ratecard_id, svcType) {
+        const ep = svcEndpointMap[svcType];
+        if (!ep) throw new Error('Unknown svcType endpoint: ' + svcType);
+        const res = await fetch(`${API_BASE}/ratecards/${ratecard_id}/${ep}s/`);
+        // NOTE: this assumes your server supports URLs like /ratecards/<id>/service_rates/ or /ratecards/<id>/dedicated_rates/
+        // If your endpoints differ, adjust to something like `${API_BASE}/${ep}/?rate_card_id=${ratecard_id}`
+        if (!res.ok) {
+          console.warn('failed loadServiceRatesForType', ratecard_id, svcType, res.status);
+          return [];
+        }
+        const j = await res.json();
+        return j.results || [];
+      }
+
+      // initial load: get ratecards, then load each svc type incrementally for each ratecard
+      async function loadRateCards() {
+
+        // load customers 
+        await loadCustomers();
+
+        // load entities
+        await loadEntities();
+
+
+        const res = await fetch(`${API_BASE}/ratecards/`);
+        const j = await res.json();
+        ns.data = j.results || [];
+
+        // initialize ns.services slots for each ratecard
+        ns.data.forEach(r => {
+          ns.services[r.id] = ns.services[r.id] || {};
+          Object.values(serviceKeyMap).forEach(k => ns.services[r.id][k] = []);
+        });
+
+        // list of svcTypes to load (all of them)
+        const svcTypes = Object.keys(serviceKeyMap);
+
+        // load each ratecard's svc types incrementally (fire-and-await pattern)
+        await Promise.all(ns.data.map(async r => {
+          await Promise.all(svcTypes.map(async svcType => {
+            try {
+              const arr = await loadServiceRatesForType(r.id, svcType);
+              const key = serviceKeyMap[svcType];
+              ns.services[r.id][key] = arr;
+              // if currently viewing the tab that uses this svcType, re-render for immediate feedback
+              if (ns.currentType === svcType) render();
+            } catch (err) {
+              console.warn('failed loading', svcType, 'for', r.id, err);
+              ns.services[r.id][serviceKeyMap[svcType]] = [];
+            }
+          }));
+        }));
+
+        // initial render & filters
+        render();
+        refreshSupplierFilter();
+      }
+
+
+      // CRUD helpers
+      async function createRateCard(payload) {
+        const body = new URLSearchParams(payload);
+        const res = await fetch(`${API_BASE}/ratecards/create/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body
+        });
+        return await res.json();
+      }
+      async function updateRateCard(id, payload) {
+        const res = await fetch(`${API_BASE}/ratecards/${id}/update/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body: new URLSearchParams(payload)
+        });
+        return await res.json();
+      }
+      async function deleteRateCard(id) {
+        const res = await fetch(`${API_BASE}/ratecards/${id}/delete/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+        });
+        return await res.json();
+      }
+      // ServiceRate CRUD helpers (uses csrftoken and API_BASE from your script)
+      // maps: ns.currentType -> ns.services property name (no dashes)
+      const serviceKeyMap = {
+        'service-rate': 'service_rates',
+        'dedicated': 'dedicated',
+        'scheduled': 'scheduled',
+        'dispatch': 'dispatch',
+        'projects': 'projects'
+      };
+
+      // maps: ns.currentType -> backend endpoint base (adjust to your real endpoints)
+      const svcEndpointMap = {
+        'service-rate': 'service_rate',   // endpoint examples: /rate-cards/api/service_rate/create/
+        'dedicated': 'dedicated_rate',
+        'scheduled': 'scheduled_rate',
+        'dispatch': 'dispatch_rate',
+        'projects': 'project_rate'
+      };
+
+      // Generic service CRUD that uses svcType to pick endpoint
+      async function createSvc(svcType, payload) {
+        const ep = svcEndpointMap[svcType];
+        if (!ep) throw new Error('Unknown svcType endpoint: ' + svcType);
+        const res = await fetch(`${API_BASE}/${ep}/create/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body: new URLSearchParams(payload)
+        });
+        return await res.json();
+      }
+      async function updateSvc(svcType, id, payload) {
+        const ep = svcEndpointMap[svcType];
+        if (!ep) throw new Error('Unknown svcType endpoint: ' + svcType);
+        const res = await fetch(`${API_BASE}/${ep}/${id}/update/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body: new URLSearchParams(payload)
+        });
+        return await res.json();
+      }
+      async function deleteSvc(svcType, id) {
+        const ep = svcEndpointMap[svcType];
+        if (!ep) throw new Error('Unknown svcType endpoint: ' + svcType);
+        const res = await fetch(`${API_BASE}/${ep}/${id}/delete/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+        });
+        return await res.json();
+      }
+
+      ns.customers = [];
+
+      async function loadCustomers() {
+        try {
+          const res = await fetch(`${API_BASE}/customers/`);
+          if (!res.ok) return;
+          const j = await res.json();
+          ns.customers = j.results || [];
+        } catch (e) {
+          console.warn('Failed to load customers', e);
+          ns.customers = [];
+        }
+      }
+
+      ns.entities = [];
+
+      async function loadEntities() {
+        try {
+          // adjust endpoint if your API exposes entities under another path
+          const res = await fetch(`${API_BASE}/purchase-orders/`);
+          if (!res.ok) return;
+          const j = await res.json();
+          // expecting results: array of {id, excis_entity, ...}
+          ns.entities = (j.results || []).map(x => ({ id: x.id, display: x.excis_entity || x.excis_entity }));
+        } catch (e) {
+          console.warn('Failed to load entities', e);
+          ns.entities = [];
+        }
+      }
+
+      // --- Keep your UI wiring but use ns.data from backend
+      const container = document.getElementById('rcTableContainer');
+      const cards = document.querySelectorAll('#rcCards .card');
+      const modalBackdrop = document.getElementById('rcModalBackdrop');
+      const modalTitle = document.getElementById('rcModalTitle');
+      const modalBody = document.getElementById('rcModalBody');
+      const saveBtn = document.getElementById('rcSaveBtn');
+      const cancelBtn = document.getElementById('rcCancelBtn');
+      const searchEl = document.getElementById('rc_search');
+      const regionEl = document.getElementById('rc_region');
+      const currencyEl = document.getElementById('rc_currency');
+      const supplierEl = document.getElementById('rc_supplier');
+      const newBtn = document.getElementById('rcNewBtn');
+
+      ns.currentType = 'default';
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+      // Add event listeners for filters
+      [searchEl, regionEl, currencyEl, supplierEl].forEach(el => {
+          el.addEventListener('input', () => {
+              currentPage = 1;
+              render();
+          });
+      });
+
+      function renderPagination(totalItems) {
+          const container = document.getElementById('rcPagination');
+          const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+          
+          // Update footer text
+          const start = (currentPage - 1) * itemsPerPage + 1;
+          const end = Math.min(currentPage * itemsPerPage, totalItems);
+          document.getElementById('footerText').textContent = 
+              totalItems > 0 ? `Showing ${start}–${end} of ${totalItems} items` : 'No items found';
+
+          if (totalItems === 0) {
+              container.innerHTML = '';
+              return;
+          }
+
+          let paginationHTML = `
+              <button ${currentPage === 1 ? 'disabled' : ''} class="prev-btn">Previous</button>
+          `;
+
+          const maxVisiblePages = 5;
+          let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+          let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+          if (endPage - startPage + 1 < maxVisiblePages) {
+              startPage = Math.max(1, endPage - maxVisiblePages + 1);
+          }
+
+          for (let i = startPage; i <= endPage; i++) {
+              paginationHTML += `
+                  <button class="${i === currentPage ? 'current' : ''} page-btn" data-page="${i}">${i}</button>
+              `;
+          }
+
+          paginationHTML += `
+              <button ${currentPage === totalPages ? 'disabled' : ''} class="next-btn">Next</button>
+          `;
+
+          container.innerHTML = paginationHTML;
+
+          // Event listeners
+          const changePage = (page) => {
+              if (page < 1 || page > totalPages) return;
+              currentPage = page;
+              render();
+          };
+
+          container.querySelector('.prev-btn').onclick = () => changePage(currentPage - 1);
+          container.querySelector('.next-btn').onclick = () => changePage(currentPage + 1);
+          container.querySelectorAll('.page-btn').forEach(btn => {
+              btn.onclick = () => changePage(parseInt(btn.dataset.page));
+          });
+      }
+
+      function uniqueSuppliers() { return [...new Set((ns.data || []).map(d => d.supplier))]; }
+      function refreshSupplierFilter() {
+        supplierEl.innerHTML = '<option value="">All Suppliers</option>' + uniqueSuppliers().map(s => `<option>${esc(s)}</option>`).join('');
+      }
+      function filterData() {
+        const q = (searchEl.value || '').toLowerCase(), r = regionEl.value, c = currencyEl.value, s = supplierEl.value;
+        return (ns.data || []).filter(d =>
+          (!r || d.region === r) && (!c || d.currency === c) && (!s || d.supplier === s) &&
+          (!q || [d.customer, d.country, d.supplier].some(x => (x || '').toLowerCase().includes(q)))
+        );
+      }
+
+      const baseCols = () => `<th>#</th><th>Customer</th><th>Region</th><th>Country</th><th>Supplier</th><th>Currency</th><th>Entity</th><th>Payment</th>`;
+      const baseCells = (r, i) => `<td>${i + 1}</td><td>${esc(r.customer)}</td><td>${esc(r.region)}</td><td>${esc(r.country)}</td><td>${esc(r.supplier)}</td><td>${esc(r.currency)}</td><td>${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td><td>${esc(r.payment)}</td>`;
+
+      function renderDefault() {
+        const allData = filterData();
+        const totalItems = allData.length;
+        
+        const start = (currentPage - 1) * itemsPerPage;
+        const pagedData = allData.slice(start, start + itemsPerPage);
+        
+        const rows = pagedData.map((r, i) => `
+      <tr data-id="${r.id}">
+        ${baseCells(r, start + i)}
+        <td>${r.status}</td>
+        <td class="actions">
+          <button class="iconbtn rc-view" data-id="${r.id}" data-viewtype="details">👁️</button>
+          <button class="iconbtn rc-edit" data-id="${r.id}">✏️</button>
+          <button class="iconbtn rc-del" data-id="${r.id}">🗑️</button>
+        </td>
+      </tr>`).join('');
+        container.innerHTML = `<table><thead><tr>${baseCols()}<th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+        
+        renderPagination(totalItems);
+      }
+
+      function render() {
+        if (ns.currentType === 'dedicated') renderGeneric('dedicated');
+        else if (ns.currentType === 'scheduled') renderGeneric('scheduled');
+        else if (ns.currentType === 'dispatch') renderGeneric('dispatch');
+        else if (ns.currentType === 'projects') renderGeneric('projects');
+        else if (ns.currentType === 'service-rate') renderServiceRateCard();
+        else renderDefault();
+      }
+
+      function renderGeneric(key) {
+        // helper to safely get the array for a given ratecard/key
+        const getSvcList = id => {
+          const slot = ns.services[id] && ns.services[id][key];
+          return Array.isArray(slot) ? slot : [];
+        };
+
+        const allData = filterData();
+        const totalItems = allData.length;
+        
+        const start = (currentPage - 1) * itemsPerPage;
+        const rowsData = allData.slice(start, start + itemsPerPage);
+
+        const categoryOrder = [];
+        const categoryTypes = {}; // { category: Set(types) }
+
+        // optional known ordering for dedicated (keeps previous behavior)
+        const knownOrder = (key === 'dedicated' && Array.isArray(ns.dedicatedCols) && ns.dedicatedCols.length)
+          ? ns.dedicatedCols.slice()
+          : null;
+
+        // discover categories and types from visible rows
+        rowsData.forEach(r => {
+          const svc = getSvcList(r.id);
+          svc.forEach(s => {
+            const cat = String(s.category ?? '—');
+            const t = String(s.rate_type ?? '—');
+            if (!categoryTypes[cat]) categoryTypes[cat] = new Set();
+            categoryTypes[cat].add(t);
+            if (!categoryOrder.includes(cat)) categoryOrder.push(cat);
+          });
+        });
+
+        // merge knownOrder if present so configured categories appear first and all show up
+        if (knownOrder) {
+          const merged = [];
+          knownOrder.forEach(k => { if (categoryOrder.includes(k)) merged.push(k); });
+          categoryOrder.forEach(c => { if (!merged.includes(c)) merged.push(c); });
+          knownOrder.forEach(k => { if (!merged.includes(k)) merged.push(k); });
+          categoryOrder.length = 0;
+          categoryOrder.push(...merged);
+          knownOrder.forEach(k => { if (!categoryTypes[k]) categoryTypes[k] = new Set(); });
+        }
+
+        // build headers
+        const topHeaders = categoryOrder.map(cat => {
+          const types = Array.from(categoryTypes[cat] || []);
+          const colspan = Math.max(1, types.length || 1);
+          return `<th colspan="${colspan}" style="text-align:center">${esc(cat)}</th>`;
+        }).join('');
+
+        const subHeaders = categoryOrder.map(cat => {
+          const types = Array.from(categoryTypes[cat] || []);
+          if (types.length === 0) return `<th>—</th>`;
+          return types.map(t => `<th>${esc(t)}</th>`).join('');
+        }).join('');
+
+        // rows
+        const rowsHtml = rowsData.map((r, idx) => {
+          const svc = getSvcList(r.id);
+          const idxMap = {};
+          svc.forEach(s => {
+            const cat = String(s.category ?? '—');
+            const t = String(s.rate_type ?? '—');
+            idxMap[cat] = idxMap[cat] || {};
+            if (idxMap[cat][t] === undefined) idxMap[cat][t] = s;
+          });
+
+          const cells = categoryOrder.map(cat => {
+            const types = Array.from(categoryTypes[cat] || []);
+            if (types.length === 0) {
+              const s = idxMap[cat] ? (Object.values(idxMap[cat])[0]) : null;
+              const val = s ? String(s.rate_value ?? '—') : '—';
+              return `<td style="text-align:center">${esc(val)}</td>`;
+            }
+            return types.map(t => {
+              const s = (idxMap[cat] && idxMap[cat][t]) ? idxMap[cat][t] : null;
+              const val = s ? String(s.rate_value ?? '—') : '—';
+              return `<td style="text-align:center">${esc(val)}</td>`;
+            }).join('');
+          }).join('');
+
+          return `<tr data-id="${r.id}">
+        ${baseCells(r, idx)}
+        ${cells}
+        <td>${esc(r.status)}</td>
+        <td class="actions">
+          <button class="iconbtn rc-view" data-id="${r.id}">👁️</button>
+          <button class="iconbtn rc-edit" data-id="${r.id}">✏️</button>
+          <button class="iconbtn rc-del" data-id="${r.id}">🗑️</button>
+        </td>
+      </tr>`;
+        }).join('');
+
+        // header fallback when no categories discovered
+        let headerHtml;
+        if (categoryOrder.length === 0) {
+          headerHtml = `<tr>${baseCols()}<th>Status</th><th>Actions</th></tr>`;
+        } else {
+          headerHtml = `<tr>${baseCols()}${topHeaders}<th>Status</th><th>Actions</th></tr>
+                    <tr><th colspan="8"></th>${subHeaders}<th colspan="2"></th></tr>`;
+        }
+
+        container.innerHTML = `<table><thead>${headerHtml}</thead><tbody>${rowsHtml || '<tr><td colspan="100%">No rows</td></tr>'}</tbody></table>`;
+        renderPagination(totalItems);
+      }
+
+
+      function renderServiceRateCard() {
+        const rowsData = filterData();
+        
+        // Flatten data first to paginate properly across flattened rows
+        let allRows = [];
+        let rowIndex = 0;
+        
+        rowsData.forEach(r => {
+            const services = (ns.services[r.id] && ns.services[r.id].service_rates) ? ns.services[r.id].service_rates : [];
+            if (services.length === 0) {
+                allRows.push({ r, s: null, sIdx: -1 });
+            } else {
+                services.forEach((s, sIdx) => {
+                    allRows.push({ r, s, sIdx });
+                });
+            }
+        });
+        
+        const totalItems = allRows.length;
+        const start = (currentPage - 1) * itemsPerPage;
+        const pagedRows = allRows.slice(start, start + itemsPerPage);
+
+        // ------------------------------
+        // COLUMN VISIBILITY SETTINGS
+        // ------------------------------
+        const allColumns = [
+          { key: "customer", label: "Customer" },
+          { key: "region", label: "Region" },
+          { key: "country", label: "Country" },
+          { key: "supplier", label: "Supplier" },
+          { key: "currency", label: "Currency" },
+          { key: "entity", label: "Entity" },
+          { key: "payment", label: "Payment" },
+          { key: "status", label: "Status" },
+          { key: "category", label: "Category" },
+          { key: "sr_region", label: "SR Region" },
+          { key: "rate_type", label: "Rate Type" },
+          { key: "rate_value", label: "Rate Value" },
+          { key: "after_hours", label: "After Hours" },
+          { key: "weekend", label: "Weekend" },
+          { key: "travel", label: "Travel" },
+          { key: "includes_travel", label: "Includes Travel" },
+          { key: "remarks", label: "Remarks" },
+          { key: "fte", label: "FTE" },
+          { key: "sv", label: "Scheduled Visits" }
+        ];
+
+        // Initialize hiddenColumns from localStorage or default to all visible
+        let hiddenColumns = {};
+        const saved = localStorage.getItem("defaultHiddenColumns");
+        if (saved) {
+          hiddenColumns = JSON.parse(saved);
+        } else {
+          allColumns.forEach(c => hiddenColumns[c.key] = false); // default = all visible
+        }
+
+        // Flatten data: RateCard -> ServiceRates
+        let combinedRowsHtml = '';
+        let displayIndex = start;
+
+        // We need to store a reference to the specific service rate for editing
+        // We'll attach data attributes to the row: data-rcid (RateCard ID) and data-sidx (Service Index)
+
+        pagedRows.forEach(item => {
+          const { r, s, sIdx } = item;
+          
+          if (!s) {
+            // Show a row with empty service columns if no services exist? 
+            // Or just skip? Let's show one row with empty service data so the Rate Card is visible
+            combinedRowsHtml += `
+            <tr class="combined-row" data-rcid="${r.id}" data-sidx="-1">
+              <td>${++displayIndex}</td>
+              <td class="col-customer">${esc(r.customer)}</td>
+              <td class="col-region">${esc(r.region)}</td>
+              <td class="col-country">${esc(r.country)}</td>
+              <td class="col-supplier">${esc(r.supplier)}</td>
+              <td class="col-currency">${esc(r.currency)}</td>
+              <td class="col-entity">${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td>
+              <td class="col-payment">${esc(r.payment)}</td>
+              <td class="col-status">${esc(r.status)}</td>
+
+              <td class="col-category">—</td>
+              <td class="col-sr_region">—</td>
+              <td class="col-rate_type">—</td>
+              <td class="col-rate_value">—</td>
+              <td class="col-after_hours">—</td>
+              <td class="col-weekend">—</td>
+              <td class="col-travel">—</td>
+              <td class="col-includes_travel">—</td>
+              <td class="col-remarks">—</td>
+              <td class="col-fte">—</td>
+              <td class="col-sv">—</td>
+
+              <td>
+                <button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="-1">Edit</button>
+                <button class="btn small rc-del" data-id="${r.id}">Delete</button>
+              </td>
+            </tr>`;
+          } else {
+              combinedRowsHtml += `
+                <tr class="combined-row" data-rcid="${r.id}" data-sidx="${sIdx}">
+                  <td>${++displayIndex}</td>
+                  <td class="col-customer">${esc(r.customer)}</td>
+                  <td class="col-region">${esc(r.region)}</td>
+                  <td class="col-country">${esc(r.country)}</td>
+                  <td class="col-supplier">${esc(r.supplier)}</td>
+                  <td class="col-currency">${esc(r.currency)}</td>
+                  <td class="col-entity">${esc(r.entity && r.entity.display ? r.entity.display : r.entity || '')}</td>
+                  <td class="col-payment">${esc(r.payment)}</td>
+                  <td class="col-status">${esc(r.status)}</td>
+
+                  <td class="col-category">${esc(s.category)}</td>
+                  <td class="col-sr_region">${esc(s.region)}</td>
+                  <td class="col-rate_type">${esc(s.rate_type)}</td>
+                  <td class="col-rate_value">${esc(s.rate_value)}</td>
+                  <td class="col-after_hours">${esc(s.after_hours_multiplier ?? '-')}</td>
+                  <td class="col-weekend">${esc(s.weekend_multiplier ?? '-')}</td>
+                  <td class="col-travel">${esc(s.travel_charge ?? '-')}</td>
+                  <td class="col-includes_travel">${s.includes_travel ? '✅' : '❌'}</td>
+                  <td class="col-remarks">${esc(s.remarks ?? '-')}</td>
+
+                  <td class="col-fte">${esc(s.prebilling?.fte ?? '-')}</td>
+                  <td class="col-sv">${esc(s.prebilling?.sv ?? '-')}</td>
+
+                  <td>
+                    <button class="btn small rc-edit-modal" data-rcid="${r.id}" data-sidx="${sIdx}">Edit</button>
+                    <button class="btn small rc-del-svc" data-rcid="${r.id}" data-sidx="${sIdx}">Delete</button>
+                  </td>
+                </tr>`;
+          }
+        });
+
+        // Render Container
+        container.innerHTML = `
+        <h3>📋 Combined Rate Card & Service Rates</h3>
+
+        <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px">
+            <div class="col-toggle-dropdown" id="colToggle">
+              <button class="btn small">Columns ▼</button>
+              <div class="col-toggle-dropdown-content">
+                ${allColumns.map(c => `
+                  <label>
+                    <input type="checkbox" class="col-toggle-checkbox" data-col="${c.key}"> ${c.label}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+            <button id="saveDefaultColsBtn" class="btn small primary">💾 Save Default</button>
+            <button id="revertColsBtn" class="btn small">🔄 Revert</button>
+        </div>
+
+        <table class="combinedTable">
+          <thead>
+            <tr>
+              <th>#</th><th class="col-customer">Customer</th><th class="col-region">Region</th><th class="col-country">Country</th><th class="col-supplier">Supplier</th>
+              <th class="col-currency">Currency</th><th class="col-entity">Entity</th><th class="col-payment">Payment</th><th class="col-status">Status</th>
+              <th class="col-category">Category</th><th class="col-sr_region">SR Region</th><th class="col-rate_type">Rate Type</th><th class="col-rate_value">Rate Value</th>
+              <th class="col-after_hours">After Hours</th><th class="col-weekend">Weekend</th><th class="col-travel">Travel</th><th class="col-includes_travel">Includes Travel</th><th class="col-remarks">Remarks</th>
+              <th class="col-fte">FTE</th><th class="col-sv">Scheduled Visits</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${combinedRowsHtml || '<tr><td colspan="100%">No rows</td></tr>'}</tbody>
+        </table>
+
+        <a href="/billing/create?step=3" class="btn primary"
+        style="margin-right:10px; text-decoration:none;">Standardize Rate Card</a>
+    `;
+        renderPagination(totalItems);
+
+        // ------------------------------
+        // EVENT HANDLERS
+        // ------------------------------
+
+        // Column Toggle Logic
+        const colToggleBtn = document.querySelector("#colToggle > button");
+        const colToggleDropdown = document.querySelector("#colToggle");
+        // close others
+        document.addEventListener('click', e => {
+          if (!colToggleDropdown.contains(e.target)) colToggleDropdown.classList.remove("show");
+        });
+        colToggleBtn.onclick = (e) => {
+          e.stopPropagation();
+          colToggleDropdown.classList.toggle("show");
+        };
+
+        const checkboxes = container.querySelectorAll(".col-toggle-checkbox");
+        checkboxes.forEach(checkbox => {
+          const col = checkbox.dataset.col;
+          checkbox.checked = hiddenColumns[col] || false;
+
+          // Initial visibility
+          container.querySelectorAll(`.col-${col}`).forEach(td => td.style.display = hiddenColumns[col] ? "none" : "");
+
+          checkbox.onchange = () => {
+            hiddenColumns[col] = checkbox.checked;
+            container.querySelectorAll(`.col-${col}`).forEach(td => td.style.display = hiddenColumns[col] ? "none" : "");
+          };
+        });
+
+        document.getElementById("saveDefaultColsBtn").onclick = () => {
+          localStorage.setItem("defaultHiddenColumns", JSON.stringify(hiddenColumns));
+          alert("Default column settings saved!");
+        };
+
+        document.getElementById("revertColsBtn").onclick = () => {
+          localStorage.removeItem("defaultHiddenColumns");
+          allColumns.forEach(c => hiddenColumns[c.key] = false);
+          checkboxes.forEach(cb => {
+            cb.checked = false;
+            const col = cb.dataset.col;
+            container.querySelectorAll(`.col-${col}`).forEach(td => td.style.display = "");
+          });
+          alert("Reverted to original table columns!");
+        };
+
+        // Edit Modal Logic
+        container.querySelectorAll(".rc-edit-modal").forEach(btn => {
+          btn.onclick = () => {
+            const rcid = btn.dataset.rcid;
+            const sidx = parseInt(btn.dataset.sidx);
+
+            const r = ns.data.find(x => String(x.id) === String(rcid));
+            if (!r) return;
+
+            const s = (sidx >= 0 && ns.services[rcid] && ns.services[rcid].service_rates) ? ns.services[rcid].service_rates[sidx] : null;
+
+            // If no service rate (sidx -1), we are editing the Rate Card only, or adding a new service rate?
+            // For now let's assume we edit the Rate Card and if they want to add a service rate they can do it via the old modal or we add a button.
+            // But the requirement implies we should be able to edit the row.
+            // Let's open the new modal populated with what we have.
+
+            openServiceRateModal(r, s, sidx);
+          };
+        });
+
+        // Delete Service Rate Logic
+        container.querySelectorAll(".rc-del-svc").forEach(btn => {
+          btn.onclick = async () => {
+            const rcid = btn.dataset.rcid;
+            const sidx = parseInt(btn.dataset.sidx);
+            if (confirm("Delete this service rate?")) {
+              const s = ns.services[rcid].service_rates[sidx];
+              if (s && s.id) {
+                try {
+                  await deleteSvc('service-rate', s.id);
+                  // reload data for this rate card
+                  const arr = await loadServiceRatesForType(rcid, 'service-rate');
+                  ns.services[rcid]['service_rates'] = arr;
+                  renderServiceRateCard();
+                } catch (e) {
+                  alert('Failed to delete: ' + e.message);
+                }
+              }
+            }
+          };
+        });
+      }
+
+      function openServiceRateModal(r, s, sidx) {
+        modalTitle.textContent = s ? `📌 Edit Rate & Prebilling: ${s.category} (${s.region})` : `Edit Rate Card: ${r.customer}`;
+
+        // Pre-fill values
+        const safeVal = (v) => esc(v || '');
+
+        modalBody.innerHTML = `
+        <div class="modal-grid">
+          <div><label>Customer</label><input type="text" id="m-customer" value="${safeVal(r.customer)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Region</label><input type="text" id="m-region" value="${safeVal(r.region)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Country</label><input type="text" id="m-country" value="${safeVal(r.country)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Supplier</label><input type="text" id="m-supplier" value="${safeVal(r.supplier)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Currency</label><input type="text" id="m-currency" value="${safeVal(r.currency)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Entity</label><input type="text" id="m-entity" value="${safeVal(r.entity && r.entity.display ? r.entity.display : r.entity)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Payment</label><input type="text" id="m-payment" value="${safeVal(r.payment)}" readonly style="background:#f9f9f9"></div>
+          <div><label>Status</label><input type="text" id="m-status" value="${safeVal(r.status)}" readonly style="background:#f9f9f9"></div>
+
+          ${s ? `
+          <hr class="full">
+          <div style="font-weight:bold;margin-bottom:10px" class="full">Service Rate Details</div>
+          
+          <div><label>Category</label><input type="text" id="m-category" value="${safeVal(s.category)}"></div>
+          <div><label>Rate Type</label><input type="text" id="m-rate_type" value="${safeVal(s.rate_type)}"></div>
+          <div><label>Rate Value</label><input type="number" id="m-rate_value" value="${safeVal(s.rate_value)}"></div>
+          <div><label>After Hours Multiplier</label><input type="number" step="0.1" id="m-after_hours_multiplier" value="${safeVal(s.after_hours_multiplier)}"></div>
+          <div><label>Weekend Multiplier</label><input type="number" step="0.1" id="m-weekend_multiplier" value="${safeVal(s.weekend_multiplier)}"></div>
+          <div><label>Travel Charge</label><input type="number" id="m-travel_charge" value="${safeVal(s.travel_charge)}"></div>
+          <div><label>Includes Travel</label>
+            <select id="m-includes_travel">
+              <option value="true" ${s.includes_travel ? 'selected' : ''}>Yes</option>
+              <option value="false" ${!s.includes_travel ? 'selected' : ''}>No</option>
+            </select>
+          </div>
+          <div class="full"><label>Remarks</label><textarea id="m-remarks">${safeVal(s.remarks)}</textarea></div>
+
+          <div class="full" style="font-weight:bold;margin-top:10px">Prebilling</div>
+          <div><label>FTE Count</label><input type="number" id="m-fte" value="${safeVal(s.prebilling?.fte)}"></div>
+          <div><label>Scheduled Visits</label><input type="number" id="m-sv" value="${safeVal(s.prebilling?.sv)}"></div>
+          ` : `<div class="full" style="padding:20px;text-align:center;color:#777">No service rate selected. Use the main "New Rate Card" button to add services.</div>`}
+        </div>
+      `;
+
+        modalBackdrop.style.display = "flex";
+
+        saveBtn.onclick = async () => {
+          if (!s) {
+            modalBackdrop.style.display = "none";
+            return;
+          }
+
+          // Construct payload
+          const payload = {
+            category: document.getElementById("m-category").value,
+            rate_type: document.getElementById("m-rate_type").value,
+            rate_value: document.getElementById("m-rate_value").value,
+            after_hours_multiplier: document.getElementById("m-after_hours_multiplier").value,
+            weekend_multiplier: document.getElementById("m-weekend_multiplier").value,
+            travel_charge: document.getElementById("m-travel_charge").value,
+            includes_travel: document.getElementById("m-includes_travel").value === "true",
+            remarks: document.getElementById("m-remarks").value,
+            // Flatten prebilling into the payload if your backend expects it flattened, 
+            // or as a nested object. The reference code implies it might be flattened or handled specially.
+            // Assuming backend accepts these fields directly or we need to structure it.
+            // Based on `updateSvc` it sends URLSearchParams.
+            // Let's send them as is, assuming backend handles them.
+            fte: document.getElementById("m-fte").value,
+            sv: document.getElementById("m-sv").value
+          };
+
+          try {
+            await updateSvc('service-rate', s.id, payload);
+            // Reload data
+            const arr = await loadServiceRatesForType(r.id, 'service-rate');
+            ns.services[r.id]['service_rates'] = arr;
+            renderServiceRateCard();
+            modalBackdrop.style.display = "none";
+          } catch (e) {
+            alert("Failed to save: " + e.message);
+          }
+        };
+
+        cancelBtn.onclick = () => modalBackdrop.style.display = "none";
+      }
+
+
+      // Modal open/edit/new using backend
+      function openModal(mode, id) {
+        const rec = id ? (ns.data.find(x => x.id === id) || {}) : { id: Date.now(), customer: '', region: '', country: '', supplier: '', currency: 'USD', entity: '', payment: '', status: 'Active' };
+        const svcType = ns.currentType;
+        modalTitle.textContent = mode === 'edit' ? 'Edit Record' : mode === 'view' ? 'View Record' : 'New Rate Card';
+        const readonly = mode === 'view' ? 'readonly' : '';
+
+        // base fields
+        let html = `
+    <div class="rcFormRow">
+      <label>Customer</label>
+      ${readonly ?
+            `<div id="rcf_customer_display">${esc(rec.customer || '')}</div>` :
+            // single input + hidden id; dropdown container appended below input
+            `<div style="position:relative">
+          <input id="rcf_customer_picker" autocomplete="off" placeholder="Type to search customers..." style="width:100%;box-sizing:border-box" />
+          <input type="hidden" id="rcf_customer_id" value="${esc(rec.customer && rec.customer.id ? rec.customer.id : '')}" />
+          <div id="rcf_customer_dropdown" style="position:absolute;left:0;right:0;z-index:50;max-height:220px;overflow:auto;border:1px solid #ddd;background:#fff;display:none;border-radius:4px"></div>
+        </div>`
+          }
+    </div>
+    <div class="rcFormRow"><label>Region</label><input id="rcf_region" value="${esc(rec.region || '')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Country</label><input id="rcf_country" value="${esc(rec.country || '')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Supplier</label><input id="rcf_supplier" value="${esc(rec.supplier || '')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Currency</label><input id="rcf_currency" value="${esc(rec.currency || 'USD')}" ${readonly}></div>
+
+    <div class="rcFormRow">
+      <label>Entity</label>
+      ${readonly ? `<div id="rcf_entity_display">${esc(rec.entity && rec.entity.display ? rec.entity.display : rec.entity || '')}</div>`
+            : `<select id="rcf_entity_select" style="width:100%;box-sizing:border-box">
+                    <option value="">-- choose entity --</option>
+                  </select>`}
+    </div>
+
+    <div class="rcFormRow"><label>Payment</label><input id="rcf_payment" value="${esc(rec.payment || '')}" ${readonly}></div>
+    <div class="rcFormRow"><label>Status</label><input id="rcf_status" value="${esc(rec.status || 'Active')}" ${readonly}></div>
+  `;
+
+
+        // determine service key and label
+        const svcKey = serviceKeyMap[svcType] || 'service_rates';
+        const svcLabel = svcType === 'service-rate' ? 'Service Rates' : (svcType.charAt(0).toUpperCase() + svcType.slice(1).replace('-', ' '));
+
+        // include service list/editor for every svcType (except 'default' where you may opt-out)
+        if (svcType !== 'default') {
+          html += `<hr><div style="font-weight:700;margin-bottom:8px">${esc(svcLabel)}</div>`;
+          html += `<div id="rcSvcList" style="max-height:320px;overflow:auto;border:1px solid #eee;padding:8px;border-radius:6px">${'<div style="color:#777">Loading…</div>'}</div>`;
+          if (mode !== 'view') html += `<div style="margin-top:8px"><button class="btn" id="rcAddSvcBtn">＋ Add ${esc(svcLabel)}</button></div>`;
+        }
+
+        modalBody.innerHTML = html;
+        modalBackdrop.style.display = 'flex';
+
+        if (!readonly) {
+          const picker = document.getElementById('rcf_customer_picker');
+          const hid = document.getElementById('rcf_customer_id');
+          const dropdown = document.getElementById('rcf_customer_dropdown');
+
+          // helper to render list of matches (arr of {id, display})
+          function renderCustomerList(arr) {
+            if (!dropdown) return;
+            if (!arr || arr.length === 0) {
+              dropdown.innerHTML = `<div style="padding:8px;color:#777">No matches</div>`;
+              return;
+            }
+            dropdown.innerHTML = arr.map(c => `<div class="rcf_c_item" data-id="${c.id}" style="padding:8px;cursor:pointer;border-bottom:1px solid #f3f3f3">${esc(c.display)}</div>`).join('');
+          }
+
+          // open/close helpers
+          function openDropdown() { dropdown.style.display = 'block'; }
+          function closeDropdown() { dropdown.style.display = 'none'; }
+
+          // initialize: prefill input from rec.customer (if available)
+          (function initPicker() {
+            const preId = rec.customer && (rec.customer.id || rec.customer);
+            if (preId) {
+              const found = ns.customers.find(c => String(c.id) === String(preId));
+              if (found) {
+                picker.value = found.display;
+                hid.value = found.id;
+              } else {
+                // if rec.customer is a plain string (legacy), keep it as input value but no id
+                picker.value = typeof rec.customer === 'string' ? rec.customer : '';
+              }
+            }
+          })();
+
+          // show full list on focus
+          picker.addEventListener('focus', () => {
+            renderCustomerList(ns.customers.slice(0, 200)); // show initial items (cap to avoid huge DOM)
+            openDropdown();
+          });
+
+          // filter on input
+          picker.addEventListener('input', () => {
+            const q = (picker.value || '').toLowerCase();
+            const matched = ns.customers.filter(c => c.display.toLowerCase().includes(q));
+            renderCustomerList(matched.slice(0, 200));
+            openDropdown();
+            // clear hidden id since user is typing a new string
+            hid.value = '';
+          });
+
+          // click to select
+          dropdown.addEventListener('click', (ev) => {
+            const it = ev.target.closest('.rcf_c_item');
+            if (!it) return;
+            const id = it.dataset.id;
+            const txt = it.textContent;
+            picker.value = txt;
+            hid.value = id;
+            closeDropdown();
+            picker.focus(); // keep focus for keyboard flow
+          });
+
+          // basic keyboard support: ArrowDown to move, Enter to pick, Esc to close
+          let focusedIndex = -1;
+          picker.addEventListener('keydown', (ev) => {
+            const items = Array.from(dropdown.querySelectorAll('.rcf_c_item'));
+            if (ev.key === 'ArrowDown') {
+              ev.preventDefault();
+              focusedIndex = Math.min(items.length - 1, focusedIndex + 1);
+              items.forEach((it, i) => it.style.background = i === focusedIndex ? '#f0f0f0' : '');
+              if (items[focusedIndex]) items[focusedIndex].scrollIntoView({ block: 'nearest' });
+            } else if (ev.key === 'ArrowUp') {
+              ev.preventDefault();
+              focusedIndex = Math.max(0, focusedIndex - 1);
+              items.forEach((it, i) => it.style.background = i === focusedIndex ? '#f0f0f0' : '');
+              if (items[focusedIndex]) items[focusedIndex].scrollIntoView({ block: 'nearest' });
+            } else if (ev.key === 'Enter') {
+              if (items[focusedIndex]) {
+                ev.preventDefault();
+                items[focusedIndex].click();
+              } else {
+                // no focused item — allow form save to handle free-text fallback
+                closeDropdown();
+              }
+            } else if (ev.key === 'Escape') {
+              closeDropdown();
+            }
+          });
+
+          // close when clicking outside (with tiny timeout to allow item click)
+          document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && e.target !== picker) closeDropdown();
+          });
+        }
+
+        // populate entity select (if not readonly)
+        if (!readonly) {
+          const entSel = document.getElementById('rcf_entity_select');
+          if (entSel) {
+            entSel.innerHTML = '<option value="">-- choose entity --</option>' +
+              ns.entities.map(e => `<option value="${e.id}" ${rec.entity && rec.entity.id && String(rec.entity.id) === String(e.id) ? 'selected' : ''}>${esc(e.display)}</option>`).join('');
+          }
+        }
+
+
+        // helper to extract created/updated object from backend response (best-effort)
+        function extractObjectFromResponse(resp, svcTypeKey) {
+          if (!resp) return null;
+          // common conventional keys
+          const keysToTry = [
+            svcEndpointMap[svcTypeKey],     // e.g. 'service_rate'
+            serviceKeyMap[svcTypeKey],      // e.g. 'service_rates' (plural)
+            'service_rate', 'result', 'data', 'created', 'updated'
+          ];
+          for (const k of keysToTry) {
+            if (k && resp[k] && typeof resp[k] === 'object') return resp[k];
+          }
+          // look for any object with id
+          for (const k in resp) {
+            const v = resp[k];
+            if (v && typeof v === 'object' && ('id' in v)) return v;
+          }
+          // fallback to first result element
+          if (Array.isArray(resp.results) && resp.results.length) return resp.results[0];
+          return null;
+        }
+
+        // render service editor/list
+        function renderSvcEditor() {
+          const svc = (ns.services[rec.id] && ns.services[rec.id][svcKey]) ? ns.services[rec.id][svcKey].slice() : [];
+          const listEl = document.getElementById('rcSvcList');
+          if (!listEl) return;
+          if (svc.length === 0) {
+            listEl.innerHTML = `<div style="color:#777" class="rcFormRow"><label style="width:auto">No entries for ${esc(svcLabel)}.</label></div>`;
+            return;
+          }
+
+          const showExtra = svcType === 'service-rate'; // only show these for service-rate
+
+          listEl.innerHTML = svc.map(s => {
+            const sid = s.id || s._tmpId || `tmp-${Math.random().toString(36).slice(2, 8)}`;
+            s._tmpId = sid;
+            if (mode === 'view') {
+              return `<div data-sid="${sid}" style="padding:8px;border-bottom:1px solid #f2f2f2">
+          <div class="rcFormRow"><label>Category</label><div class="rcValue">${esc(s.category || '—')}</div></div>
+          <div class="rcFormRow"><label>Rate</label><div class="rcValue">${esc(String(s.rate_value ?? '—'))} ${s.currency ? esc(s.currency) : ''}</div></div>
+          <div class="rcFormRow"><label>Type</label><div class="rcValue">${esc(s.rate_type || '—')}</div></div>
+          <div class="rcFormRow"><label>Region</label><div class="rcValue">${esc(s.region || '—')}</div></div>
+          ${showExtra ? `<div class="rcFormRow"><label>After hours</label><div class="rcValue">${esc(String(s.after_hours_multiplier ?? '—'))}</div></div>
+                          <div class="rcFormRow"><label>Weekend</label><div class="rcValue">${esc(String(s.weekend_multiplier ?? '—'))}</div></div>
+                          <div class="rcFormRow"><label>Travel</label><div class="rcValue">${esc(String(s.travel_charge ?? '—'))}</div></div>` : ''}
+          <div class="rcFormRow"><label>Remarks</label><div class="rcValue">${esc(s.remarks || '')}</div></div>
+        </div>`;
+            } else {
+              // editable layout uses same rcFormRow rows for visual consistency
+              return `<div data-sid="${sid}" style="padding:8px;border-bottom:1px solid #f8f8f8">
+          <div class="rcFormRow"><label>Category</label><input class="rc_svc_field" data-field="category" value="${esc(s.category || '')}" placeholder="e.g. Band 0"></div>
+
+          <div class="rcFormRow">
+            <label>Rate</label>
+            <input class="rc_svc_field" data-field="rate_value" value="${esc(s.rate_value || '')}" placeholder="e.g. 26000" style="width:140px">
+            <label style="margin-left:12px;width:60px">Type</label>
+            <input class="rc_svc_field" data-field="rate_type" value="${esc(s.rate_type || '')}" placeholder="free text" style="width:160px">
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button class="btn small rcSvcSave" data-sid="${sid}">Save</button>
+              <button class="btn small rcSvcDel" data-sid="${sid}">✖</button>
+            </div>
+          </div>
+
+          <div class="rcFormRow"><label>Region</label><input class="rc_svc_field" data-field="region" value="${esc(s.region || '')}" placeholder="Region / Location"></div>
+
+          ${showExtra ? `
+            <div class="rcFormRow"><label>After hours</label><input class="rc_svc_field" data-field="after_hours_multiplier" value="${esc(s.after_hours_multiplier ?? '')}" placeholder="e.g. 1.5" style="width:120px"></div>
+            <div class="rcFormRow"><label>Weekend</label><input class="rc_svc_field" data-field="weekend_multiplier" value="${esc(s.weekend_multiplier ?? '')}" placeholder="e.g. 2.0" style="width:120px"></div>
+            <div class="rcFormRow"><label>Travel</label><input class="rc_svc_field" data-field="travel_charge" value="${esc(s.travel_charge ?? '')}" placeholder="e.g. 150.00" style="width:140px"></div>
+          ` : ''}
+
+          <div class="rcFormRow"><label>Remarks</label><input class="rc_svc_field" data-field="remarks" value="${esc(s.remarks || '')}" placeholder="Optional remarks"></div>
+        </div>`;
+            }
+          }).join('');
+
+          if (mode !== 'view') {
+            // Save (create/update)
+            Array.from(listEl.querySelectorAll('.rcSvcSave')).forEach(btn => {
+              btn.onclick = async () => {
+                const sid = btn.dataset.sid;
+                const wrapper = listEl.querySelector(`[data-sid="${sid}"]`);
+                if (!wrapper) return;
+                const fields = wrapper.querySelectorAll('.rc_svc_field');
+                const payload = {};
+                fields.forEach(inp => payload[inp.dataset.field] = inp.value);
+                const svcList = ns.services[rec.id][svcKey] || [];
+                const existing = svcList.find(x => (x._tmpId && x._tmpId === sid) || (x.id && String(x.id) === sid));
+
+                try {
+                  if (existing && existing.id) {
+                    const resp = await updateSvc(svcType, existing.id, Object.assign({ rate_card_id: rec.id }, payload));
+                    if (resp && resp.success) {
+                      const updatedObj = extractObjectFromResponse(resp, svcType) || resp;
+                      const idx = svcList.findIndex(x => x.id === existing.id);
+                      if (idx >= 0) svcList[idx] = updatedObj;
+                    } else {
+                      alert('Update failed');
+                    }
+                  } else {
+                    payload.rate_card_id = rec.id;
+                    const resp = await createSvc(svcType, payload);
+                    if (resp && resp.success) {
+                      const created = extractObjectFromResponse(resp, svcType) || resp;
+                      const idx = svcList.findIndex(x => x._tmpId === sid);
+                      if (idx >= 0) svcList.splice(idx, 1, created);
+                      else svcList.push(created);
+                    } else {
+                      alert('Create failed');
+                    }
+                  }
+                  ns.services[rec.id][svcKey] = svcList;
+                  renderSvcEditor();
+                  render();
+                } catch (err) {
+                  console.error(err);
+                  alert('Request failed');
+                }
+              };
+            });
+
+            // Delete
+            Array.from(listEl.querySelectorAll('.rcSvcDel')).forEach(btn => {
+              btn.onclick = async () => {
+                const sid = btn.dataset.sid;
+                const svcList = ns.services[rec.id][svcKey] || [];
+                const existing = svcList.find(x => x._tmpId === sid || (x.id && String(x.id) === sid));
+                if (!existing) return;
+                if (existing.id) {
+                  if (!confirm('Delete this entry?')) return;
+                  try {
+                    const resp = await deleteSvc(svcType, existing.id);
+                    if (resp && resp.success) {
+                      ns.services[rec.id][svcKey] = svcList.filter(x => x.id !== existing.id);
+                      renderSvcEditor();
+                      render();
+                    } else {
+                      alert('Delete failed');
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert('Delete request failed');
+                  }
+                } else {
+                  ns.services[rec.id][svcKey] = svcList.filter(x => x._tmpId !== sid);
+                  renderSvcEditor();
+                  render();
+                }
+              };
+            });
+          }
+        } // end renderSvcEditor
+
+        // when modal is opened, load this svcType for this record if not already loaded
+        (async () => {
+          ns.services[rec.id] = ns.services[rec.id] || {};
+          ns.services[rec.id][svcKey] = ns.services[rec.id][svcKey] || [];
+          try {
+            // load via typed endpoint helper if empty
+            if (!ns.services[rec.id][svcKey] || ns.services[rec.id][svcKey].length === 0) {
+              if (id) {
+                // use generic loader (make sure function loadServiceRatesForType exists and accepts svcType)
+                const arr = await loadServiceRatesForType(id, svcType).catch(e => {
+                  console.warn('typed load failed, falling back to ratecard detail', e);
+                  return null;
+                });
+                if (Array.isArray(arr)) {
+                  ns.services[rec.id][svcKey] = arr;
+                } else {
+                  // fallback to fetching ratecard detail and plucking out the array key (best-effort)
+                  const res = await fetch(`${API_BASE}/ratecards/${id}/`);
+                  if (res.ok) {
+                    const j = await res.json();
+                    // attempt to pick the right array from response
+                    const opt = j.ratecard && (j.ratecard[svcKey] || j.ratecard.service_rates || j.ratecard.results);
+                    ns.services[rec.id][svcKey] = Array.isArray(opt) ? opt : [];
+                  }
+                }
+              } else {
+                ns.services[rec.id][svcKey] = [];
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to load entries for', svcType, err);
+            ns.services[rec.id][svcKey] = ns.services[rec.id][svcKey] || [];
+          } finally {
+            renderSvcEditor();
+            const addBtn = document.getElementById('rcAddSvcBtn');
+            if (addBtn) {
+              addBtn.onclick = () => {
+                ns.services[rec.id][svcKey] = ns.services[rec.id][svcKey] || [];
+                ns.services[rec.id][svcKey].unshift({ category: '', region: '', rate_type: '', rate_value: '', remarks: '', _tmpId: `tmp-${Math.random().toString(36).slice(2, 8)}` });
+                renderSvcEditor();
+              };
+            }
+          }
+        })();
+
+        // Save handler for the main ratecard (not svc items)
+        saveBtn.onclick = async () => {
+          if (mode === 'view') { modalBackdrop.style.display = 'none'; return; }
+
+          const payload = {
+            // customer: document.getElementById('rcf_customer').value,
+            region: document.getElementById('rcf_region').value,
+            country: document.getElementById('rcf_country').value,
+            supplier: document.getElementById('rcf_supplier').value,
+            currency: document.getElementById('rcf_currency').value,
+            // entity: document.getElementById('rcf_entity').value,
+            payment: document.getElementById('rcf_payment').value,
+            status: document.getElementById('rcf_status').value,
+          };
+
+          // pick customer_id from select if present, else fall back to free text input (older behavior)
+          const customerIdEl = document.getElementById('rcf_customer_id');
+          if (customerIdEl && customerIdEl.value) {
+            payload.customer_id = customerIdEl.value;
+          } else {
+            // backward-compatible: if user typed free text, send 'customer' so backend can create/get
+            payload.customer = document.getElementById('rcf_customer_picker') ? document.getElementById('rcf_customer_picker').value : '';
+          }
+
+          const entitySel = document.getElementById('rcf_entity_select');
+          if (entitySel && entitySel.value) payload.entity_id = entitySel.value;
+
+
+          try {
+            if (mode === 'new') {
+              const j = await createRateCard(payload);
+              if (j.success) {
+                await loadRateCards();
+              } else { alert('Create failed'); return; }
+            } else {
+              const j = await updateRateCard(id, payload);
+              if (!j.success) { alert('Update failed'); return; }
+              await loadRateCards();
+            }
+          } catch (err) {
+            console.error(err);
+            alert('Request failed');
+          } finally {
+            modalBackdrop.style.display = 'none';
+          }
+        };
+
+        cancelBtn.onclick = () => modalBackdrop.style.display = 'none';
+      }
+
+
+
+
+      async function deleteRec(id) {
+        if (!confirm('Delete this record?')) return;
+        const j = await deleteRateCard(id);
+        if (j.success) {
+          ns.data = ns.data.filter(x => x.id !== id);
+          render();
+        } else {
+          alert('Delete failed');
+        }
+      }
+
+      // events
+      container.addEventListener('click', e => {
+        const id = +e.target.dataset.id;
+        const viewType = e.target.dataset.viewtype;
+        if (e.target.classList.contains('rc-view')) {
+          if (viewType === 'details') {
+            // open detailed service rate view by fetching ratecard detail
+            (async () => {
+              const res = await fetch(`${API_BASE}/ratecards/${id}/`);
+              const j = await res.json();
+              const d = j.ratecard;
+              modalTitle.textContent = "Service Rate Card Details";
+              modalBody.innerHTML = `
+            <div><b>${esc(d.customer)}</b></div>
+            <div>Currency: ${esc(d.currency)}</div>
+            <div>Valid From: —</div>
+            <div>Valid To: —</div>
+            <div>Contact Email: —</div>
+            <div>Last Updated At: ${esc(d.updated_at)}</div>
+            <hr>
+            <div style="font-weight:700">Service Rates</div>
+            <div>${(d.service_rates || []).map(s => `<div style="padding:6px;border-bottom:1px solid #eee"><b>${esc(s.category)}</b> — ${esc(s.region)} — ${esc(s.rate_type)} ${s.rate_value}</div>`).join('')}</div>
+          `;
+              modalBackdrop.style.display = 'flex';
+              saveBtn.onclick = () => (modalBackdrop.style.display = 'none');
+            })();
+          } else {
+            openModal('view', id);
+          }
+        }
+        if (e.target.classList.contains('rc-edit')) openModal('edit', id);
+        if (e.target.classList.contains('rc-del')) deleteRec(id);
+      });
+
+      cards.forEach(c => c.onclick = () => {
+        cards.forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        ns.currentType = c.dataset.type;
+        render();
+      });
+
+      [searchEl, regionEl, currencyEl, supplierEl].forEach(el => el.oninput = render);
+      newBtn.onclick = () => openModal('new');
+
+      // initial load
+      loadRateCards();
+    })();
+  </script>
+
+
+
+  {% endblock %}

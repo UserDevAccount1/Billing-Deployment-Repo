@@ -1,0 +1,103 @@
+services:
+
+    # ── 1. PostgreSQL — local DB restored from dump.sql.gz ─────────────────────
+    postgres:
+        image: postgres:16-alpine
+        container_name: excis-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB:       "${DB_NAME}"
+            POSTGRES_USER:     "${DB_USER}"
+            POSTGRES_PASSWORD: "${DB_PASSWORD}"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            # Init scripts run ONCE on first start (empty data dir)
+            - ./docker/postgres-init/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+            - ./dump.sql.gz:/docker-entrypoint-initdb.d/dump.sql.gz:ro
+        ports:
+            - "5433:5432"          # host:5433 → avoid clash with any local PG
+        networks:
+            - excis-net
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+    # ── 2. n8n — AI Billing Orchestrator workflow (mandatory with web) ──────────
+    n8n:
+        image: docker.n8n.io/n8nio/n8n:latest
+        container_name: excis-n8n
+        restart: unless-stopped
+        environment:
+            N8N_HOST:     "${N8N_HOST:-localhost}"
+            N8N_PORT:     "5678"
+            N8N_PROTOCOL: "${N8N_PROTOCOL:-http}"
+            WEBHOOK_URL:  "${N8N_WEBHOOK_URL:-http://localhost:5679/}"
+
+            N8N_BASIC_AUTH_ACTIVE:   "${N8N_BASIC_AUTH_ACTIVE:-true}"
+            N8N_BASIC_AUTH_USER:     "${N8N_BASIC_AUTH_USER:-admin}"
+            N8N_BASIC_AUTH_PASSWORD: "${N8N_BASIC_AUTH_PASSWORD:-changeme}"
+
+            N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:-ExcisN8nEncryptKey2026SecureKey1}"
+
+            GENERIC_TIMEZONE: "${GENERIC_TIMEZONE:-UTC}"
+            TZ:               "${GENERIC_TIMEZONE:-UTC}"
+
+            # Auto-import the AI Billing Orchestrator workflow on first start
+            N8N_DEFAULT_BINARY_DATA_MODE: "filesystem"
+            N8N_IMPORT_WORKFLOWS: "/home/node/workflows"
+        volumes:
+            - n8n_data:/home/node/.n8n
+            - ./AI_Billing_Orchestrator_v2.0.json:/home/node/workflows/AI_Billing_Orchestrator_v2.0.json:ro
+        ports:
+            - "5679:5678"          # host:5679 → avoids clash with existing n8n-billing on 5678
+        networks:
+            - excis-net
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+
+    # ── 3. Django billing web app ───────────────────────────────────────────────
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: excis-billing-web
+        restart: unless-stopped
+        env_file:
+            - .env
+        environment:
+            DB_ENGINE: "django.db.backends.postgresql"
+            DB_HOST:   "postgres"       # service name — internal Docker DNS
+            DB_PORT:   "5432"
+            DB_NAME:   "${DB_NAME}"
+            DB_USER:   "${DB_USER}"
+            DB_PASSWORD: "${DB_PASSWORD}"
+
+            # n8n webhook — points to the excis-n8n service on the same network
+            N8N_DASHBOARD_KPI_WEBHOOK: "http://n8n:5678/webhook/dashboard-kpi-notification"
+        depends_on:
+            postgres:
+                condition: service_healthy
+            n8n:
+                condition: service_started
+        volumes:
+            - .:/app:cached
+            - static_volume:/app/staticfiles
+            - media_volume:/app/media
+            - logs_volume:/app/logs
+        ports:
+            - "8000:8000"
+        networks:
+            - excis-net
+
+volumes:
+    postgres_data:
+    n8n_data:
+    static_volume:
+    media_volume:
+    logs_volume:
+
+networks:
+    excis-net:
+        driver: bridge

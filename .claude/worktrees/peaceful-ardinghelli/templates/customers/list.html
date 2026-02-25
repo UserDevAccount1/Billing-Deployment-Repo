@@ -1,0 +1,1448 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Customers & Accounts - Excis Billing System{% endblock %}
+
+{% block page_title %}Customers & Accounts{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+  --bg: #ffffff;
+  --panel: #f9f9f9;
+  --muted: #555;
+  --muted-2:#666;
+  --text:#000000;
+  --line:#ddd;
+  --brand:#5335ff;
+  --btn:#f5f5f5;
+  --btn-h:#ececec;
+  --chip:#f2f2f2;
+  --good:#e8f9ef;
+  --warn:#fff5e6;
+  --bad:#fdeaea;
+  --link:#5335ff;
+}
+
+.customer-app{
+  display:grid;
+  grid-template-columns: 260px 1fr;
+  height:calc(100vh - 200px);
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* SIDEBAR */
+.sidebar{
+  border-right:1px solid var(--line);
+  background:#fafafa;
+  padding:16px;
+  overflow:auto;
+}
+.sb-title{
+  font-weight:600; 
+  margin:0 0 12px 4px; 
+  color:var(--text);
+  font-size: 16px;
+}
+.sb-search{position:relative; margin:0 0 16px}
+.sb-search input{
+  width:100%; background:#fff; color:var(--text); border:1px solid var(--line);
+  padding:12px 12px 12px 36px; border-radius:8px; outline:none;
+  font-size: 14px;
+}
+.sb-search svg{position:absolute; left:10px; top:12px; opacity:.6}
+.brand-list{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+.brand{
+  display:flex; align-items:center; gap:12px;
+  padding:12px; border-radius:10px; cursor:pointer;
+  border:1px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.brand:hover{background:#f2f2f2}
+.brand.active{background:#e6e6ff; border-color:#c3b8fe}
+.dot{width:8px; height:8px; background:var(--brand); border-radius:50%;}
+.brand-name{font-weight: 500; color: var(--text); flex: 1;}
+.brand-edit, .brand-delete{
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.brand:hover .brand-edit, .brand:hover .brand-delete{
+  opacity: 1;
+}
+.brand-edit:hover{
+  background: rgba(83, 53, 255, 0.1);
+}
+.brand-delete:hover{
+  background: rgba(239, 68, 68, 0.1);
+}
+.count{
+  margin-left:auto; color:var(--muted); background:#fff; 
+  border:1px solid var(--line); padding:4px 10px; 
+  border-radius:20px; font-size:12px; font-weight: 500;
+}
+
+/* MAIN */
+.main{display:flex; flex-direction:column; height:100%; overflow:hidden}
+.topbar{
+  display:flex; align-items:center; gap:12px; padding:16px 20px;
+  border-bottom:1px solid var(--line); background:#f9f9f9;
+}
+.title-wrap{display:flex; flex-direction:column}
+.main-title{font-weight:600; font-size: 18px; color: var(--text);}
+.subtitle{color:var(--muted); font-size:13px; margin-top: 2px;}
+.controls{display:flex; align-items:center; gap:10px; margin-left:auto;}
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--btn); color:var(--text); border:1px solid var(--line);
+  padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:500;
+  text-decoration: none; font-size: 14px;
+  transition: all 0.2s ease;
+}
+.btn:hover{background:var(--btn-h); color: var(--text);}
+.btn.primary{background:#5335ff; border-color:#5335ff; color: white;}
+.btn.primary:hover{background:#4528e0; color: white;}
+.icon{width:16px; height:16px;}
+.filters{
+  display:flex; gap:12px; padding:16px 20px; 
+  border-bottom:1px solid var(--line); background:#fff; 
+  flex-wrap:wrap; align-items: center;
+}
+.input, select{
+  background:#fff; color:var(--text); border:1px solid var(--line); 
+  border-radius:8px; padding:12px 14px; outline:none; font-size: 14px;
+}
+.search-wrapper{
+  min-width:300px; display:flex; align-items:center; gap:10px;
+  background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px;
+}
+.search-wrapper input{
+  flex:1; background:transparent; border:none; outline:none; 
+  color:var(--text); font-size: 14px;
+}
+.pill{
+  font-size:12px; color:var(--muted); background:#fafafa; border:1px solid var(--line);
+  padding:8px 12px; border-radius:8px; font-weight: 500;
+}
+
+/* TABLE */
+.table-wrap{overflow:auto; flex:1; background: white;}
+table{width:100%; border-collapse:collapse; min-width:1200px}
+thead th{
+  position:sticky; top:0; z-index:2;
+  text-align:left; font-size:11px; color:var(--muted); font-weight:700;
+  background:#f8f9fa; border-bottom:2px solid var(--line); 
+  padding:16px 12px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+tbody td{
+  border-bottom:1px solid #f0f0f0; padding:16px 12px; vertical-align:middle;
+}
+tbody tr{transition: background-color 0.2s ease;}
+tbody tr:hover{background:#f9f9f9}
+.row-main{font-weight:500; color: var(--text); font-size: 14px;}
+.row-sub{font-size:12px; color:var(--muted); margin-top: 2px;}
+.mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px;}
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:999px; font-size:12px; 
+  background:var(--chip); border:1px solid #ddd; font-weight: 500;
+}
+.chip.good{background:var(--good); color:#0c4021; border-color: #c3e6cb;}
+.chip.bad{background:var(--bad); color:#8b1c2e; border-color: #f5c6cb;}
+.chip.warn{background:var(--warn); color:#754c12; border-color: #ffeaa7;}
+.status{
+  font-size:11px; padding:6px 10px; border-radius:999px; 
+  border:1px solid #ddd; background:#f8f9fa; color:#495057; 
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.status.active{background:#d4edda; color:#155724; border-color: #c3e6cb;}
+.status.low{background:#f8d7da; color:#721c24; border-color: #f5c6cb;}
+.status.missing{background:#fff3cd; color:#856404; border-color: #ffeaa7;}
+.status.inactive{background:#e2e3e5; color:#495057; border-color: #d1d3d4;}
+.actions{display:flex; gap:8px;}
+.actions button, .actions a{
+  background:#fff; border:1px solid var(--line); color:var(--text); 
+  border-radius:6px; padding:8px 10px; cursor:pointer;
+  text-decoration: none; display: inline-flex; align-items: center;
+  font-size: 13px; transition: all 0.2s ease;
+}
+.actions button:hover, .actions a:hover{background:#f2f2f2; color: var(--text);}
+.footer{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-top:1px solid var(--line); background:#f9f9f9;
+  font-size:13px; color:var(--muted);
+}
+.pagination{display:flex; gap:6px; align-items:center}
+.pagination button{
+  background:#fff; border:1px solid var(--line); color:var(--text);
+  padding:8px 12px; border-radius:6px; cursor:pointer; font-size: 13px;
+  transition: all 0.2s ease;
+}
+.pagination button:hover:not(:disabled){background:#f2f2f2}
+.pagination button:disabled{opacity: 0.5; cursor: not-allowed;}
+.pagination .current{background:#5335ff; border-color:#5335ff; color: white;}
+.empty-state{
+  text-align: center; padding: 60px 20px; color: var(--muted);
+}
+.empty-state h3{margin-bottom: 8px; color: var(--text);}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .customer-app{grid-template-columns: 220px 1fr;}
+  .search-wrapper{min-width:220px}
+  .hide-sm{display:none}
+}
+
+/* Modal Styles from edit_account.html */
+.form-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white; border-radius: 16px 16px 0 0; padding: 24px;
+  text-align: center;
+}
+.form-container {
+  background: white; border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.form-body { padding: 32px; }
+.form-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; }
+.section-title {
+  font-size: 16px; font-weight: 600; color: #1f2937;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.form-group { display: flex; flex-direction: column; }
+.form-label {
+  font-size: 13px; font-weight: 600; color: #374151;
+  margin-bottom: 6px;
+}
+.required { color: #ef4444; }
+.form-input, .form-select, .form-control, select.form-control {
+  padding: 10px 14px; border: 2px solid #d1d5db; border-radius: 8px;
+  font-size: 14px; transition: all 0.2s; background: white; width: 100%;
+}
+.form-input:focus, .form-select:focus, .form-control:focus {
+  outline: none; border-color: #5335ff;
+  box-shadow: 0 0 0 3px rgba(83, 53, 255, 0.1);
+}
+.help-text { font-size: 11px; color: #6b7280; margin-top: 4px; }
+.toggle-section {
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 8px; margin-bottom: 16px; overflow: hidden;
+}
+.toggle-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; color: #1f2937; cursor: pointer; padding: 12px 16px;
+  transition: background-color 0.2s; font-size: 13px;
+}
+.toggle-header:hover { background: #f1f5f9; }
+.toggle-content {
+  padding: 0 16px 16px 16px; display: none; border-top: 1px solid #e2e8f0;
+}
+.toggle-content.active { display: block; }
+.new-entry-badge {
+  background: #10b981; color: white; padding: 2px 6px;
+  border-radius: 4px; font-size: 10px; font-weight: 600;
+}
+.error-message { color: #ef4444; font-size: 12px; margin-top: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="customer-app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-title">Customers</div>
+    <div class="sb-search">
+      <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M10 2a8 8 0 1 1 5.3 14l4.4 4.4-1.4 1.4L13.9 17A8 8 0 0 1 10 2m0 2a6 6 0 1 0 0 12a6 6 0 0 0 0-12"/>
+      </svg>
+      <input type="text" id="customerSearch" placeholder="Search customers..." />
+    </div>
+
+    <div class="brand-list" id="customerList">
+      {% for customer in customers %}
+      <div class="brand {% if forloop.first %}active{% endif %}" 
+           data-customer-id="{{ customer.id }}"
+           data-customer-name="{{ customer.name }}">
+        <span class="dot"></span>
+        <span class="brand-name">{{ customer.name }}</span>
+        <span class="brand-edit" onclick="editCustomer({{ customer.id }}, event); return false;" title="Edit Customer">✏️</span>
+        <span class="brand-delete" onclick="deleteCustomer({{ customer.id }}, '{{ customer.name|escapejs }}', event); return false;" title="Delete Customer">🗑️</span>
+        <span class="count">{{ customer.accounts.all.count }}</span>
+      </div>
+      {% empty %}
+      <div class="text-center text-muted py-3">
+        <p>No customers found</p>
+        <a href="{% url 'customers:create' %}" class="btn btn-sm btn-primary">Add Customer</a>
+      </div>
+      {% endfor %}
+      <!-- Debug: {{ customers|join:", " }} -->
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="title-wrap">
+        <div class="main-title" id="currentCustomerTitle">
+          {% if customers %}
+            {{ customers.0.name }} — End Customer Accounts
+          {% else %}
+            Customer Accounts
+          {% endif %}
+        </div>
+        <div class="subtitle">Manage billing cycles, rate cards, and PO assignments</div>
+      </div>
+
+      <div class="controls">
+        <a href="{% url 'customers:create_account' %}" class="btn primary">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          Add Account
+        </a>
+        <a href="{% url 'customers:create' %}" class="btn">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          Add Customer
+        </a>
+        <a href="/customers/billing-cycles/" class="btn">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          Billing Cycles
+        </a>
+        <button class="btn" id="btnRefresh">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 6V3l4 4l-4 4V8A4 4 0 1 0 16 12h2A6 6 0 1 1 12 6z"/>
+          </svg>
+          Refresh
+        </button>
+        <!-- <div class="dropdown">
+            <i class="bi bi-three-dots-vertical dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="true"></i>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/customers/billing-cycles/">Billing Cycle</a></li>
+          </ul>
+        </div> -->
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="search-wrapper">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10 2a8 8 0 1 1 5.3 14l4.4 4.4-1.4 1.4L13.9 17A8 8 0 0 1 10 2m0 2a6 6 0 1 0 0 12a6 6 0 0 0 0-12"/>
+        </svg>
+        <input id="accountSearch" placeholder="Search accounts..." />
+      </div>
+
+      <select id="statusFilter" class="input">
+        <option value="">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="missing_po">Missing PO</option>
+        <option value="low_po_balance">Low PO Balance</option>
+      </select>
+
+      <select id="cycleFilter" class="input">
+        <option value="">All Billing Cycles</option>
+        {% for cycle in billing_cycles %}
+        <option value="{{ cycle.id }}">{{ cycle.name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="pill hide-sm">
+        Showing <span id="rangeInfo">0—0</span> of <span id="totalInfo">0</span> accounts
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">
+              <input type="checkbox" id="selectAll">
+            </th>
+            <th>Account Name</th>
+            <th>Account ID</th>
+            <th>Billing Cycle</th>
+            <th>Currency</th>
+            <th>Active PO</th>
+            <th>PO Balance</th>
+            <th>Last Billing</th>
+            <th>Status</th>
+            <th style="width:120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="accountsTableBody">
+          <tr>
+            <td colspan="10" class="empty-state">
+              <h3>Select a customer</h3>
+              <p>Choose a customer from the sidebar to view their accounts</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <div id="footerText">Select a customer to view accounts</div>
+      <div class="pagination" id="pagination">
+        <!-- Pagination will be inserted here -->
+      </div>
+    </div>
+  </main>
+</div>
+  </main>
+</div>
+
+<!-- View Account Modal -->
+<div class="modal fade" id="viewAccountModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius: 16px; border: none;">
+      <div class="form-header">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div style="flex:1">
+                <h2 style="margin:0; font-size:24px">Account Details</h2>
+                <p style="margin:4px 0 0 0; opacity:0.9" id="viewModalSubtitle">View account information</p>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="modal-body form-body">
+         <div id="viewModalLoading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+         </div>
+         <div id="viewModalContent" style="display:none">
+             <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Customer</label>
+                    <div id="viewCustomer" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Account Name</label>
+                    <div id="viewName" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Account ID</label>
+                    <div id="viewAccountId" class="fs-5 mb-3 font-monospace"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Region</label>
+                    <div id="viewRegion" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Country</label>
+                    <div id="viewCountry" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Billing Cycle</label>
+                    <div id="viewBillingCycle" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Currency</label>
+                    <div id="viewCurrency" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Contact Email</label>
+                    <div id="viewEmail" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Contact Phone</label>
+                    <div id="viewPhone" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-12">
+                    <label class="fw-bold text-muted small text-uppercase">Notes</label>
+                    <div id="viewNotes" class="p-3 bg-light rounded"></div>
+                </div>
+                
+                <!-- File Downloads -->
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Ticket Report</label>
+                    <div id="viewTicketReport" class="fs-5 mb-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small text-uppercase">Contact File</label>
+                    <div id="viewContactFile" class="fs-5 mb-3"></div>
+                </div>
+             </div>
+         </div>
+      </div>
+      <div class="modal-footer" style="background:#f9fafb; border-top:1px solid #e5e7eb; padding: 20px 32px;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="btnEditFromView">Edit Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content" style="border-radius: 16px; border: none;">
+      <div class="form-header">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div style="flex:1">
+                <h2 style="margin:0; font-size:24px">Edit Account</h2>
+                <p style="margin:4px 0 0 0; opacity:0.9" id="editModalSubtitle">Update account details</p>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <form id="editAccountForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" id="editAccountId" name="account_id">
+        
+        <div class="modal-body form-body">
+            <div id="modalLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading account details...</p>
+            </div>
+
+            <div id="modalContent" style="display:none">
+                <!-- Basic Information -->
+                <div class="form-section">
+                  <h3 class="section-title">Basic Information</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Customer <span class="required">*</span></label>
+                      {{ form.customer }}
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Account Name <span class="required">*</span></label>
+                      {{ form.name }}
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Account ID <span class="required">*</span></label>
+                      {{ form.account_id }}
+                      <div class="help-text">Unique identifier for this account</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Location Information -->
+                <div class="form-section">
+                  <h3 class="section-title">Location</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Region <span class="required">*</span></label>
+                      {{ form.region }}
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Country</label>
+                      {{ form.country }}
+                    </div>
+                  </div>
+                  <!-- Add New Country Toggle -->
+                  <div class="toggle-section">
+                    <div class="toggle-header" onclick="toggleNewCountry(event)">
+                      <span>➕ Add New Country</span>
+                      <span class="new-entry-badge">OPTIONAL</span>
+                    </div>
+                    <div class="toggle-content" id="newCountrySection">
+                      <div class="form-row" style="margin-top: 16px; margin-bottom: 0;">
+                        <div class="form-group">
+                          <label class="form-label">Country Name</label>
+                          {{ form.new_country_name }}
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label">Country Code</label>
+                          {{ form.new_country_code }}
+                          <div class="help-text">3-letter ISO code</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Billing Configuration -->
+                <div class="form-section">
+                  <h3 class="section-title">Billing Configuration</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Billing Cycle <span class="required">*</span></label>
+                      {{ form.billing_cycle }}
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Currency</label>
+                      {{ form.currency }}
+                    </div>
+                  </div>
+                  <!-- Add New Currency Toggle -->
+                  <div class="toggle-section">
+                    <div class="toggle-header" onclick="toggleNewCurrency(event)">
+                      <span>➕ Add New Currency</span>
+                      <span class="new-entry-badge">OPTIONAL</span>
+                    </div>
+                    <div class="toggle-content" id="newCurrencySection">
+                      <div class="form-row" style="margin-top: 16px;">
+                        <div class="form-group">
+                          <label class="form-label">Currency Code <span class="required">*</span></label>
+                          {{ form.new_currency_code }}
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label">Currency Name <span class="required">*</span></label>
+                          {{ form.new_currency_name }}
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Currency Symbol</label>
+                        {{ form.new_currency_symbol }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-section">
+                  <h3 class="section-title">Contact Information</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Contact Email</label>
+                      {{ form.contact_email }}
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Contact Phone</label>
+                      {{ form.contact_phone }}
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    {{ form.notes }}
+                  </div>
+                </div>
+
+                <!-- File Uploads -->
+                <div class="form-section">
+                  <h3 class="section-title">File Uploads</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Ticket Report</label>
+                      {{ form.ticket_report }}
+                      <div id="currentTicketReport" class="mt-2 small text-muted"></div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Contact File</label>
+                      {{ form.contact_file }}
+                      <div id="currentContactFile" class="mt-2 small text-muted"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="formErrors" class="alert alert-danger d-none"></div>
+            </div>
+        </div>
+        <div class="modal-footer" style="background:#f9fafb; border-top:1px solid #e5e7eb; padding: 20px 32px;">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveAccountBtn">Update Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius: 16px; border: none;">
+      <div class="form-header">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div style="flex:1">
+                <h2 style="margin:0; font-size:24px">Edit Customer</h2>
+                <p style="margin:4px 0 0 0; opacity:0.9" id="editCustomerModalSubtitle">Update customer details</p>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <form id="editCustomerForm" method="post">
+        {% csrf_token %}
+        <input type="hidden" id="editCustomerId" name="customer_id">
+        
+        <div class="modal-body form-body">
+            <div id="customerModalLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading customer details...</p>
+            </div>
+
+            <div id="customerModalContent" style="display:none">
+                <!-- Customer Information -->
+                <div class="form-section">
+                  <h3 class="section-title">Customer Information</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Customer Name <span class="required">*</span></label>
+                      <input type="text" id="edit_customer_name" name="name" class="form-input" required>
+                      <div class="help-text">Full legal name of the customer organization</div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Customer Code <span class="required">*</span></label>
+                      <input type="text" id="edit_customer_code" name="code" class="form-input" required style="text-transform: uppercase;">
+                      <div class="help-text">Unique identifier (3-10 characters)</div>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Email Address <span class="required">*</span></label>
+                      <input type="email" id="edit_customer_email" name="email" class="form-input" required>
+                      <div class="help-text">Primary contact email</div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Phone Number</label>
+                      <input type="text" id="edit_customer_phone" name="phone" class="form-input">
+                      <div class="help-text">Optional contact phone</div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <textarea id="edit_customer_address" name="address" class="form-input form-textarea" rows="3"></textarea>
+                    <div class="help-text">Company address</div>
+                  </div>
+                </div>
+
+                <div id="customerFormErrors" class="alert alert-danger d-none"></div>
+            </div>
+        </div>
+        <div class="modal-footer" style="background:#f9fafb; border-top:1px solid #e5e7eb; padding: 20px 32px;">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveCustomerBtn">Update Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = "{{ csrf_token }}";
+// Build accounts array directly from Django template loops
+const accountsData = [
+{% for customer in customers %}
+  {% for account in customer.accounts.all %}
+  {
+    id: {{ account.id }},
+    customer_id: {{ customer.id }},
+    customer_name: "{{ customer.name|escapejs }}",
+    name: "{{ account.name|escapejs }}",
+    account_id: "{{ account.account_id|default:""|escapejs }}",
+    region_name: "{{ account.region.name|default:""|escapejs }}",
+    billing_cycle_name: "{{ account.billing_cycle.name|default:""|escapejs }}",
+    billing_cycle_id: {{ account.billing_cycle.id|default:"null" }},
+    currency: "{{ account.currency|default:"USD"|escapejs }}",
+    active_po_number: "{{ account.active_purchase_order.po_number|default:""|escapejs }}",
+    po_balance: "{{ account.po_balance|default:""|escapejs }}",
+    last_billing_run: "{{ account.last_billing_run|date:"M d, Y"|default:""|escapejs }}",
+    status: "{{ account.status|default:"unknown"|escapejs }}"
+  }{% if not forloop.last or not forloop.parentloop.last %},{% endif %}
+  {% endfor %}
+{% endfor %}
+];
+
+// Sort accountsData alphabetically by account name
+accountsData.sort((a, b) => a.name.localeCompare(b.name));
+
+let currentCustomerId = null;
+let filteredAccounts = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
+// Initialize with first customer if available
+document.addEventListener('DOMContentLoaded', function() {
+    const firstCustomer = document.querySelector('.brand.active');
+    if (firstCustomer && accountsData.length > 0) {
+        currentCustomerId = parseInt(firstCustomer.dataset.customerId);
+        updateTitle(firstCustomer.dataset.customerName);
+        applyFilters();
+    } else {
+        renderTable();
+        updatePagination();
+    }
+});
+
+function updateTitle(customerName) {
+    document.getElementById('currentCustomerTitle').textContent = 
+        `${customerName} — End Customer Accounts`;
+}
+
+function formatMoney(amount, currency = 'USD') {
+    if (!amount || amount === 'None' || amount === null || amount === undefined || amount === '') {
+        return '—';
+    }
+    
+    const currencySymbols = {
+        'USD': '$', 'EUR': '€', 'GBP': '£', 'AUD': 'A$', 
+        'INR': '₹', 'JPY': '¥', 'CAD': 'C$'
+    };
+    
+    const symbol = currencySymbols[currency] || currency + ' ';
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount)) return '—';
+    
+    return symbol + numericAmount.toLocaleString(undefined, { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+    });
+}
+
+function getStatusBadge(status) {
+    const statusMap = {
+        'active': { class: 'status active', text: 'Active' },
+        'low_po_balance': { class: 'status low', text: 'Low Balance' },
+        'missing_po': { class: 'status missing', text: 'Missing PO' },
+        'inactive': { class: 'status inactive', text: 'Inactive' }
+    };
+    
+    const statusInfo = statusMap[status] || { class: 'status', text: status || 'Unknown' };
+    return `<span class="${statusInfo.class}">${statusInfo.text}</span>`;
+}
+
+function getPOChip(poNumber) {
+    if (!poNumber || poNumber === 'None' || poNumber === null || poNumber === undefined || poNumber === '') {
+        return '<span class="chip bad"><span>•</span>No Active PO</span>';
+    }
+    return `<span class="chip good"><span>•</span>${poNumber}</span>`;
+}
+
+function safeValue(value, defaultValue = '—') {
+    return (value && value !== 'None' && value !== null && value !== undefined && value !== '') ? value : defaultValue;
+}
+
+// Customer sidebar handling
+document.querySelectorAll('.brand').forEach(brand => {
+    brand.addEventListener('click', function() {
+        document.querySelectorAll('.brand').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        currentCustomerId = parseInt(this.dataset.customerId);
+        updateTitle(this.dataset.customerName);
+        currentPage = 1;
+        applyFilters();
+    });
+});
+
+function applyFilters() {
+    if (!currentCustomerId) {
+        filteredAccounts = [];
+        renderTable();
+        updatePagination();
+        return;
+    }
+    
+    const searchTerm = (document.getElementById('accountSearch').value || '').toLowerCase().trim();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const cycleFilter = document.getElementById('cycleFilter').value;
+    
+    filteredAccounts = accountsData.filter(account => {
+        // Customer filter - ensure both are numbers for comparison
+        if (parseInt(account.customer_id) !== parseInt(currentCustomerId)) {
+            return false;
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const searchableText = [
+                account.name || '',
+                account.account_id || ''
+            ].join(' ').toLowerCase();
+            
+            if (!searchableText.includes(searchTerm)) return false;
+        }
+        
+        // Status filter
+        if (statusFilter && account.status !== statusFilter) return false;
+        
+        // Billing cycle filter
+        if (cycleFilter && account.billing_cycle_id && 
+            parseInt(account.billing_cycle_id) !== parseInt(cycleFilter)) return false;
+        
+        return true;
+    });
+    
+    // Reset to first page if current page is beyond available pages
+    const totalPages = Math.ceil(filteredAccounts.length / itemsPerPage) || 1;
+    if (currentPage > totalPages) {
+        currentPage = 1;
+    }
+    
+    renderTable();
+    updatePagination();
+}
+
+function renderTable() {
+    const tbody = document.getElementById('accountsTableBody');
+    const totalAccounts = filteredAccounts.length;
+    
+    document.getElementById('totalInfo').textContent = totalAccounts;
+    
+    if (totalAccounts === 0) {
+        let emptyMessage, emptyDescription;
+        
+        if (!currentCustomerId) {
+            emptyMessage = 'Select a customer';
+            emptyDescription = 'Choose a customer from the sidebar to view their accounts';
+        } else {
+            emptyMessage = 'No accounts found';
+            emptyDescription = 'Try adjusting your search or filters, or add a new account';
+        }
+        
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="empty-state">
+                    <h3>${emptyMessage}</h3>
+                    <p>${emptyDescription}</p>
+                </td>
+            </tr>
+        `;
+        
+        document.getElementById('rangeInfo').textContent = '0—0';
+        document.getElementById('footerText').textContent = 
+            currentCustomerId ? 'No accounts to show' : 'Select a customer to view accounts';
+        return;
+    }
+    
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalAccounts);
+    const pageAccounts = filteredAccounts.slice(startIndex, endIndex);
+    
+    document.getElementById('rangeInfo').textContent = `${startIndex + 1}—${endIndex}`;
+    document.getElementById('footerText').textContent = 
+        `Showing ${startIndex + 1} to ${endIndex} of ${totalAccounts} accounts`;
+    
+    tbody.innerHTML = pageAccounts.map(account => {
+        const accountDetailUrl = "{% url 'customers:account_detail' pk=999999 %}".replace('999999', account.id);
+        const editUrl = "{% url 'customers:edit_account' pk=999999 %}".replace('999999', account.id);
+        const deleteUrl = "{% url 'customers:delete_account' pk=999999 %}".replace('999999', account.id);
+        
+        return `
+            <tr>
+                <td><input type="checkbox" value="${account.id}"></td>
+                <td>
+                    <div class="row-main">${safeValue(account.name, 'Unnamed Account')}</div>
+                    <div class="row-sub">${safeValue(account.region_name)}</div>
+                </td>
+                <td class="mono">${safeValue(account.account_id)}</td>
+                <td>${safeValue(account.billing_cycle_name)}</td>
+                <td class="mono">${safeValue(account.currency, 'USD')}</td>
+                <td>${getPOChip(account.active_po_number)}</td>
+                <td>${formatMoney(account.po_balance, account.currency || 'USD')}</td>
+                <td>${safeValue(account.last_billing_run)}</td>
+                <td>${getStatusBadge(account.status)}</td>
+                <td class="actions">
+                    <a href="#" onclick="viewAccount(${account.id}); return false;" title="View Account">👁</a>
+                    <a href="#" onclick="editAccount(${account.id}); return false;" title="Edit Account">✏️</a>
+                    <form method="POST" action="${deleteUrl}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this account?');">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <button type="submit" title="Delete Account" style="border:none; background:none; cursor:pointer; padding: 8px 10px;">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updatePagination() {
+    const totalPages = Math.ceil(filteredAccounts.length / itemsPerPage) || 1;
+    const pagination = document.getElementById('pagination');
+    
+    if (filteredAccounts.length === 0) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = `
+        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
+            Previous
+        </button>
+    `;
+    
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <button class="${i === currentPage ? 'current' : ''}" onclick="changePage(${i})">
+                ${i}
+            </button>
+        `;
+    }
+    
+    paginationHTML += `
+        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
+            Next
+        </button>
+    `;
+    
+    pagination.innerHTML = paginationHTML;
+}
+
+function changePage(page) {
+    const totalPages = Math.ceil(filteredAccounts.length / itemsPerPage) || 1;
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    renderTable();
+    updatePagination();
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('accountSearch').addEventListener('input', () => {
+        currentPage = 1;
+        applyFilters();
+    });
+
+    document.getElementById('statusFilter').addEventListener('change', () => {
+        currentPage = 1;
+        applyFilters();
+    });
+
+    document.getElementById('cycleFilter').addEventListener('change', () => {
+        currentPage = 1;
+        applyFilters();
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+        applyFilters();
+    });
+
+    document.getElementById('customerSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        document.querySelectorAll('.brand').forEach(brand => {
+            const customerName = (brand.dataset.customerName || '').toLowerCase();
+            brand.style.display = customerName.includes(searchTerm) ? 'flex' : 'none';
+        });
+    });
+
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('#accountsTableBody input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+
+    // Initialize Modals
+    editAccountModal = new bootstrap.Modal(document.getElementById('editAccountModal'));
+    viewAccountModal = new bootstrap.Modal(document.getElementById('viewAccountModal'));
+    
+    document.getElementById('editAccountForm').addEventListener('submit', handleAccountFormSubmit);
+    
+    document.getElementById('btnEditFromView').addEventListener('click', function() {
+        const accountId = this.dataset.accountId;
+        viewAccountModal.hide();
+        editAccount(accountId);
+    });
+});
+
+// Modal handling
+let editAccountModal;
+let viewAccountModal;
+
+async function viewAccount(accountId) {
+    try {
+        document.getElementById('viewModalLoading').style.display = 'block';
+        document.getElementById('viewModalContent').style.display = 'none';
+        viewAccountModal.show();
+        
+        const response = await fetch(`/customers/api/accounts/${accountId}/`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const account = data.account;
+            
+            // Populate fields
+            setTextContent('viewCustomer', account.customer_name || '—'); // API might need to return customer name
+            setTextContent('viewName', account.name);
+            setTextContent('viewAccountId', account.account_id);
+            setTextContent('viewRegion', account.region);
+            setTextContent('viewCountry', account.country_name || '—'); // API needs country name
+            setTextContent('viewBillingCycle', account.billing_cycle_name || '—'); // API needs cycle name
+            setTextContent('viewCurrency', account.currency_code || '—'); // API needs currency code
+            setTextContent('viewEmail', account.contact_email);
+            setTextContent('viewPhone', account.contact_phone);
+            setTextContent('viewPhone', account.contact_phone);
+            setTextContent('viewNotes', account.notes);
+            
+            // File links
+            setFileLink('viewTicketReport', account.ticket_report_url, account.ticket_report_name);
+            setFileLink('viewContactFile', account.contact_file_url, account.contact_file_name);
+            
+            // Set Edit button ID
+            document.getElementById('btnEditFromView').dataset.accountId = account.id;
+            
+            document.getElementById('viewModalLoading').style.display = 'none';
+            document.getElementById('viewModalContent').style.display = 'block';
+        } else {
+            alert('Error loading account: ' + data.error);
+            viewAccountModal.hide();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error loading account details');
+        viewAccountModal.hide();
+    }
+}
+
+function setTextContent(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = value || '—';
+    }
+}
+
+function setFileLink(elementId, url, name) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        if (url) {
+            element.innerHTML = `<a href="${url}" target="_blank" class="text-decoration-none">📄 ${name || 'Download File'}</a>`;
+        } else {
+            element.textContent = '—';
+        }
+    }
+}
+
+async function editAccount(accountId) {
+    console.log('Starting editAccount for ID:', accountId);
+    try {
+        // Show loading state
+        const loadingEl = document.getElementById('modalLoading');
+        const contentEl = document.getElementById('modalContent');
+        const errorEl = document.getElementById('formErrors');
+        
+        if (!loadingEl || !contentEl || !errorEl) {
+            console.error('Critical Error: Modal elements missing from DOM');
+            alert('Critical Error: Modal elements missing from DOM');
+            return;
+        }
+
+        loadingEl.style.display = 'block';
+        contentEl.style.display = 'none';
+        errorEl.classList.add('d-none');
+        editAccountModal.show();
+        
+        console.log('Fetching account details...');
+        const response = await fetch(`/customers/api/accounts/${accountId}/`);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Data received:', data);
+        
+        if (data.success) {
+            const account = data.account;
+            
+            // Populate form fields
+            const idInput = document.getElementById('editAccountId');
+            const subtitle = document.getElementById('editModalSubtitle');
+            
+            if (idInput) idInput.value = account.id;
+            if (subtitle) subtitle.textContent = `Editing ${account.name}`;
+            
+            // Helper to log missing fields
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.warn(`Field ${id} not found in DOM`);
+                } else {
+                    el.value = (val === null || val === undefined) ? '' : val;
+                }
+            };
+
+            setField('id_customer', account.customer);
+            setField('id_name', account.name);
+            setField('id_account_id', account.account_id);
+            setField('id_region', account.region);
+            setField('id_country', account.country);
+            setField('id_billing_cycle', account.billing_cycle);
+            setField('id_currency', account.currency);
+            setField('id_contact_email', account.contact_email);
+            setField('id_contact_phone', account.contact_phone);
+            setField('id_contact_phone', account.contact_phone);
+            setField('id_notes', account.notes);
+            
+            // Show current files
+            const setFileStatus = (id, url, name) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (url) {
+                        el.innerHTML = `Current: <a href="${url}" target="_blank">${name || 'View File'}</a>`;
+                    } else {
+                        el.textContent = 'No file uploaded';
+                    }
+                }
+            };
+            
+            setFileStatus('currentTicketReport', account.ticket_report_url, account.ticket_report_name);
+            setFileStatus('currentContactFile', account.contact_file_url, account.contact_file_name);
+            
+            console.log('Showing content...');
+            loadingEl.style.display = 'none';
+            contentEl.style.display = 'block';
+        } else {
+            console.error('API Error:', data.error);
+            alert('Error loading account: ' + data.error);
+            editAccountModal.hide();
+        }
+    } catch (error) {
+        console.error('Error in editAccount:', error);
+        alert('Error loading account details: ' + error.message);
+        editAccountModal.hide();
+    }
+}
+
+function setFieldValue(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.value = (value === null || value === undefined) ? '' : value;
+    }
+}
+
+async function handleAccountFormSubmit(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const accountId = document.getElementById('editAccountId').value;
+    const formData = new FormData(form);
+    
+    // Ensure CSRF token is in FormData (in case it's not in the form)
+    if (!formData.has('csrfmiddlewaretoken')) {
+        formData.append('csrfmiddlewaretoken', csrfToken);
+    }
+    
+    try {
+        const response = await fetch(`/customers/api/accounts/${accountId}/update/`, {
+            method: 'POST',
+            body: formData,
+            // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            editAccountModal.hide();
+            // Reload to show changes
+            window.location.reload(); 
+        } else {
+            const errorDiv = document.getElementById('formErrors');
+            errorDiv.innerHTML = formatErrors(data.errors);
+            errorDiv.classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating account');
+    }
+}
+
+function formatErrors(errors) {
+    if (typeof errors === 'string') return errors;
+    
+    let html = '<ul>';
+    for (const [field, messages] of Object.entries(errors)) {
+        html += `<li><strong>${field}:</strong> ${messages.join(', ')}</li>`;
+    }
+    html += '</ul>';
+    return html;
+}
+
+function toggleNewCountry(e) {
+    const content = document.getElementById('newCountrySection');
+    content.classList.toggle('active');
+}
+
+function toggleNewCurrency(e) {
+    const content = document.getElementById('newCurrencySection');
+    content.classList.toggle('active');
+}
+
+// Customer Edit Modal Functions
+let editCustomerModal;
+
+async function editCustomer(customerId, event) {
+    // Prevent the customer from being selected when clicking edit
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    console.log('Starting editCustomer for ID:', customerId);
+    try {
+        // Show loading state
+        const loadingEl = document.getElementById('customerModalLoading');
+        const contentEl = document.getElementById('customerModalContent');
+        const errorEl = document.getElementById('customerFormErrors');
+        
+        if (!loadingEl || !contentEl || !errorEl) {
+            console.error('Critical Error: Customer modal elements missing from DOM');
+            alert('Critical Error: Customer modal elements missing from DOM');
+            return;
+        }
+
+        loadingEl.style.display = 'block';
+        contentEl.style.display = 'none';
+        errorEl.classList.add('d-none');
+        
+        // Initialize modal if not already done
+        if (!editCustomerModal) {
+            editCustomerModal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
+        }
+        editCustomerModal.show();
+        
+        console.log('Fetching customer details...');
+        const response = await fetch(`/customers/api/customer/${customerId}/`);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Data received:', data);
+        
+        if (data.success) {
+            const customer = data.customer;
+            
+            // Populate form fields
+            const idInput = document.getElementById('editCustomerId');
+            const subtitle = document.getElementById('editCustomerModalSubtitle');
+            
+            if (idInput) idInput.value = customer.id;
+            if (subtitle) subtitle.textContent = `Editing ${customer.name}`;
+            
+            // Helper to set field values
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.warn(`Field ${id} not found in DOM`);
+                } else {
+                    el.value = (val === null || val === undefined) ? '' : val;
+                }
+            };
+
+            setField('edit_customer_name', customer.name);
+            setField('edit_customer_code', customer.code);
+            setField('edit_customer_email', customer.email);
+            setField('edit_customer_phone', customer.phone);
+            setField('edit_customer_address', customer.address);
+            
+            console.log('Showing content...');
+            loadingEl.style.display = 'none';
+            contentEl.style.display = 'block';
+        } else {
+            console.error('API Error:', data.error);
+            alert('Error loading customer: ' + data.error);
+            editCustomerModal.hide();
+        }
+    } catch (error) {
+        console.error('Error in editCustomer:', error);
+        alert('Error loading customer details: ' + error.message);
+        if (editCustomerModal) {
+            editCustomerModal.hide();
+        }
+    }
+}
+
+async function handleCustomerFormSubmit(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const customerId = document.getElementById('editCustomerId').value;
+    const formData = new FormData(form);
+    
+    // Ensure CSRF token is in FormData
+    if (!formData.has('csrfmiddlewaretoken')) {
+        formData.append('csrfmiddlewaretoken', csrfToken);
+    }
+    
+    try {
+        const response = await fetch(`/customers/api/customer/${customerId}/update/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            editCustomerModal.hide();
+            // Reload to show changes
+            window.location.reload();
+        } else {
+            const errorDiv = document.getElementById('customerFormErrors');
+            errorDiv.innerHTML = formatErrors(data.errors);
+            errorDiv.classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating customer');
+    }
+}
+
+// Initialize customer edit form handler
+document.addEventListener('DOMContentLoaded', function() {
+    const customerForm = document.getElementById('editCustomerForm');
+    if (customerForm) {
+        customerForm.addEventListener('submit', handleCustomerFormSubmit);
+    }
+});
+
+// Delete Customer Function
+async function deleteCustomer(customerId, customerName, event) {
+    // Prevent the customer from being selected when clicking delete
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete "${customerName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        // Create a form and submit it (since the existing delete endpoint expects POST)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/customers/${customerId}/delete/`;
+        
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Append to body and submit
+        document.body.appendChild(form);
+        form.submit();
+        
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        alert('Error deleting customer: ' + error.message);
+    }
+}
+
+</script>
+{% endblock %}
