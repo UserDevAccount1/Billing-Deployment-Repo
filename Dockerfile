@@ -29,9 +29,9 @@ RUN pip install --upgrade pip \
 # Copy project
 COPY . /app
 
-# Entrypoint
+# Entrypoint (fix Windows CRLF line endings)
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
