@@ -4,7 +4,6 @@
 {% block title %}Dashboard - Excis Billing System{% endblock %}
 
 {% block extra_css %}
-    <!-- No conflicting styles -->
     <style>
         .card-title i {
             margin-right: 8px;
@@ -13,6 +12,83 @@
             font-size: 0.9rem;
             padding: 8px 12px;
         }
+        
+        /* Enhanced PO Review Section Styles */
+        .po-review-card {
+            border-left: 4px solid #ffc107;
+            transition: all 0.3s ease;
+        }
+        .po-review-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        .po-review-header {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffffff 100%);
+            border-bottom: 1px solid #ffe082;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-pending-review {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .action-btn {
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .amount-display {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .kpi-card {
+            border: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+        }
+        .kpi-icon-wrapper {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover .kpi-icon-wrapper {
+            transform: scale(1.1);
+        }
+        .table-modern {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .table-modern thead {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        .table-modern tbody tr {
+            transition: all 0.2s ease;
+        }
+        .table-modern tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.005);
+        }
     </style>
 {% endblock %}
 
@@ -20,11 +96,11 @@
 <!-- KPI Cards Row - Bootstrap Styled -->
 <div class="row g-4 mb-4">
     <div class="col-xl-3 col-lg-6 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card kpi-card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <div class="bg-light-primary rounded-2 p-3">
+                        <div class="kpi-icon-wrapper bg-light-primary rounded-2 p-3">
                             <i class="bi bi-people fs-2 text-primary"></i>
                         </div>
                     </div>
@@ -37,13 +113,13 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-xl-3 col-lg-6 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card kpi-card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <div class="bg-light-success rounded-2 p-3">
+                        <div class="kpi-icon-wrapper bg-light-success rounded-2 p-3">
                             <i class="bi bi-file-text fs-2 text-success"></i>
                         </div>
                     </div>
@@ -56,13 +132,13 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-xl-3 col-lg-6 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card kpi-card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <div class="bg-light-warning rounded-2 p-3">
+                        <div class="kpi-icon-wrapper bg-light-warning rounded-2 p-3">
                             <i class="bi bi-clock-history fs-2 text-warning"></i>
                         </div>
                     </div>
@@ -75,13 +151,13 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-xl-3 col-lg-6 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card kpi-card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <div class="bg-light-info rounded-2 p-3">
+                        <div class="kpi-icon-wrapper bg-light-info rounded-2 p-3">
                             <i class="bi bi-currency-dollar fs-2 text-info"></i>
                         </div>
                     </div>
@@ -96,52 +172,104 @@
     </div>
 </div>
 
-<!-- PENDING PO REVIEWS SECTION - Bootstrap Styled -->
+<!-- PENDING PO REVIEWS SECTION - Enhanced Modern Style -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">
-                    <i class="bi bi-clock-history me-2"></i>Pending PO Reviews
-                </h4>
-                <span class="badge bg-warning text-dark px-3 py-2">{{ pending_pos|length }} Need Review</span>
+        <div class="card po-review-card shadow-sm">
+            <div class="card-header po-review-header border-0 d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <h4 class="card-title mb-0 text-warning">
+                        <i class="bi bi-clock-history me-2"></i>Pending PO Reviews
+                    </h4>
+                    <small class="text-muted">Approve or reject purchase orders from automated billing</small>
+                </div>
+                <span class="badge bg-warning text-dark px-4 py-2 status-badge">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ pending_pos|length }} Need Review
+                </span>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table class="table table-modern table-hover align-middle mb-0">
+                        <thead class="border-0">
                             <tr>
-                                <th>PO Number</th>
-                                <th>Customer</th>
-                                <th>Amount</th>
-                                <th>Uploaded</th>
-                                <th>Action</th>
+                                <th class="ps-4 py-3">PO Number</th>
+                                <th class="py-3">Customer</th>
+                                <th class="py-3">Amount</th>
+                                <th class="py-3">Uploaded</th>
+                                <th class="py-3">Status</th>
+                                <th class="py-3 text-end pe-4">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for po in pending_pos %}
-                            <tr>
-                                <td><span class="fw-semibold">{{ po.po_number }}</span></td>
-                                <td>{{ po.customer.name }}</td>
-                                <td><span class="badge bg-info bg-opacity-10 text-info px-3 py-2">{{ po.currency }} {{ po.total_amount }}</span></td>
-                                <td>{{ po.created_at|date:"Y-m-d" }}</td>
+                            <tr class="border-bottom">
+                                <td class="ps-4">
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold text-primary">{{ po.po_number }}</span>
+                                        <small class="text-muted">{{ po.currency }}</small>
+                                    </div>
+                                </td>
                                 <td>
-                                    <a href="{% url 'admin:purchase_orders_pending_review' %}" class="btn btn-sm btn-primary">
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold">{{ po.customer.name }}</span>
+                                        {% if po.account %}
+                                        <small class="text-muted">{{ po.account.name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="amount-display text-success">
+                                        {{ po.currency }} {{ po.total_amount|floatformat:2 }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span>{{ po.created_at|date:"Y-m-d" }}</span>
+                                        <small class="text-muted">{{ po.created_at|date:"H:i" }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if po.review_status == 'pending_review' %}
+                                        <span class="status-badge status-pending-review">
+                                            <i class="bi bi-clock me-1"></i>Pending
+                                        </span>
+                                    {% elif po.review_status == 'approved' %}
+                                        <span class="status-badge status-approved">
+                                            <i class="bi bi-check-circle me-1"></i>Approved
+                                        </span>
+                                    {% elif po.review_status == 'rejected' %}
+                                        <span class="status-badge status-rejected">
+                                            <i class="bi bi-x-circle me-1"></i>Rejected
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            {{ po.review_status|title }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'admin:purchase_orders_pending_review' %}" class="btn btn-sm btn-primary action-btn">
                                         <i class="bi bi-check-circle me-1"></i>Review
                                     </a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-5">
+                                <td colspan="6" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                    <span>No POs pending review</span>
+                                    <h5 class="mb-1">All Caught Up!</h5>
+                                    <p class="mb-0">No POs pending review at the moment</p>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 py-3">
+                <a href="{% url 'admin:purchase_orders_pending_review' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrow-right me-1"></i>View All Pending Reviews
+                </a>
             </div>
         </div>
     </div>
