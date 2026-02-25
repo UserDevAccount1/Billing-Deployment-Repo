@@ -5,206 +5,312 @@
 
 {% block extra_css %}
     <!-- No conflicting styles -->
+    <style>
+        .card-title i {
+            margin-right: 8px;
+        }
+        .badge {
+            font-size: 0.9rem;
+            padding: 8px 12px;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-        <div class="row">
-            <div class="col-lg-3 col-sm-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">Total Customers</h4>
-                        <h2 class="text-primary">{{ kpis.total_customers }}</h2>
-                        <p class="text-muted">Active accounts</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-sm-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">Active POs</h4>
-                        <h2 class="text-primary">{{ kpis.active_pos }}</h2>
-                        <p class="text-muted">Purchase orders</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-sm-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">Pending Approvals</h4>
-                        <h2 class="text-primary">{{ kpis.pending_approvals }}</h2>
-                        <p class="text-muted">Need attention</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-sm-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">Total Revenue</h4>
-                        <h2 class="text-primary">${{ kpis.total_revenue|floatformat:0 }}</h2>
-                        <p class="text-muted">Last 30 days</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- PENDING PO REVIEWS SECTION - NEW -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Pending PO Reviews</h4>
-                        <span class="badge bg-warning">{{ pending_pos|length }} Need Review</span>
-                    </div>
-                    <div class="card-body">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>PO Number</th>
-                                    <th>Customer</th>
-                                    <th>Amount</th>
-                                    <th>Uploaded</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for po in pending_pos %}
-                                <tr>
-                                    <td>{{ po.po_number }}</td>
-                                    <td>{{ po.customer.name }}</td>
-                                    <td>{{ po.currency }} {{ po.total_amount }}</td>
-                                    <td>{{ po.created_at|date:"Y-m-d" }}</td>
-                                    <td>
-                                        <a href="{% url 'admin:purchase_orders_pending_review' %}" class="btn btn-sm btn-primary">Review</a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center">No POs pending review</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Recent Billing Files</h4>
-                        <a href="{% url 'billing:list' %}" class="btn btn-primary">View All</a>
-                    </div>
-                    <div class="card-body">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>RUN ID</th>
-                                    <th>CUSTOMER</th>
-                                    <th>PO NUMBER</th>
-                                    <th>AMOUNT</th>
-                                    <th>DATE</th>
-                                    <th>STATUS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for billing in recent_billing %}
-                                <tr>
-                                    <td>{{ billing.run_id }}</td>
-                                    <td>{{ billing.customer.name }}</td>
-                                    <td>{{ billing.purchase_order.po_number }}</td>
-                                    <td>${{ billing.amount|floatformat:2 }}</td>
-                                    <td>{{ billing.billing_date }}</td>
-                                    <td>{{ billing.get_status_display }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6">No billing runs found</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Quick Actions</h4>
-                    </div>
-                    <div class="card-body">
-                        <a href="{% url 'billing:create' %}" class="btn btn-primary">Create Billing Run </a>
-                        <a href="{% url 'purchase_orders:list' %}" class="btn btn-primary">Add Purchase Order </a>
-                        <a href="{% url 'customers:create' %}" class="btn btn-primary">Add Customer </a>
-                        <a href="{% url 'rate_cards:create' %}" class="btn btn-primary">Create Rate Card </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% if kpis.low_balance_pos > 0 or kpis.pending_approvals > 0 %}
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Alerts & Notifications</h4>
-                    </div>
-                    <div class="card-body">
-                        {% if kpis.low_balance_pos > 0 %}
-                        <div class="alert alert-warning">
-                            {{ kpis.low_balance_pos }} POs below 20% balance
-                            <p>Action required to avoid billing delays</p>
+<!-- KPI Cards Row - Bootstrap Styled -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-light-primary rounded-2 p-3">
+                            <i class="bi bi-people fs-2 text-primary"></i>
                         </div>
-                        {% endif %}
-                        {% if kpis.pending_approvals > 0 %}
-                        <div class="alert alert-warning">
-                            {{ kpis.pending_approvals }} files pending approval
-                            <p>Review required</p>
-                        </div>
-                        {% endif %}
-                        {% if kpis.draft_pos > 0 %}
-                        <div class="alert alert-warning">
-                            {{ kpis.draft_pos }} draft POs
-                            <p>Need to be activated</p>
-                        </div>
-                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Total Customers</h6>
+                        <h3 class="mb-0 text-primary">{{ kpis.total_customers }}</h3>
+                        <small class="text-muted">Active accounts</small>
                     </div>
                 </div>
             </div>
         </div>
-        {% endif %}
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Recent Purchase Orders</h4>
-                        <a href="{% url 'purchase_orders:list' %}" class="btn btn-primary">View All</a>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-light-success rounded-2 p-3">
+                            <i class="bi bi-file-text fs-2 text-success"></i>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        {% for po in recent_pos %}
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5>{{ po.po_number }}</h5>
-                                <p>{{ po.customer.name }}</p>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Active POs</h6>
+                        <h3 class="mb-0 text-success">{{ kpis.active_pos }}</h3>
+                        <small class="text-muted">Purchase orders</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-light-warning rounded-2 p-3">
+                            <i class="bi bi-clock-history fs-2 text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Pending Approvals</h6>
+                        <h3 class="mb-0 text-warning">{{ kpis.pending_approvals }}</h3>
+                        <small class="text-muted">Need attention</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-light-info rounded-2 p-3">
+                            <i class="bi bi-currency-dollar fs-2 text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="text-muted mb-1">Total Revenue</h6>
+                        <h3 class="mb-0 text-info">${{ kpis.total_revenue|floatformat:0 }}</h3>
+                        <small class="text-muted">Last 30 days</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PENDING PO REVIEWS SECTION - Bootstrap Styled -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Pending PO Reviews
+                </h4>
+                <span class="badge bg-warning text-dark px-3 py-2">{{ pending_pos|length }} Need Review</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>PO Number</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Uploaded</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for po in pending_pos %}
+                            <tr>
+                                <td><span class="fw-semibold">{{ po.po_number }}</span></td>
+                                <td>{{ po.customer.name }}</td>
+                                <td><span class="badge bg-info bg-opacity-10 text-info px-3 py-2">{{ po.currency }} {{ po.total_amount }}</span></td>
+                                <td>{{ po.created_at|date:"Y-m-d" }}</td>
+                                <td>
+                                    <a href="{% url 'admin:purchase_orders_pending_review' %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>Review
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                    <span>No POs pending review</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Billing Files -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-files me-2"></i>Recent Billing Files
+                </h4>
+                <a href="{% url 'billing:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>RUN ID</th>
+                                <th>CUSTOMER</th>
+                                <th>PO NUMBER</th>
+                                <th>AMOUNT</th>
+                                <th>DATE</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for billing in recent_billing %}
+                            <tr>
+                                <td><span class="fw-semibold">{{ billing.run_id }}</span></td>
+                                <td>{{ billing.customer.name }}</td>
+                                <td>{{ billing.purchase_order.po_number }}</td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2">${{ billing.amount|floatformat:2 }}</span></td>
+                                <td>{{ billing.billing_date }}</td>
+                                <td>
+                                    {% if billing.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif billing.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% elif billing.status == 'pending_po_review' %}
+                                        <span class="badge bg-info">PO Review</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ billing.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No billing runs found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h4 class="card-title mb-0"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h4>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'billing:create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Create Billing Run
+                    </a>
+                    <a href="{% url 'purchase_orders:list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Add Purchase Order
+                    </a>
+                    <a href="{% url 'customers:create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Add Customer
+                    </a>
+                    <a href="{% url 'rate_cards:create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Create Rate Card
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts & Notifications -->
+{% if kpis.low_balance_pos > 0 or kpis.pending_approvals > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-warning">
+            <div class="card-header bg-transparent border-0">
+                <h4 class="card-title mb-0 text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Alerts & Notifications</h4>
+            </div>
+            <div class="card-body">
+                {% if kpis.low_balance_pos > 0 %}
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="bi bi-exclamation-circle-fill me-2 fs-4"></i>
+                    <div>
+                        <strong>{{ kpis.low_balance_pos }} POs below 20% balance</strong>
+                        <p class="mb-0 small">Action required to avoid billing delays</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if kpis.pending_approvals > 0 %}
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="bi bi-clock-history me-2 fs-4"></i>
+                    <div>
+                        <strong>{{ kpis.pending_approvals }} files pending approval</strong>
+                        <p class="mb-0 small">Review required</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if kpis.draft_pos > 0 %}
+                <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
+                    <i class="bi bi-pencil-square me-2 fs-4"></i>
+                    <div>
+                        <strong>{{ kpis.draft_pos }} draft POs</strong>
+                        <p class="mb-0 small">Need to be activated</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Purchase Orders -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0"><i class="bi bi-receipt me-2"></i>Recent Purchase Orders</h4>
+                <a href="{% url 'purchase_orders:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for po in recent_pos %}
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ po.po_number }}</h6>
+                                        <p class="small text-muted mb-2">{{ po.customer.name }}</p>
+                                    </div>
+                                    <span class="badge {% if po.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ po.status|title }}
+                                    </span>
+                                </div>
+                                <h5 class="mb-0">${{ po.total_amount|floatformat:0 }}</h5>
                             </div>
-                            <div>
-                                <h5>${{ po.total_amount|floatformat:0 }}</h5>
-                                <p>{{ po.status|title }}</p>
-                            </div>
                         </div>
-                        {% empty %}
-                        <p>No purchase orders found</p>
-                        {% endfor %}
                     </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-center text-muted py-4 mb-0">No purchase orders found</p>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
