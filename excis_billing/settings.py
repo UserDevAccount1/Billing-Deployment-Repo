@@ -14,6 +14,11 @@ DEBUG = config("DEBUG_STATUS", default=True, cast=bool)
 
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 
+# Supabase Configuration
+SUPABASE_URL = config("SUPABASE_URL", default="")
+SUPABASE_KEY = config("SUPABASE_KEY", default="")
+SUPABASE_BUCKET = config("SUPABASE_BUCKET", default="fso-data-files")
+
 ALLOWED_HOSTS = ['billing-agent.dev-environment.site', 'www.billing-agent.dev-environment.site', 'sv70.billing-agent.dev-environment.site', 'localhost', '127.0.0.1', '*']
 
 # Application definition

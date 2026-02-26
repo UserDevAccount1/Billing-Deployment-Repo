@@ -46,4 +46,4 @@ tzdata
 urllib3
 wheel
 whitenoise
-crispy-bootstrap5
+supabase

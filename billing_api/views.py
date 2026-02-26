@@ -1,15 +1,33 @@
+import os
 import json
 import uuid
+import datetime
+import zipfile
+
+from urllib.parse import urlparse
+from decimal import Decimal
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.conf import settings
+from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum, Count
+
 from apps.billing.models import BillingRun, BillingRunLineItem
 from apps.customers.models import Customer
 from apps.purchase_orders.models import PurchaseOrder
-from decimal import Decimal
+
+# Supabase client (only if configured)
+supabase = None
+try:
+    from supabase import create_client
+    if getattr(settings, 'SUPABASE_URL', '') and getattr(settings, 'SUPABASE_KEY', ''):
+        supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+except ImportError:
+    pass
 
 @csrf_exempt
 def billing_api(request):
@@ -246,3 +264,213 @@ def get_all_purchase_orders(request):
         })
 
     return JsonResponse({'purchase_orders': data})
+
+
+# ================== MONITOR / WORKFLOW VIEWS ===================
+
+@csrf_exempt
+def upload_zip(request):
+    """N8N FSO Data Files Receiver"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "POST request required"}, status=400)
+
+    if not supabase:
+        return JsonResponse({"error": "Supabase not configured"}, status=503)
+
+    if 'file' not in request.FILES:
+        return JsonResponse({"error": "No file uploaded"}, status=400)
+
+    zip_file = request.FILES['file']
+    folder_name = os.path.splitext(zip_file.name)[0]
+
+    try:
+        with zipfile.ZipFile(zip_file) as z:
+            for filename in z.namelist():
+                if filename.endswith(('.xlsx', '.xls')):
+                    with z.open(filename) as f:
+                        supabase.storage.from_(settings.SUPABASE_BUCKET).upload(
+                            f"{folder_name}/{os.path.basename(filename)}",
+                            f.read(),
+                            {"content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+                        )
+        return JsonResponse({"status": "success"})
+    except zipfile.BadZipFile:
+        return JsonResponse({"error": "Invalid zip file"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def workflow_report(request):
+    """N8N Node Report Data"""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required"}, status=400)
+
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    required_fields = ["workflow", "region", "node", "executed", "workflowDurationMs", "workflowDuration", "status", "data"]
+    missing = [field for field in required_fields if field not in payload]
+    if missing:
+        return JsonResponse({"error": f"Missing fields: {missing}"}, status=400)
+
+    print("Received workflow report:", payload)
+    return JsonResponse({"status": "success"})
+
+
+def get_workflow_execution_rows(request):
+    if not supabase:
+        return JsonResponse({"error": "Supabase not configured"}, status=503)
+    try:
+        result = supabase.table("workflow_executions").select("*").order("id", desc=False).execute()
+        data = result.model_dump()
+        rows = data.get("data", [])
+        return JsonResponse({"success": True, "rows": rows})
+    except Exception as e:
+        return JsonResponse({"error": str(e)})
+
+
+@csrf_exempt
+def remove_workflow_cycle(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid method"}, status=405)
+
+    if not supabase:
+        return JsonResponse({"error": "Supabase not configured"}, status=503)
+
+    body = json.loads(request.body)
+    cycle_ids = body.get("cycleIDs")
+
+    if not cycle_ids or not isinstance(cycle_ids, list):
+        return JsonResponse({"success": False, "error": "cycleIDs must be a non-empty array"}, status=400)
+
+    results = []
+
+    for cycle_id in cycle_ids:
+        deleted_files = []
+        skipped_files = []
+
+        try:
+            records = (
+                supabase.table("workflow_executions")
+                .select("id, node_type, data")
+                .eq("cycle_Id", cycle_id)
+                .execute()
+            )
+
+            for row in records.data or []:
+                node_type = row.get("node_type")
+                raw_data = row.get("data")
+                data = _normalize_data(raw_data)
+
+                if node_type not in ["Upload", "Ticket Gen"]:
+                    continue
+                if not data:
+                    continue
+
+                for item in data:
+                    signed_url = item.get("url")
+                    if not signed_url:
+                        continue
+
+                    bucket, object_path = _extract_bucket_and_path(signed_url)
+
+                    if not bucket or not object_path:
+                        skipped_files.append({"reason": "invalid_url", "url": signed_url})
+                        continue
+
+                    response = supabase.storage.from_(bucket).remove([object_path])
+
+                    if response and getattr(response, "errors", None):
+                        skipped_files.append({"bucket": bucket, "path": object_path, "reason": response.errors})
+                    else:
+                        deleted_files.append({"bucket": bucket, "path": object_path})
+
+            delete_result = (
+                supabase.table("workflow_executions")
+                .delete()
+                .eq("cycle_Id", cycle_id)
+                .execute()
+            )
+
+            results.append({
+                "cycle_id": cycle_id,
+                "success": True,
+                "deleted_rows": len(delete_result.data) if delete_result.data else 0,
+                "files_deleted": deleted_files,
+                "files_skipped": skipped_files
+            })
+
+        except Exception as e:
+            results.append({
+                "cycle_id": cycle_id,
+                "success": False,
+                "error": str(e),
+                "files_deleted": deleted_files,
+                "files_skipped": skipped_files
+            })
+
+    return JsonResponse({"success": True, "results": results})
+
+
+def list_last_month_excels(request):
+    if not supabase:
+        return JsonResponse({"error": "Supabase not configured"}, status=503)
+    try:
+        today = datetime.date.today()
+        first_day_this_month = today.replace(day=1)
+        last_month_last_day = first_day_this_month - datetime.timedelta(days=1)
+
+        prev_month = last_month_last_day.strftime("%b")
+        prev_year = last_month_last_day.strftime("%Y")
+        folder_prefix = f"{prev_month}_{prev_year}_"
+
+        root_files = supabase.storage.from_(settings.SUPABASE_BUCKET).list()
+        matching_folders = [f["name"] for f in root_files if f["name"].startswith(folder_prefix)]
+
+        all_excel_files = []
+        for folder in matching_folders:
+            items = supabase.storage.from_(settings.SUPABASE_BUCKET).list(path=folder)
+            for file in items:
+                name = file.get("name")
+                if not name:
+                    continue
+                if name.endswith((".xlsx", ".xls")):
+                    full_path = f"{folder}/{name}"
+                    url = supabase.storage.from_(settings.SUPABASE_BUCKET).create_signed_url(full_path, 3600)['signedURL']
+                    all_excel_files.append({
+                        "folder": folder,
+                        "file_name": name,
+                        "path": full_path,
+                        "url": url,
+                    })
+
+        return JsonResponse({"files": all_excel_files})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+# ================== HELPER FUNCTIONS ===================
+
+def _extract_bucket_and_path(signed_url: str):
+    """Extract bucket name and object path from Supabase signed URL"""
+    parsed = urlparse(signed_url)
+    parts = parsed.path.split("/object/sign/")
+    if len(parts) != 2:
+        return None, None
+    full_path = parts[1]
+    bucket, object_path = full_path.split("/", 1)
+    return bucket, object_path
+
+
+def _normalize_data(data):
+    if isinstance(data, list):
+        return data
+    if isinstance(data, str):
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError:
+            return []
+    return []

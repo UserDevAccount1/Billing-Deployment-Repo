@@ -22,8 +22,10 @@ from apps.billing.models import BillingRun
 
 # ================== SUPABASE CLIENT ===================
 
-# Initialize Supabase client
-supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+# Initialize Supabase client (only if configured)
+supabase = None
+if getattr(settings, 'SUPABASE_URL', '') and getattr(settings, 'SUPABASE_KEY', ''):
+    supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
 # ================== PO REVIEW API VIEWS ===================
