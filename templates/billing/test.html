@@ -141,6 +141,25 @@
                                 <span class="upload-info">Max file size: 50MB</span>
                             </div>
 
+
+                            <div class="tmm-version-select" style="margin-bottom: 15px;">
+                                <label for="versionUUIDSelect"
+                                    style="display:block; font-weight:600; margin-bottom:5px;">Link to Previous
+                                    Version (Optional):</label>
+                                <select id="versionUUIDSelect" class="form-select" style="width: 80%; margin: 0 auto;">
+                                    <option value="">-- New File (No Versioning) --</option>
+                                </select>
+                            </div>
+
+                            <div class="tmm-notes-container"
+                                style="margin-bottom: 15px; text-align: left; padding: 0 10%;">
+                                <label for="tmm_notesInput"
+                                    style="display:block; font-weight:600; margin-bottom:5px;">Version Notes
+                                    (Optional):</label>
+                                <textarea id="tmm_notesInput" class="form-control" rows="2"
+                                    placeholder="Enter notes to identify this specific upload version..."></textarea>
+                            </div>
+
                             <!-- Ticket Matching Matrix: Upload -->
                             <div id="tmm_uploadArea" class="upload-area" data-scope="ticket-matching-matrix">
                                 <div class="upload-icon">
@@ -1754,7 +1773,25 @@
 <script src="{% static 'js/Band_features.js' %}" defer></script>
 <script src="{% static 'js/RateCard.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</script>
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    document.addEventListener("DOMContentLoaded", function () {
+        // Fetch existing versions
+        fetch('/billing/api/available-versioned-files/')
+            .then(res => res.json())
+            .then(data => {
+                const selectElement = document.getElementById('versionUUIDSelect');
+                if (data.files && data.files.length > 0) {
+                    data.files.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f.uuid;
+                        option.textContent = `v${f.version} - ${f.original_name}`;
+                        selectElement.appendChild(option);
+                    });
+                }
+            })
+            .catch(err => console.error("Error fetching available verioned files:", err));
+    });
 </script>
 {% endblock %}

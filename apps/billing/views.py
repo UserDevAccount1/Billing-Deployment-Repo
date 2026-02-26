@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import datetime
 import uuid
 import logging
 import json
@@ -11,6 +12,9 @@ from django.http import JsonResponse
 from django.db.models.functions import Lower
 from django.utils.dateformat import format
 from django.views import View
+import os
+import re
+from django.core.files.storage import FileSystemStorage
 
 from excis_billing import settings
 
@@ -474,6 +478,7 @@ def get_all_final_data(request):
                     "account": entry.account.name if entry.account else None,
                     "data_table": entry.data_table,
                     "created_at": entry.created_at,
+                    "file_uuid": entry.file_uuid,
                 }
             )
 
@@ -640,6 +645,7 @@ class BatchStoreFinalTicketView(View):
                             instance.data_table = item.get("data_table", {})
                             instance.initial_ticket = initial_ticket_instance
                             instance.band = band_instance
+                            instance.file_uuid = item.get("file_uuid")
                             instance.save()
                             updated_count += 1
                         except FinalTicket.DoesNotExist:
@@ -655,6 +661,7 @@ class BatchStoreFinalTicketView(View):
                             data_table=item.get("data_table", {}),
                             initial_ticket=initial_ticket_instance,
                             band=band_instance,
+                            file_uuid=item.get("file_uuid"),
                         )
                         saved_count += 1
 
@@ -766,6 +773,7 @@ class BatchStoreInitialTicketView(View):
                             instance.ticket_number = item["ticket_number"]
                             instance.request_id = item["request_id"]
                             instance.data_table = item.get("data_table", {})
+                            instance.file_uuid = item.get("file_uuid")
                             instance.save()
                             updated_count += 1
                         except InitialTicket.DoesNotExist:
@@ -779,6 +787,7 @@ class BatchStoreInitialTicketView(View):
                             ticket_number=item["ticket_number"],
                             request_id=item["request_id"],
                             data_table=item.get("data_table", {}),
+                            file_uuid=item.get("file_uuid"),
                         )
                         saved_count += 1
 
@@ -807,6 +816,175 @@ class BatchStoreInitialTicketView(View):
             )
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@csrf_exempt
+def upload_versioned_file(request):
+    """
+    Endpoint to receive a file and save it with a version number.
+    Format: <uuid>_v<version>_<original_name>.<ext>
+    If uuid is provided, check existing files and increment version.
+    If no uuid is provided, generate a new uuid and set version to 1.
+    """
+    if request.method == "POST":
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+
+        provided_uuid = request.POST.get("uuid", "").strip()
+        
+        # Determine base directory
+        upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_uuid = provided_uuid
+        version = 1
+
+        if not file_uuid:
+            # Generate new UUID
+            file_uuid = str(uuid.uuid4())
+        else:
+            # Check for existing versions
+            highest_version = 0
+            
+            # Regex to match: uuid_vX_...
+            pattern = re.compile(rf"^{file_uuid}_v(\d+)(?:_\d+)?_.*$")
+            for filename in os.listdir(upload_dir):
+                match = pattern.match(filename)
+                if match:
+                    ver = int(match.group(1))
+                    if ver > highest_version:
+                        highest_version = ver
+            
+            version = highest_version + 1
+
+        # Extract extension and construct new filename
+        original_name = uploaded_file.name
+        # Get ticket count
+        ticket_count = request.POST.get("ticket_count", "0")
+
+        # Determine new filename
+        name, ext = os.path.splitext(original_name)
+        new_filename = f"{file_uuid}_v{version}_{ticket_count}_{original_name}"
+
+        # Save the file
+        fs = FileSystemStorage(location=upload_dir)
+        saved_filename = fs.save(new_filename, uploaded_file)
+        
+        # Save Notes to sidecar JSON
+        notes = request.POST.get("notes", "").strip()
+        if notes:
+            sidecar_path = os.path.join(upload_dir, f"{saved_filename}.json")
+            try:
+                with open(sidecar_path, "w", encoding="utf-8") as f:
+                    json.dump({"notes": notes}, f)
+            except Exception as e:
+                logger.error(f"Failed to write sidecar JSON for {saved_filename}: {e}")
+
+        return JsonResponse({
+            "success": True,
+            "uuid": file_uuid,
+            "version": version,
+            "filename": saved_filename,
+            "message": "File uploaded successfully"
+        })
+
+    return JsonResponse({"success": False, "error": "Only POST requests are allowed"}, status=405)
+
+
+def get_available_versioned_files(request):
+    """
+    Returns a list of all uniquely grouped files based on their UUIDs and captures their metadata.
+    [
+        {
+            "uuid": "...", 
+            "version": X, 
+            "filename": "...", 
+            "original_name": "...", 
+            "ticket_count": "...", 
+            "creation_date": "...",
+            "file_type": "..."
+        }
+    ]
+    """
+    upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
+    if not os.path.exists(upload_dir):
+        return JsonResponse({"files": []})
+        
+    files_list = []
+    pattern = re.compile(r"^([a-f0-9\-]+)_v(\d+)(?:_(\d+))?_(.+)$")
+    
+    for filename in os.listdir(upload_dir):
+        match = pattern.match(filename)
+        if match:
+            file_uuid, version_str, ticket_count_str, original_name = match.groups()
+            version = int(version_str)
+            ticket_count = int(ticket_count_str) if ticket_count_str else 0
+            
+            filepath = os.path.join(upload_dir, filename)
+            creation_timestamp = os.path.getctime(filepath)
+            
+            # Format creation date to a readable string (e.g. 15/01/2024 9:00:00 am)
+            dt = datetime.datetime.fromtimestamp(creation_timestamp)
+            creation_date = dt.strftime("%d/%m/%Y %I:%M:%S %p").lower()
+            
+            file_type = os.path.splitext(original_name)[1].lower().replace('.', '')
+            if not file_type:
+                file_type = "unknown"
+
+            # Parse optional sidecar notes JSON
+            notes = ""
+            sidecar_path = f"{filepath}.json"
+            if os.path.exists(sidecar_path):
+                try:
+                    with open(sidecar_path, 'r', encoding='utf-8') as sf:
+                        sidecar_data = json.load(sf)
+                        notes = sidecar_data.get("notes", "")
+                except Exception as e:
+                    logger.error(f"Failed to read sidecar JSON for {filename}: {e}")
+
+            files_list.append({
+                "uuid": file_uuid,
+                "version": version,
+                "filename": filename,
+                "original_name": original_name,
+                "ticket_count": ticket_count,
+                "creation_date": creation_date,
+                "file_type": file_type,
+                "notes": notes
+            })
+
+    # Sort files by newest first
+    files_list.sort(key=lambda x: x["creation_date"], reverse=True)
+    return JsonResponse({"files": files_list})
+
+
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+@xframe_options_exempt
+def serve_versioned_file(request, filename):
+    """
+    Serves a file from the versioned uploads directory. 
+    If ?download=1 is appended to the request, the file is returned as an attachment.
+    """
+    upload_dir = os.path.join(settings.MEDIA_ROOT, "billing", "versioned_files")
+    filepath = os.path.join(upload_dir, filename)
+    
+    if not os.path.exists(filepath):
+        from django.http import Http404
+        raise Http404("File does not exist")
+        
+    download = request.GET.get('download') == '1'
+    
+    from django.http import FileResponse
+    response = FileResponse(open(filepath, 'rb'))
+    
+    if download:
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    else:
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        
+    return response
 
 
 @method_decorator(csrf_exempt, name="dispatch")

@@ -9,7 +9,7 @@ from .models import BillingPipeline, PipelineStep, PipelineLog
 
 @login_required
 def monitor_dashboard(request):
-    return render(request, 'monitor/index.html')
+    return render(request, 'monitor/dev.html')
 
 @login_required
 def get_pipeline_status(request):

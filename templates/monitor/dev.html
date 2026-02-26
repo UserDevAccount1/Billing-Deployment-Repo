@@ -1,0 +1,705 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Monitor Billing - Excis Billing System{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'css/Monitor_Billing.css' %}">
+<link rel="stylesheet" href="{% static 'css/DedicatedTab.css' %}">
+<link rel="stylesheet" href="{% static 'css/ProjectTab.css' %}">
+
+<script src="{% static 'js/Monitor_Billing.js' %}"></script>
+
+<div id="billingDashboard">
+
+
+    <!-- Global Controls -->
+    <div class="global-controls">
+        <button class="control-btn primary" id="playPipeline">
+            <i class="fas fa-play"></i> Play Pipeline
+        </button>
+        <button class="control-btn secondary" id="quickSetupBtn">
+            <i class="fas fa-cog"></i> Quick View
+        </button>
+        <button class="control-btn secondary" id="ticketManagerBtn">
+            <i class="fas fa-ticket"></i> Ticket Manager
+        </button>
+
+    </div>
+
+    <!-- Step Tracker -->
+    <div class="step-tracker-container">
+        <div class="step-tracker" id="stepTracker">
+            <!-- Steps will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Management Table -->
+        <div class="management-table-container">
+            <div class="table-header">
+
+                <div class="table-controls">
+                    <!-- Table Filters (moved from header) -->
+                    <div class="table-filters">
+                        <div class="filter-with-icon">
+                            <i class="fas fa-globe"></i>
+                            <select id="billingRegionFilter" class="table-filter">
+                                <option value="">All Regions</option>
+                                <option value="APAC">APAC</option>
+                                <option value="EMEA">EMEA</option>
+                                <option value="NA">North America</option>
+                                <option value="LATAM">LATAM</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-with-icon">
+                            <i class="fas fa-users"></i>
+                            <select id="billingCustomerFilter" class="table-filter">
+                                <option value="">All Customers</option>
+                                <option value="HCL">HCL</option>
+                                <option value="acme">Acme Corp</option>
+                                <option value="coforge">COFORGE</option>
+                                <option value="cognizant">Cognizant</option>
+                                <option value="ericsson">ERICSSON</option>
+                                <option value="leg">LEG</option>
+                                <option value="lenovo_th">Lenovo Thailand</option>
+                                <option value="skf">SKF</option>
+                                <option value="tcs_full">Tata Consultancy Services</option>
+                                <option value="aico">AICO PHARMA</option>
+                                <option value="atos">ATOS</option>
+                                <option value="beckman">Beckman Coulter</option>
+                                <option value="capgemini">CAPGEMINI</option>
+                                <option value="dxc">DXC</option>
+                                <option value="genpact">GENPACT</option>
+                                <option value="hpe">HPE</option>
+                                <option value="hughes">HUGHES</option>
+                                <option value="lenovo_fifa">LENOVO_FIFA</option>
+                                <option value="sifi">SIFI SBI</option>
+                                <option value="solcentrix">Solcentrix</option>
+                                <option value="sprout">SPROUT</option>
+                                <option value="tcs">TCS</option>
+                                <option value="techem">TECHEM</option>
+                                <option value="wwt">WWT</option>
+                                <option value="zones">ZONES</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-with-icon">
+                            <i class="fas fa-building"></i>
+                            <select id="billingAccountFilter" class="table-filter">
+                                <option value="">All Accounts</option>
+                                <option value="hcl_abbvie">HCL_ABBVIE</option>
+                                <option value="hcl_abbvie_dss">HCL_ABBVIE DSS</option>
+                                <option value="hcl_abbvie_he">HCL_ABBVIE H&amp;E</option>
+                                <option value="hcl_adidas">HCL_ADIDAS</option>
+                                <option value="hcl_akzo_nobel">HCL_AKZO NOBEL</option>
+                                <option value="hcl_allianz">HCL_ALLIANZ</option>
+                                <option value="hcl_altera">HCL_ALTERA</option>
+                                <option value="hcl_amd">HCL_AMD</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-with-icon">
+                            <i class="fas fa-search"></i>
+                            <input type="search" id="billingSearchInput" class="table-filter"
+                                placeholder="Search ticket ID...">
+                        </div>
+                    </div>
+
+                    <div class="table-action-buttons">
+                        <div class="columns-dropdown">
+                            <button class="control-btn" id="toggleColumns">
+                                <i class="fas fa-columns"></i> Columns
+                            </button>
+                            <div class="columns-menu" id="columnsMenu">
+                                <!-- Column checkboxes will be dynamically inserted here -->
+                            </div>
+                        </div>
+
+                        <button class="control-btn info" id="refreshTable">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="control-btn" id="advancedSearchBtn">
+                            <i class="fas fa-search-plus"></i> Advanced
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-container-outer" style="overflow-x: auto; max-width: 100%;">
+                <table id="managementTable">
+                    <thead>
+                        <tr>
+                            <!-- Headers will be dynamic -->
+                        </tr>
+                    </thead>
+                    <tbody id="billingMonitorTableBody">
+                        <!-- Data will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-controls" id="paginationControls">
+                <!-- Pagination will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Step Detail Panel -->
+        <div class="step-detail-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="panelStepName">Step Details</span>
+                </div>
+                <div class="status-badge status-info" id="panelStepStatus">Pending</div>
+            </div>
+
+            <div class="step-info">
+                <div class="info-row">
+                    <span class="info-label">Started:</span>
+                    <span class="info-value" id="panelStartedAt">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duration:</span>
+                    <span class="info-value" id="panelDuration">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Records:</span>
+                    <span class="info-value" id="panelRecords">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Success Rate:</span>
+                    <span class="info-value" id="panelSuccessRate">-</span>
+                </div>
+            </div>
+
+            <!-- Manual Workflow Section -->
+            <div class="panel-section" id="manualWorkflowSection" style="display: none;">
+                <div class="section-title">
+                    <i class="fas fa-hands-helping"></i> Manual Workflow Connection
+                </div>
+                <div class="manual-workflow-section">
+                    <div class="manual-workflow-title">
+                        <i class="fas fa-user-cog"></i>
+                        <span id="manualStepName">Manual Step Name</span>
+                    </div>
+                    <div class="manual-workflow-details" id="manualStepDescription">
+                        Manual workflow description will appear here...
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Required Actions:</span>
+                        <span class="info-value" id="manualRequiredActions">-</span>
+                    </div>
+                    <div class="manual-workflow-actions" id="manualWorkflowActions">
+                        <!-- Manual action buttons will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">
+                    <i class="fas fa-history"></i> Recent Logs
+                </div>
+                <div class="log-list" id="stepLogs">
+                    <!-- Logs will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick View Modal (Reusing quickSetupModal ID) -->
+<div class="modal" id="quickSetupModal">
+    <div class="modal-content quick-setup-modal" style="width: 95%; max-width: 1600px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-eye"></i> Quick View Initial Data</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="control-btn info" id="toggleQuickViewModeBtn"><i class="fas fa-list-alt"></i> Form
+                    View</button>
+                <button class="close-modal" id="closeQuickSetupModal">&times;</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="quick-view-filters" style="margin-bottom: 20px; display: flex; gap: 15px;">
+                <div class="filter-group" style="flex-grow: 1;">
+                    <input type="text" id="quickViewSearchInput" class="form-control"
+                        placeholder="Search Customer, Account, Ticket or Request ID...">
+                </div>
+            </div>
+
+            <div id="quickViewTableContainer">
+                <div class="modal-tabs">
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="dedicated">Dedicated</button>
+                        <button class="tab-btn" data-tab="project">Project</button>
+                        <button class="tab-btn" data-tab="sv_visit">SV Full & Half Day</button>
+                        <button class="tab-btn" data-tab="dispatch">Dispatch</button>
+                    </div>
+
+                    <div class="tab-content active" id="qvDedicatedTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="dedicatedInitialTable">
+                                <thead></thead>
+                                <tbody id="dedicatedInitialBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="qvProjectTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="projectInitialTable">
+                                <thead></thead>
+                                <tbody id="projectInitialBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="qvSv_visitTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="sv_visitInitialTable">
+                                <thead></thead>
+                                <tbody id="sv_visitInitialBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="qvDispatchTab">
+                        <div class="table-container-outer" style="overflow-x: auto;">
+                            <table class="data-table" id="dispatchInitialTable">
+                                <thead></thead>
+                                <tbody id="dispatchInitialBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quickViewFormContainer"
+                style="display: none; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e0e0e0; border-radius: 8px 8px 0 0; background: white;">
+                    <h3 style="margin: 0; font-size: 16px; color: #333;"><i class="fas fa-file-alt"></i> Record Details
+                        (<span id="qvFormActiveTabName">Dedicated</span>)</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="control-btn secondary" id="qvFormPrevBtn"><i class="fas fa-chevron-left"></i>
+                            Prev</button>
+                        <span id="qvFormRecordCounter" style="font-weight: 600; color: #555;">Record 0 of 0</span>
+                        <button class="control-btn secondary" id="qvFormNextBtn">Next <i
+                                class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div id="qvFormContent"
+                    style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="closeQuickViewBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Remaining Modals -->
+<!-- Advanced Search Modal -->
+<div class="modal" id="advancedSearchModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-search-plus"></i> Advanced Search</h2>
+            <button class="close-modal" id="closeAdvancedSearch">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="advancedSearchConditions">
+                <!-- Search conditions will be added here -->
+            </div>
+            <button class="control-btn info" id="addSearchCondition" style="margin-top: 15px;">
+                <i class="fas fa-plus"></i> Add Condition
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="clearAllConditions">Clear All</button>
+            <button class="control-btn success" id="applyAdvancedSearch">Search</button>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket Manager Modal -->
+<div class="modal" id="ticketManagerModal">
+    <div class="modal-content" style="width: 80%; height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h2><i class="fas fa-ticket"></i> Ticket Manager</h2>
+            <button class="close-modal" id="closeTicketManagerModal">&times;</button>
+        </div>
+        <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+            <div id="ticketManagerContent">
+                <div class="modal-tabs">
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tm-tab="available">Available Files</button>
+                        <button class="tab-btn" data-tm-tab="calculated">Calculated Files</button>
+                        <button class="tab-btn" data-tm-tab="approved">Approved Files</button>
+                        <button class="tab-btn" data-tm-tab="invoice">Invoice Files</button>
+                    </div>
+
+                    <div class="tab-content active" id="tmAvailableTab">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Upload Date</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Dates</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
+                                        <th><i class="fas fa-file"></i> File Name</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-sticky-note"></i> Notes</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Upload Date</th>
+                                        <th><i class="fas fa-calendar-check"></i> Last Date For Calculation</th>
+                                        <th><i class="fas fa-ticket-alt"></i> Ticket Count</th>
+                                        <th><i class="fas fa-list"></i> Status</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>HCL_Tickets_Jan</td>
+                                        <td><span class="tm-status-badge sent">V1.0</span></td>
+                                        <td>Initial upload for January</td>
+                                        <td>15/01/2024 9:00:00 am</td>
+                                        <td>2024-01-25</td>
+                                        <td><span class="tm-status-badge amount">125</span></td>
+                                        <td><span class="tm-status-badge sent">AVAILABLE</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn pink"><i class="fas fa-envelope"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>LexCorp_Tickets</td>
+                                        <td><span class="tm-status-badge sent">V2.1</span></td>
+                                        <td>Revised tickets due to LexCorp merging...</td>
+                                        <td>16/01/2024 9:30:00 am</td>
+                                        <td>2024-01-26</td>
+                                        <td><span class="tm-status-badge sent">AVAILABLE</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn pink"><i class="fas fa-envelope"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 2 of 2 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> LOAD
+                                    TICKETS</button>
+                                <button class="control-btn" disabled><i class="fas fa-calculator"></i>
+                                    CALCULATE</button>
+                                <button class="control-btn" disabled><i class="fas fa-file-download"></i>
+                                    DOWNLOAD</button>
+                                <button class="control-btn" disabled><i class="fas fa-eye"></i> PREVIEW</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tmCalculatedTab" style="display: none;">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Calculation Date</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Dates</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
+                                        <th><i class="fas fa-file"></i> Source File</th>
+                                        <th><i class="fas fa-file-invoice"></i> Calculated File</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Calculation Date</th>
+                                        <th><i class="fas fa-ticket-alt"></i> Tickets Processed</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>HCL_Tickets_Jan</td>
+                                        <td>HCL_Tickets_Jan_Calculated</td>
+                                        <td><span class="tm-status-badge sent">V1.0</span></td>
+                                        <td>18/02/2026 2:07:35 pm</td>
+                                        <td><span class="tm-status-badge amount">125</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-chart-line"></i></button>
+                                                <button class="tm-act-btn" style="background: #f59e0b; color: white;"><i
+                                                        class="fas fa-file-export"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn" style="background: #3b82f6; color: white;"><i
+                                                        class="fas fa-paper-plane"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 1 of 1 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-chart-bar"></i> VIEW
+                                    RESULTS</button>
+                                <button class="control-btn" disabled><i class="fas fa-file-export"></i> EXPORT</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> DOWNLOAD</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tmApprovedTab" style="display: none;">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Approval Date</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Dates</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
+                                        <th><i class="fas fa-file"></i> File Name</th>
+                                        <th><i class="fas fa-code-branch"></i> Version</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Approval Date</th>
+                                        <th><i class="fas fa-user-check"></i> Approved By</th>
+                                        <th><i class="fas fa-info-circle"></i> Status</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>Stark_Approved</td>
+                                        <td><span class="tm-status-badge sent">V1.0</span></td>
+                                        <td>17/01/2024 9:30:00 am</td>
+                                        <td><span class="tm-status-badge amount">MANAGER</span></td>
+                                        <td><span class="tm-status-badge"
+                                                style="background:#fef3c7; color:#d97706;">PENDING</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-eye"></i></button>
+                                                <button class="tm-act-btn" style="background: #10b981; color: white;"><i
+                                                        class="fas fa-check"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn" style="background: #ef4444; color: white;"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 1 of 1 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-eye"></i> VIEW</button>
+                                <button class="control-btn" disabled><i class="fas fa-check"></i> APPROVE</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> DOWNLOAD</button>
+                                <button class="control-btn" disabled><i class="fas fa-times"></i> REJECT</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tmInvoiceTab" style="display: none;">
+                        <!-- Filters -->
+                        <div class="tm-filter-box">
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-file-alt"></i> File Name</label>
+                                <input type="text" class="tm-filter-input" placeholder="Search files...">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-code-branch"></i> Version</label>
+                                <input type="text" class="tm-filter-input" placeholder="Enter version (e.g. v1)">
+                            </div>
+                            <div class="tm-filter-group">
+                                <label><i class="fas fa-calendar-alt"></i> Invoice Date</label>
+                                <select class="tm-filter-input">
+                                    <option value="">All Dates</option>
+                                </select>
+                            </div>
+                            <button class="tm-btn-clear"><i class="fas fa-filter"></i> CLEAR</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="tm-table-container">
+                            <table class="tm-data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"><input type="checkbox" class="tm-radio"> SELECT</th>
+                                        <th><i class="fas fa-receipt"></i> Invoice Number</th>
+                                        <th><i class="fas fa-file"></i> Source File</th>
+                                        <th><i class="fas fa-calendar-alt"></i> Invoice Date</th>
+                                        <th><i class="fas fa-dollar-sign"></i> Amount</th>
+                                        <th><i class="fas fa-info-circle"></i> Status</th>
+                                        <th><i class="fas fa-cog"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="checkbox" class="tm-radio"></td>
+                                        <td>INV-2024-001</td>
+                                        <td>Umbrella_Tickets</td>
+                                        <td>17/01/2024</td>
+                                        <td><span class="tm-status-badge amount">$4,250.00</span></td>
+                                        <td><span class="tm-status-badge sent">SENT</span></td>
+                                        <td>
+                                            <div class="tm-actions">
+                                                <button class="tm-act-btn"><i class="fas fa-file-invoice"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-download"></i></button>
+                                                <button class="tm-act-btn pink"><i class="fas fa-envelope"></i></button>
+                                                <button class="tm-act-btn"><i class="fas fa-print"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="tm-pagination">
+                                <span>Showing 1 to 1 of 1 entries</span>
+                                <div>
+                                    <button class="control-btn" disabled>Previous</button>
+                                    <button class="control-btn" disabled>Next</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="tm-footer-bar">
+                            <div class="tm-footer-selection">
+                                <i class="fas fa-info-circle"></i> No file selected
+                            </div>
+                            <div class="tm-footer-actions">
+                                <button class="control-btn" disabled><i class="fas fa-eye"></i> VIEW INVOICE</button>
+                                <button class="control-btn" disabled><i class="fas fa-download"></i> DOWNLOAD</button>
+                                <button class="control-btn" disabled><i class="fas fa-envelope"></i> EMAIL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="closeTicketManagerBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- File Preview Modal -->
+<div class="modal" id="filePreviewModal" style="z-index: 9999;">
+    <div class="modal-content" style="width: 90%; height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h2 id="filePreviewTitle"><i class="fas fa-eye"></i> File Preview</h2>
+            <button class="close-modal" id="closeFilePreviewModal">&times;</button>
+        </div>
+        <div class="modal-body" id="filePreviewBody"
+            style="flex: 1; overflow: auto; padding: 20px; background: #f8fafc;">
+            <!-- Content injected via JS: iframe for PDF, HTML table for XLS/CSV -->
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="closeFilePreviewBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="{% static 'js/Monitor_Billing.js' %}"></script>
+<script src="{% static 'js/Ticket_matching_matrix.js' %}"></script>
+
+{% endblock %}
