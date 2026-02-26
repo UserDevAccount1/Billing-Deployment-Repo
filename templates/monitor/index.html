@@ -4,57 +4,40 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-        :root {
-            --primary-color: #2563eb;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
-            --info-color: #3b82f6;
-            --bg-color: #f8fafc;
-            --card-color: #ffffff;
-            --border-color: #e2e8f0;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
+        /* Monitor Billing scoped variables - do NOT override :root or body */
+        #billingDashboard {
+            --mb-primary-color: #2563eb;
+            --mb-success-color: #10b981;
+            --mb-warning-color: #f59e0b;
+            --mb-error-color: #ef4444;
+            --mb-info-color: #3b82f6;
+            --mb-bg-color: #f8fafc;
+            --mb-card-color: #ffffff;
+            --mb-border-color: #e2e8f0;
+            --mb-text-primary: #1e293b;
+            --mb-text-secondary: #64748b;
             --step-width: 100px;
-            --manual-color: #8b5cf6;
+            --mb-manual-color: #8b5cf6;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 100%;
-            padding: 20px;
-        }
-
-        /* Header */
-        .header {
+        /* Monitor billing header - scoped to avoid conflicting with base .header */
+        #billingDashboard .monitor-header {
            display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
             padding-bottom: 16px;
-            border-bottom: 2px solid var(--bam-border-color);
+            border-bottom: 2px solid var(--mb-border-color);
         }
-        .header h1 {
+        #billingDashboard .monitor-header h1 {
             font-size: 24px;
             font-weight: 700;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        .header h1 i {
-            color: var(--primary-color);
+        #billingDashboard .monitor-header h1 i {
+            color: var(--mb-primary-color);
         }
 
         .header-controls {
@@ -70,7 +53,7 @@
             flex-wrap: wrap;
             margin-bottom: 24px;
             padding: 16px;
-            background: var(--card-color);
+            background: var(--mb-card-color);
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
@@ -89,32 +72,32 @@
         }
 
         .control-btn.primary {
-            background-color: var(--primary-color);
+            background-color: var(--mb-primary-color);
             color: white;
         }
 
         .control-btn.success {
-            background-color: var(--success-color);
+            background-color: var(--mb-success-color);
             color: white;
         }
 
         .control-btn.warning {
-            background-color: var(--warning-color);
+            background-color: var(--mb-warning-color);
             color: white;
         }
 
         .control-btn.danger {
-            background-color: var(--error-color);
+            background-color: var(--mb-error-color);
             color: white;
         }
 
         .control-btn.info {
-            background-color: var(--info-color);
+            background-color: var(--mb-info-color);
             color: white;
         }
 
         .control-btn.manual {
-            background-color: var(--manual-color);
+            background-color: var(--mb-manual-color);
             color: white;
         }
 
@@ -132,7 +115,7 @@
 
         select, input[type="search"] {
             padding: 8px 12px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--mb-border-color);
             border-radius: 8px;
             font-size: 14px;
             min-width: 180px;
@@ -140,7 +123,7 @@
 
         /* Step Tracker */
         .step-tracker-container {
-            background: var(--card-color);
+            background: var(--mb-card-color);
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -162,7 +145,7 @@
             left: 50px;
             right: 50px;
             height: 3px;
-            background: var(--border-color);
+            background: var(--mb-border-color);
             z-index: 1;
         }
 
@@ -187,7 +170,7 @@
 
         .step.requires-manual .step-icon {
             border-style: dashed;
-            border-color: var(--manual-color);
+            border-color: var(--mb-manual-color);
         }
 
         .step-icon {
@@ -200,27 +183,27 @@
             font-size: 24px;
             margin-bottom: 12px;
             background: white;
-            border: 3px solid var(--border-color);
-            color: var(--text-secondary);
+            border: 3px solid var(--mb-border-color);
+            color: var(--mb-text-secondary);
             transition: all 0.3s;
             position: relative;
         }
 
         .step.active .step-icon {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
+            border-color: var(--mb-primary-color);
+            color: var(--mb-primary-color);
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
 
         .step.completed .step-icon {
-            border-color: var(--success-color);
-            background-color: var(--success-color);
+            border-color: var(--mb-success-color);
+            background-color: var(--mb-success-color);
             color: white;
         }
 
         .step.failed .step-icon {
-            border-color: var(--error-color);
-            background-color: var(--error-color);
+            border-color: var(--mb-error-color);
+            background-color: var(--mb-error-color);
             color: white;
         }
 
@@ -230,7 +213,7 @@
             right: -5px;
             width: 20px;
             height: 20px;
-            background-color: var(--manual-color);
+            background-color: var(--mb-manual-color);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -246,11 +229,11 @@
             font-weight: 600;
             text-align: center;
             margin-bottom: 6px;
-            color: var(--text-secondary);
+            color: var(--mb-text-secondary);
         }
 
         .step.active .step-label {
-            color: var(--primary-color);
+            color: var(--mb-primary-color);
         }
 
         .step-status {
@@ -300,7 +283,7 @@
 
         /* Management Table */
         .management-table-container {
-            background: var(--card-color);
+            background: var(--mb-card-color);
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -339,8 +322,8 @@
             text-align: left;
             padding: 16px 12px;
             font-weight: 600;
-            color: var(--text-secondary);
-            border-bottom: 2px solid var(--border-color);
+            color: var(--mb-text-secondary);
+            border-bottom: 2px solid var(--mb-border-color);
             white-space: nowrap;
             position: relative;
             cursor: pointer;
@@ -370,7 +353,7 @@
 
         td {
             padding: 16px 12px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--mb-border-color);
         }
 
         tr:hover {
@@ -379,7 +362,7 @@
 
         tr.requires-manual {
             background-color: #faf5ff;
-            border-left: 3px solid var(--manual-color);
+            border-left: 3px solid var(--mb-manual-color);
         }
 
         tr.requires-manual:hover {
@@ -473,7 +456,7 @@
 
         /* Step Detail Panel */
         .step-detail-panel {
-            background: var(--card-color);
+            background: var(--mb-card-color);
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -488,7 +471,7 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 16px;
-            border-bottom: 2px solid var(--border-color);
+            border-bottom: 2px solid var(--mb-border-color);
         }
 
         .panel-title {
@@ -512,7 +495,7 @@
         }
 
         .info-label {
-            color: var(--text-secondary);
+            color: var(--mb-text-secondary);
             font-weight: 500;
         }
 
@@ -538,13 +521,13 @@
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 20px;
-            border-left: 4px solid var(--manual-color);
+            border-left: 4px solid var(--mb-manual-color);
         }
 
         .manual-workflow-title {
             font-size: 14px;
             font-weight: 600;
-            color: var(--manual-color);
+            color: var(--mb-manual-color);
             margin-bottom: 8px;
             display: flex;
             align-items: center;
@@ -553,7 +536,7 @@
 
         .manual-workflow-details {
             font-size: 13px;
-            color: var(--text-primary);
+            color: var(--mb-text-primary);
             margin-bottom: 12px;
             line-height: 1.5;
         }
@@ -569,8 +552,8 @@
             width: 100%;
             padding: 8px 12px;
             background-color: white;
-            border: 1px solid var(--manual-color);
-            color: var(--manual-color);
+            border: 1px solid var(--mb-manual-color);
+            color: var(--mb-manual-color);
             border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
@@ -582,7 +565,7 @@
         }
 
         .manual-action-btn:hover {
-            background-color: var(--manual-color);
+            background-color: var(--mb-manual-color);
             color: white;
         }
 
@@ -593,35 +576,35 @@
 
         .log-item {
             padding: 12px;
-            border-left: 3px solid var(--border-color);
+            border-left: 3px solid var(--mb-border-color);
             margin-bottom: 8px;
             background-color: #f8fafc;
             border-radius: 0 8px 8px 0;
         }
 
         .log-item.error {
-            border-left-color: var(--error-color);
+            border-left-color: var(--mb-error-color);
             background-color: #fef2f2;
         }
 
         .log-item.warning {
-            border-left-color: var(--warning-color);
+            border-left-color: var(--mb-warning-color);
             background-color: #fffbeb;
         }
 
         .log-item.success {
-            border-left-color: var(--success-color);
+            border-left-color: var(--mb-success-color);
             background-color: #f0fdf4;
         }
 
         .log-item.manual {
-            border-left-color: var(--manual-color);
+            border-left-color: var(--mb-manual-color);
             background-color: #faf5ff;
         }
 
         .log-time {
             font-size: 12px;
-            color: var(--text-secondary);
+            color: var(--mb-text-secondary);
             margin-bottom: 4px;
         }
 
@@ -646,7 +629,7 @@
             top: 100%;
             right: 0;
             background: white;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--mb-border-color);
             border-radius: 8px;
             padding: 12px;
             min-width: 200px;
@@ -678,7 +661,7 @@
             justify-content: space-between;
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--mb-border-color);
         }
 
         .pagination-controls {
@@ -687,12 +670,12 @@
             align-items: center;
             margin-top: 20px;
             padding-top: 16px;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--mb-border-color);
         }
 
         .pagination-info {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: var(--mb-text-secondary);
         }
 
         .pagination-buttons {
@@ -704,7 +687,7 @@
         .page-btn {
             width: 32px;
             height: 32px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--mb-border-color);
             background: white;
             border-radius: 6px;
             cursor: pointer;
@@ -719,9 +702,9 @@
         }
 
         .page-btn.active {
-            background-color: var(--primary-color);
+            background-color: var(--mb-primary-color);
             color: white;
-            border-color: var(--primary-color);
+            border-color: var(--mb-primary-color);
         }
 
         .page-btn.disabled {
@@ -736,7 +719,7 @@
         .page-size-selector select {
             padding: 4px 8px;
             border-radius: 4px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--mb-border-color);
             font-size: 12px;
         }
 
@@ -771,7 +754,7 @@
 
         .modal-header {
             padding: 24px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--mb-border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -785,7 +768,7 @@
 
         .modal-footer {
             padding: 20px 24px;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--mb-border-color);
             display: flex;
             justify-content: flex-end;
             gap: 12px;
@@ -796,7 +779,7 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: var(--text-secondary);
+            color: var(--mb-text-secondary);
         }
 
         /* Advanced Search Modal */
@@ -812,14 +795,14 @@
         .search-condition input {
             width: 100%;
             padding: 8px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--mb-border-color);
             border-radius: 6px;
         }
 
         .remove-condition {
             background: none;
             border: none;
-            color: var(--error-color);
+            color: var(--mb-error-color);
             cursor: pointer;
             font-size: 18px;
         }
@@ -952,7 +935,7 @@
                     <i class="fas fa-file-export"></i> Export
                 </button>
             </div>
-            <div class="header-controls" style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+            <div class="header-controls" style="width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--mb-border-color);">
                 <div class="filter-group" style="margin-left: 0;">
                     <select id="regionFilter">
                         <option value="">All Regions</option>
@@ -1194,7 +1177,7 @@
                 </button>
                 <div style="margin-top: 20px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 600;">Filter Logic:</label>
-                    <select id="filterLogic" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <select id="filterLogic" style="width: 100%; padding: 10px; border: 1px solid var(--mb-border-color); border-radius: 8px;">
                         <option value="AND">ALL conditions must be true (AND)</option>
                         <option value="OR">ANY condition can be true (OR)</option>
                     </select>
@@ -2511,15 +2494,15 @@
         }
 
         function updateStepIconStyle(icon, status) {
-            icon.style.borderColor = status === 'completed' ? 'var(--success-color)' : 
-                                    status === 'failed' ? 'var(--error-color)' :
-                                    status === 'in_progress' ? 'var(--primary-color)' : 'var(--border-color)';
+            icon.style.borderColor = status === 'completed' ? 'var(--mb-success-color)' : 
+                                    status === 'failed' ? 'var(--mb-error-color)' :
+                                    status === 'in_progress' ? 'var(--mb-primary-color)' : 'var(--mb-border-color)';
             
-            icon.style.backgroundColor = status === 'completed' ? 'var(--success-color)' : 
-                                        status === 'failed' ? 'var(--error-color)' : 'white';
+            icon.style.backgroundColor = status === 'completed' ? 'var(--mb-success-color)' : 
+                                        status === 'failed' ? 'var(--mb-error-color)' : 'white';
             
             icon.style.color = (status === 'completed' || status === 'failed') ? 'white' : 
-                              status === 'in_progress' ? 'var(--primary-color)' : 'var(--text-secondary)';
+                              status === 'in_progress' ? 'var(--mb-primary-color)' : 'var(--mb-text-secondary)';
         }
 
         function fetchPipelineLogs() {
